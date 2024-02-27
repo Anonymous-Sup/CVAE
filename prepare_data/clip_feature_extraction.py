@@ -12,8 +12,9 @@ run = neptune.init_run(
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2ODIwNTQ4Yy0xZDA3LTRhNDctOTRmMy02ZjRlMmMzYmYwZjUifQ==",
 )  # your credentials
 
-
+# set only using GPU 1
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--data_root', type=str, default='/home/zhengwei/github/datasets/')
@@ -26,7 +27,7 @@ else:
     suffix = '.jpg'
 
 
-model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
+model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k', device=device)
 # tokenizer = open_clip.get_tokenizer('ViT-B-32')
 
 model.eval()
@@ -56,7 +57,7 @@ def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
             single_image_path = os.path.join(root, name)
             single_image = preprocess(Image.open(single_image_path)).unsqueeze(0)
             with torch.no_grad(), torch.cuda.amp.autocast():
-                single_image_features = model.encode_image(single_image)
+                single_image_features = model.encode_image(single_image.cuda())
                 single_image_features /= single_image_features.norm(dim=-1, keepdim=True)
                 torch.save(single_image_features, os.path.join(feature_root, pre + '.pt'))
         # break
