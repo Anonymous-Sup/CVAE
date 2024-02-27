@@ -41,6 +41,7 @@ def process_data(basepath, savepath):
             if not os.path.isdir(dst_path):
                 os.mkdir(dst_path)
             copyfile(src_path, dst_path + '/' + name)
+        print('dataset processed')
 
 # For query 
 query_path = download_path + '/query'
