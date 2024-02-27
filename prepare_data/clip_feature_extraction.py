@@ -37,7 +37,7 @@ print("Context length:", context_length)
 print("Vocab size:", vocab_size)
 
 print(preprocess)
-run["model/preprocess"] = preprocess
+# run["model/preprocess"] = preprocess
 
 def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
     # get all folders in the train_path
@@ -52,10 +52,12 @@ def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
             if ext != suffix:
                 continue
             single_image_path = os.path.join(root, name)
+            print("single_image_path=", single_image_path)
             single_image = preprocess(Image.open(single_image_path)).unsqueeze(0)
             with torch.no_grad(), torch.cuda.amp.autocast():
                 single_image_features = model.encode_image(single_image)
                 single_image_features /= single_image_features.norm(dim=-1, keepdim=True)
+                print("feature extraction success")
                 torch.save(single_image_features, os.path.join(feature_root, pre + '.pt'))
                 print("feature save path=", os.path.join(feature_root, pre + '.pt'))
         break
