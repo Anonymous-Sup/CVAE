@@ -14,7 +14,6 @@ run = neptune.init_run(
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-argparse = argparse.ArgumentParser()
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--data_root', type=str, default='/home/zhengwei/github/datasets/')
 argparser.add_argument('--dataset', type=str, default='DukeMTMC-reID', choices=['DukeMTMC-reID', 'Market-1501', 'MSMT17_V1', 'cuhk03', 'cuhk01'])
