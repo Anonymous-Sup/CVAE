@@ -5,6 +5,7 @@ import os
 import argparse
 import neptune
 import numpy as np
+import tqdm
 
 run = neptune.init_run(
     project="Zhengwei-Lab/NIPSTransferReID",
@@ -42,7 +43,8 @@ print(preprocess)
 def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
     # get all folders in the train_path
     dirs = os.listdir(base_path)
-    for dir in dirs:
+    # use tqdm to show the progress
+    for dir in tqdm.tqdm(dirs):
         feature_root= os.path.join(feature_path, dir)
         os.makedirs(feature_root, exist_ok=True)
         
@@ -52,15 +54,12 @@ def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
             if ext != suffix:
                 continue
             single_image_path = os.path.join(root, name)
-            print("single_image_path=", single_image_path)
             single_image = preprocess(Image.open(single_image_path)).unsqueeze(0)
             with torch.no_grad(), torch.cuda.amp.autocast():
                 single_image_features = model.encode_image(single_image)
                 single_image_features /= single_image_features.norm(dim=-1, keepdim=True)
-                print("feature extraction success")
                 torch.save(single_image_features, os.path.join(feature_root, pre + '.pt'))
-                print("feature save path=", os.path.join(feature_root, pre + '.pt'))
-        break
+        # break
 
 print("==========Extracting feature form query ==========")
 query_path = os.path.join(args.data_root, args.dataset, 'pytorch/query')
