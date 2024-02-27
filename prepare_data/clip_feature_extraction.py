@@ -57,6 +57,7 @@ def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
                 single_image_features = model.encode_image(single_image)
                 single_image_features /= single_image_features.norm(dim=-1, keepdim=True)
                 torch.save(single_image_features, os.path.join(feature_root, pre + '.pt'))
+                print("feature save path=", os.path.join(feature_root, pre + '.pt'))
         break
 
 query_path = os.path.join(args.data_root, args.dataset, 'pytorch/query')
