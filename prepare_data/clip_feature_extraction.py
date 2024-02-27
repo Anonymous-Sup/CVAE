@@ -20,9 +20,9 @@ argparser.add_argument('--dataset', type=str, default='DukeMTMC-reID', choices=[
 args = argparser.parse_args()
 
 if 'cuhk' in args.dataset:
-    suffix = 'png'
+    suffix = '.png'
 else:
-    suffix = 'jpg'
+    suffix = '.jpg'
 
 
 model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
