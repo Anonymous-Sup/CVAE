@@ -62,16 +62,19 @@ def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
                 print("feature save path=", os.path.join(feature_root, pre + '.pt'))
         break
 
+print("==========Extracting feature form query ==========")
 query_path = os.path.join(args.data_root, args.dataset, 'pytorch/query')
 feature_path = os.path.join(args.data_root, args.dataset, 'tensor/query')
 run["data/query_path"] = query_path
 extract_features(model, preprocess, query_path, feature_path, suffix)
 
+print("==========Extracting feature form gallery ==========")
 gallery_path = os.path.join(args.data_root, args.dataset, 'pytorch/gallery')
 feature_path = os.path.join(args.data_root, args.dataset, 'tensor/gallery')
 run["data/gallery_path"] = gallery_path
 extract_features(model, preprocess, gallery_path, feature_path, suffix)
 
+print("==========Extracting feature form train_all ==========")
 train_path = os.path.join(args.data_root, args.dataset, 'pytorch/train_all')
 feature_path = os.path.join(args.data_root, args.dataset, 'tensor/train_all')
 run["data/train_path"] = train_path
