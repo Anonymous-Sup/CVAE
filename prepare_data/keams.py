@@ -23,7 +23,7 @@ def clustering(args, tensors):
     sorted_counter = sorted(counter.items(), key=lambda x: x[0])  # sort by element
     return labels, centroids, sorted_counter
 
-dir_path =  osp.join(args.data_path, 'tensors', args.type)
+dir_path =  osp.join(args.data_path, 'tensor', args.type)
 tensor_paths = glob.glob(osp.join(dir_path, '*/*.pt'))
 
 # 将路径下所有的tensor保存成一个全部tensor，维度为（数量，维度）
