@@ -67,5 +67,5 @@ if not osp.exists(save_path):
     os.makedirs(save_path)
 same_name = '{}_{}k_{}.pt'.format(args.type, args.n_clusters, args.sim_mode)
 print('Keams results save to', osp.join(save_path, same_name))
-torch.save(result, save_path)
+torch.save(result, osp.join(save_path, same_name))
 print('Saving Success!')
