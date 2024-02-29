@@ -14,6 +14,7 @@ _C.DATA.ROOT = '/home/zhengwei/github/datasets'
 _C.DATA.DATASET = 'duke'
 # Dataset format, using CLIP pretrained feautre
 _C.DATA.FORMAT_TAG = 'tensor'
+_C.DATA.TRAIN_FORMAT = 'base'
 
 # Workers for dataloader
 _C.DATA.NUM_WORKERS = 4
@@ -60,6 +61,8 @@ _C.MODEL.LATENT_SIZE = 12
 _C.MODEL.DECODER_LAYER_SIZES = [256, 512]
 _C.MODEL.CONDITIONAL = False
 _C.MODEL.NUM_LABELS = 0
+# feature dim
+_C.MODEL.FEATURE_DIM = 512
 
 # Model path for resuming
 _C.MODEL.RESUME = ''
@@ -67,8 +70,6 @@ _C.MODEL.RESUME = ''
 # -----For ResNet--------
 # The stride for laery4 in resnet
 _C.MODEL.RES4_STRIDE = 1
-# feature dim
-_C.MODEL.FEATURE_DIM = 2048
 
 
 # -----------------------------------------------------------------------------
@@ -81,12 +82,14 @@ _C.LOSS.CLA_LOSS = 'crossentropy'
 _C.LOSS.CLA_S = 16.
 # Margin
 _C.LOSS.CLA_M = 0.
+
 # Pairwise loss
 _C.LOSS.PAIR_LOSS = 'triplet'
 # Scale
 _C.LOSS.PAIR_S = 16.
 # Margin
 _C.LOSS.PAIR_M = 0.3
+
 # -----------------------------------------------------------------------------
 # Training settings
 # -----------------------------------------------------------------------------
@@ -101,10 +104,13 @@ _C.TRAIN.OPTIMIZER.LR = 0.00035
 _C.TRAIN.OPTIMIZER.WEIGHT_DECAY = 5e-4
 # LR scheduler
 _C.TRAIN.LR_SCHEDULER = CN()
+_C.TRAIN.LR_SCHEDULER.NAME = 'MultiStepLR'
 # Stepsize to decay learning rate
 _C.TRAIN.LR_SCHEDULER.STEPSIZE = [20, 40]
 # LR decay rate, used in StepLRScheduler
 _C.TRAIN.LR_SCHEDULER.DECAY_RATE = 0.1
+
+
 # -----------------------------------------------------------------------------
 # Testing settings
 # -----------------------------------------------------------------------------
@@ -115,6 +121,7 @@ _C.TEST.DISTANCE = 'cosine'
 _C.TEST.EVAL_STEP = 5
 # Start to evaluate after specific epoch
 _C.TEST.START_EVAL = 0
+
 # -----------------------------------------------------------------------------
 # Misc
 # -----------------------------------------------------------------------------
@@ -123,11 +130,11 @@ _C.SEED = 0
 # Perform evaluation only
 _C.EVAL_MODE = False
 # GPU device ids for CUDA_VISIBLE_DEVICES
-_C.GPU = '0'
+_C.GPU = '1'
 # Path to output folder, overwritten by command line argument
-_C.OUTPUT = '/data/guxinqian/logs/'
+_C.OUTPUT = './outputs'
 # Tag of experiment, overwritten by command line argument
-_C.TAG = 'res50-ce-tri'
+_C.TAG = 'CVAE_default'
 
 
 def update_config(config, args):
@@ -139,27 +146,32 @@ def update_config(config, args):
     # merge from specific arguments
     if args.root:
         config.DATA.ROOT = args.root
+    if args.dataset:
+        config.DATA.DATASET = args.dataset
     if args.output:
         config.OUTPUT = args.output
 
+    if args.gpu:
+        config.GPU = args.gpu
+
+    if args.train_format:
+        config.DATA.TRAIN_FORMAT = args.train_format
+    if args.format_tag:
+        config.DATA.FORMAT_TAG = args.format_tag
+
     if args.resume:
         config.MODEL.RESUME = args.resume
+    
     if args.eval:
         config.EVAL_MODE = True
     
     if args.tag:
         config.TAG = args.tag
 
-    if args.dataset:
-        config.DATA.DATASET = args.dataset
-    if args.gpu:
-        config.GPU = args.gpu
-
     # output folder
     config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG)
 
     config.freeze()
-
 
 def get_config(args):
     """Get a yacs CfgNode object with default values."""
