@@ -1,8 +1,19 @@
 import torch
 import torch.nn as nn
 
-from utils import idx2onehot
+# import sys
+# # from utils import idx2onehot
 
+def idx2onehot(idx, n):
+
+    assert torch.max(idx).item() < n
+
+    if idx.dim() == 1:
+        idx = idx.unsqueeze(1)
+    onehot = torch.zeros(idx.size(0), n).to(idx.device)
+    onehot.scatter_(1, idx, 1)
+    
+    return onehot
 
 class VAE(nn.Module):
 
@@ -97,7 +108,7 @@ class Decoder(nn.Module):
             input_size = latent_size + num_labels
         else:
             input_size = latent_size
-
+        # (12+256, [256,512])
         for i, (in_size, out_size) in enumerate(zip([input_size]+layer_sizes[:-1], layer_sizes)):
             self.MLP.add_module(
                 name="L{:d}".format(i), module=nn.Linear(in_size, out_size))
@@ -115,3 +126,25 @@ class Decoder(nn.Module):
         x = self.MLP(z)
 
         return x
+
+# add union test code for this py
+if __name__ == '__main__':
+    
+    from thop import profile
+    
+    print('========Testing VAE========')
+    # train(64, 512)
+    vae = VAE(
+        encoder_layer_sizes=[512, 256],
+        latent_size=12,
+        decoder_layer_sizes=[256, 512],
+        conditional=False,
+        num_labels=0)
+    print(vae)
+
+    # get FLOPs and Parameters
+    input = torch.randn(64, 512)
+    flops, params = profile(vae, inputs=(input,))
+    print('FLOPs: {:.2f}M, Params: {:.2f}M'.format(flops/1e6, params/1e6))
+
+    

@@ -32,7 +32,6 @@ def build_dataset(config):
     dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, format_tag=config.DATA.FORMAT_TAG)
     return dataset
 
-
 def build_transforms(config):
     transform_train = T.Compose([
         T.RandomCroping(config.DATA.HEIGHT, config.DATA.WIDTH, p=config.AUG.RC_PROB),
@@ -70,4 +69,4 @@ def build_dataloader(config):
                                batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
                                pin_memory=True, drop_last=False, shuffle=False)
 
-    return trainloader, queryloader, galleryloader, dataset.num_train_pids
+    return trainloader, queryloader, galleryloader, dataset.num_train_pids, dataset.train_centroids, dataset.query_centroids, dataset.gallery_centroids
