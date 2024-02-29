@@ -12,7 +12,7 @@ from data.samplers import RandomIdentitySampler
 __factory = {
     # 'market1501': Market1501,
     # 'cuhk03': CUHK03,
-    'dukemtmcreid': DukeMTMCreID,
+    'duke': DukeMTMCreID,
     # 'msmt17': MSMT17,
 }
 
@@ -53,7 +53,10 @@ def build_transforms(config):
 
 def build_dataloader(config):
     dataset = build_dataset(config)
-    transform_train, transform_test = build_transforms(config)
+    if config.DATA.FORMAT_TAG != 'tensor':
+        transform_train, transform_test = build_transforms(config)
+    else:
+        transform_train, transform_test = None, None
 
     trainloader = DataLoader(ImageDataset(dataset.train, transform=transform_train),
                              sampler=RandomIdentitySampler(dataset.train, num_instances=config.DATA.NUM_INSTANCES),

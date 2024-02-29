@@ -45,11 +45,11 @@ class ImageDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        img_path, pid, camid = self.dataset[index]
+        img_path, pid, camid, cluster_id = self.dataset[index]
         if self.tag == 'tensor':
             img = read_tensor(img_path)
         else:
             img = read_image(img_path)
             if self.transform is not None:
                 img = self.transform(img)
-        return img, pid, camid
+        return img, pid, camid, cluster_id

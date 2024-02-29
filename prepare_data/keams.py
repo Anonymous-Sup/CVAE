@@ -9,8 +9,8 @@ import re
 from collections import Counter
 
 argparse = argparse.ArgumentParser()
-argparse.add_argument('--type', type=str, default='train_all', choices=['train_all', 'query', 'gallery'])
-argparse.add_argument('--n_clusters', type=int, default=25)
+argparse.add_argument('--type', type=str, default='train_all', choices=['train_all', 'query', 'gallery'], required=True)
+argparse.add_argument('--n_clusters', type=int, default=25, required=True)
 argparse.add_argument('--data_path', type=str, default='/home/zhengwei/Desktop/Zhengwei/Projects/datasets/DukeMTMC-reID')
 argparse.add_argument('--sim_mode', type=str, default='euclidean', choices=['euclidean', 'cosine'])
 argparse.add_argument('--init_method', type=str, default='random', choices=['kmeans++', 'random', 'gaussian'])

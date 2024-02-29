@@ -4,6 +4,7 @@ import glob
 import numpy as np
 import os.path as osp
 from scipy.io import loadmat
+import torch
 # from tools.utils import mkdir_if_missing, write_json, read_json
 
 
@@ -22,23 +23,24 @@ class DukeMTMCreID(object):
     # images:16522 (train) + 2228 (query) + 17661 (gallery)
     # cameras: 8
     """
-    dataset_dir = 'DukeMTMC-reID'
+    root_folder = 'DukeMTMC-reID'
 
     def __init__(self, root='data', format_tag='tensor', **kwargs):
         self.tag = format_tag
         if self.tag == 'tensor':
-            self.dataset_dir = osp.join(root, self.dataset_dir, 'tensors')
+            self.dataset_dir = osp.join(root, self.root_folder, 'tensors')
         else:
-            self.dataset_dir = osp.join(root, self.dataset_dir, 'pytorch')
+            self.dataset_dir = osp.join(root, self.root_folder, 'pytorch')
         self.train_dir = osp.join(self.dataset_dir, 'train_all')
         self.query_dir = osp.join(self.dataset_dir, 'query')
         self.gallery_dir = osp.join(self.dataset_dir, 'gallery')
+        self.cluster_dir = osp.join(root, self.root_folder, 'keams_results')
 
         self._check_before_run()
 
-        train, num_train_pids, num_train_imgs = self._process_dir(self.train_dir, self.tag, relabel=True)
-        query, num_query_pids, num_query_imgs = self._process_dir(self.query_dir, self.tag, relabel=False)
-        gallery, num_gallery_pids, num_gallery_imgs = self._process_dir(self.gallery_dir, self.tag, relabel=False)
+        train, num_train_pids, num_train_imgs, train_centroids = self._process_dir(self.train_dir, self.tag, relabel=True)
+        query, num_query_pids, num_query_imgs, query_centroids = self._process_dir(self.query_dir, self.tag, relabel=False)
+        gallery, num_gallery_pids, num_gallery_imgs, gallery_centroids = self._process_dir(self.gallery_dir, self.tag, relabel=False)
 
         num_total_pids = num_train_pids + num_query_pids
         num_total_imgs = num_train_imgs + num_query_imgs + num_gallery_imgs
@@ -67,6 +69,10 @@ class DukeMTMCreID(object):
         self.num_query_pids = num_query_pids
         self.num_gallery_pids = num_gallery_pids
 
+        self.train_centroids = train_centroids
+        self.query_centroids = query_centroids
+        self.gallery_centroids = gallery_centroids
+
     def _check_before_run(self):
         """Check if all files are available before going deeper"""
         if not osp.exists(self.dataset_dir):
@@ -84,6 +90,8 @@ class DukeMTMCreID(object):
         else:
             img_paths = glob.glob(osp.join(dir_path, '*/*.jpg'))
 
+        _, path2label, centroids = self._process_cluster(dir_path)
+
         pattern = re.compile(r'([-\d]+)_c(\d)')
 
         pid_container = set()
@@ -95,14 +103,35 @@ class DukeMTMCreID(object):
         dataset = []
         for img_path in img_paths:
             pid, camid = map(int, pattern.search(img_path).groups())
+            file_name = osp.basename(img_path)
+            file_name = re.sub(r'\.pt$', '', file_name)
+            clurster_id = path2label[file_name]
             assert 1 <= camid <= 8
             camid -= 1 # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, pid, camid))
+            dataset.append((img_path, pid, camid, clurster_id))
 
         num_pids = len(pid_container)
         num_imgs = len(dataset)
-        return dataset, num_pids, num_imgs
+        return dataset, num_pids, num_imgs, centroids
+
+    def _process_cluster(self, dir_path, n_clusters=25, sim_mode='euclidean'):
+        if 'train' in dir_path:
+            folder_type = 'train_all'
+        elif 'query' in dir_path:
+            folder_type = 'query'
+        elif 'gallery' in dir_path:
+            folder_type = 'gallery'
+        else:
+            raise RuntimeError("Unkown folder type")
+        kmeans_file = osp.join(self.cluster_dir, '{}_{}k_{}.pt'.format(folder_type, n_clusters, sim_mode))
+        print("Loading cluster results from '{}'".format(kmeans_file))
+        # load .pt files
+        cluster_resutls = torch.load(kmeans_file)
+        labels = cluster_resutls['labels']
+        path2label = cluster_resutls['path2label']
+        centroids = cluster_resutls['centroids']
+        return labels, path2label, centroids
 
 # unit test
 if __name__ == '__main__':
