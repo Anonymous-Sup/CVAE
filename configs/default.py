@@ -104,7 +104,7 @@ _C.TRAIN.OPTIMIZER.LR = 0.00035
 _C.TRAIN.OPTIMIZER.WEIGHT_DECAY = 5e-4
 # LR scheduler
 _C.TRAIN.LR_SCHEDULER = CN()
-_C.TRAIN.LR_SCHEDULER.NAME = 'MultiStepLR'
+_C.TRAIN.LR_SCHEDULER.NAME = 'None'   # 'None', 'MultiStepLR'
 # Stepsize to decay learning rate
 _C.TRAIN.LR_SCHEDULER.STEPSIZE = [20, 40]
 # LR decay rate, used in StepLRScheduler

@@ -16,6 +16,7 @@ from configs.default import get_config
 from data import build_dataloader
 from models import build_model
 from losses import build_losses
+from train import train_cvae
 from tools.eval_metrics import evaluate
 from tools.utils import AverageMeter, save_checkpoint, set_seed
 
@@ -105,8 +106,8 @@ def main(config):
     print("=> Start training")
     for epoch in range(start_epoch, config.TRAIN.EPOCHS):
         start_train_time = time.time()
-        train(config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
-              optimizer, trainloader, epoch)
+        train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
+              optimizer, trainloader, epoch, dataset.train_centroids)
         train_time += round(time.time() - start_train_time)
         
         
@@ -147,5 +148,6 @@ if __name__ == '__main__':
     print("=> Configurations:\n-------------------------")
     print(config)
     print("----------------------")
+    run['parameters'] = config
     main(config)
     run.stop()
