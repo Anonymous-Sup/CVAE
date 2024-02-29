@@ -5,6 +5,7 @@ import numpy as np
 import os.path as osp
 from scipy.io import loadmat
 import torch
+from collections import Counter
 # from tools.utils import mkdir_if_missing, write_json, read_json
 
 
@@ -28,7 +29,7 @@ class DukeMTMCreID(object):
     def __init__(self, root='data', format_tag='tensor', **kwargs):
         self.tag = format_tag
         if self.tag == 'tensor':
-            self.dataset_dir = osp.join(root, self.root_folder, 'tensors')
+            self.dataset_dir = osp.join(root, self.root_folder, 'tensor')
         else:
             self.dataset_dir = osp.join(root, self.root_folder, 'pytorch')
         self.train_dir = osp.join(self.dataset_dir, 'train_all')
@@ -131,9 +132,13 @@ class DukeMTMCreID(object):
         labels = cluster_resutls['labels']
         path2label = cluster_resutls['path2label']
         centroids = cluster_resutls['centroids']
+
+        counter = Counter(labels.cpu().numpy())
+        sorted_counter = sorted(counter.items(), key=lambda x: x[0])  # sort by element
+        print("Clustering stastistics:", sorted_counter)
         return labels, path2label, centroids
 
 # unit test
 if __name__ == '__main__':
-    root = "D:/datasets/"
-    dataset = DukeMTMCreID(root=root, format_tag='img')
+    root = "/home/zhengwei/github/datasets/"
+    dataset = DukeMTMCreID(root=root, format_tag='tensor')
