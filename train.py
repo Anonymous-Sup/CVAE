@@ -2,7 +2,6 @@ import time
 import datetime
 import torch
 # from apex import amp
-from tools.utils import AverageMeter
 
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
@@ -10,7 +9,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     
     model.train()
     classifier.train()
-    centroids
+    centroids.cuda()
 
     end = time.time()
 

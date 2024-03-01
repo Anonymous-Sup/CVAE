@@ -61,6 +61,7 @@ def main(config):
 
     # Build optimizer
     parameters = list(model.parameters()) + list(classifier.parameters())
+    
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
                                weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
@@ -76,6 +77,7 @@ def main(config):
                                             gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
     
     start_epoch = config.TRAIN.START_EPOCH
+    
     if config.MODEL.RESUME:
         print("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
         checkpoint = torch.load(config.MODEL.RESUME)

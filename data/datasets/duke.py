@@ -26,16 +26,16 @@ class DukeMTMCreID(object):
     """
     root_folder = 'DukeMTMC-reID'
 
-    def __init__(self, root='data', format_tag='tensor', **kwargs):
+    def __init__(self, root='data', format_tag='tensor', pretrained='CLIP', **kwargs):
         self.tag = format_tag
         if self.tag == 'tensor':
-            self.dataset_dir = osp.join(root, self.root_folder, 'tensor')
+            self.dataset_dir = osp.join(root, self.root_folder, 'tensor', pretrained)
         else:
             self.dataset_dir = osp.join(root, self.root_folder, 'pytorch')
         self.train_dir = osp.join(self.dataset_dir, 'train_all')
         self.query_dir = osp.join(self.dataset_dir, 'query')
         self.gallery_dir = osp.join(self.dataset_dir, 'gallery')
-        self.cluster_dir = osp.join(root, self.root_folder, 'keams_results')
+        self.cluster_dir = osp.join(root, self.root_folder, 'kmeans_results', pretrained)
 
         self._check_before_run()
 

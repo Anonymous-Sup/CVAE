@@ -28,45 +28,51 @@ class VAE(nn.Module):
         self.latent_size = latent_size
         self.feature_fusion = feat_fusion
 
+        self.domain_embeding = nn.squential()
+        self.domain_embeding.add_module('domain_embeding_layer1', nn.Linear(encoder_layer_sizes[0], latent_size))
+        self.domain_embeding.add_module('domain_embeding_activate', nn.ReLU())
+
         if self.feature_fusion:
             self.fusion = nn.sequential()
-            self.fusion.add_module('fusion_layer1', nn.Linear(encoder_layer_sizes[0]*2, encoder_layer_sizes[0]))
+            self.fusion.add_module('fusion_layer1', nn.Linear(latent_size*2, latent_size))
             self.fusion.add_module('fusion_activate', nn.ReLU())
+            self.flow_input_dim = latent_size
         else:
-            encoder_layer_sizes[0] = encoder_layer_sizes[0] * 2
-            decoder_layer_sizes[-1] = decoder_layer_sizes[-1] * 2
+            self.flow_input_dim = latent_size*2
 
         self.encoder = Encoder(
             encoder_layer_sizes, latent_size)
         self.decoder = Decoder(
             decoder_layer_sizes, latent_size)
+        
+        self.flow = Flow(self.flow_input_dim)
 
-
-    def forward(self, x, domian_index_feat):
+    def forward(self, x, domain_index_feat):
 
         if x.dim() > 2:
             x = x.view(-1, 512)
         
-        if self.feature_fusion:
-            # (b, dim)+ (b, dim) -> (b, 2*dim)
-            temp = torch.cat((x, domian_index_feat), dim=-1)
-            # (b, 2*dim) -> (b, dim)
-            flow_input = self.fusion(temp)
-        else:
-            # (b, dim)+ (b, dim) -> (b, 2*dim)
-            flow_input = torch.cat((x, domian_index_feat), dim=-1)
-
+        domain_index_feat= self.domain_embeding(domain_index_feat)
+        
         means, log_var = self.encoder(x)
 
         """
         Todo: Here need a flows model as a prior of z
         """
-        
         z = self.reparameterize(means, log_var)
+        
+        # (b, size) -> (b, 2*size)
+        flow_input = torch.cat((z, domain_index_feat), dim=-1)
+
+        if self.feature_fusion:
+            # (b, 2*size) -> (b, size)
+            flow_input = self.fusion(flow_input)
+
+        theta, logjcobin = flow(flow_input)
 
         recon_x = self.decoder(z)
 
-        return recon_x, means, log_var, z
+        return recon_x, means, log_var, z, theta, logjcobin
 
     def reparameterize(self, mu, log_var):
         std = torch.exp(0.5 * log_var)

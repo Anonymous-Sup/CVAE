@@ -13,8 +13,7 @@ def build_model(config, num_classes):
             encoder_layer_sizes=config.MODEL.ENCODER_LAYER_SIZES,
             latent_size=config.MODEL.LATENT_SIZE,
             decoder_layer_sizes=config.MODEL.DECODER_LAYER_SIZES,
-            conditional=config.MODEL.CONDITIONAL,
-            num_labels=config.MODEL.NUM_LABELS)
+            feat_fusion=config.MODEL.FEAT_FUSION)
     else:
         raise KeyError("Invalid model name, got '{}', but expected to be one of {}".format(config.MODEL.NAME, __factory.keys()))
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
