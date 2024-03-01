@@ -57,15 +57,15 @@ def build_dataloader(config):
     else:
         transform_train, transform_test = None, None
 
-    trainloader = DataLoader(ImageDataset(dataset.train, transform=transform_train),
+    trainloader = DataLoader(ImageDataset(dataset.train, format_tag=config.DATA.FORMAT_TAG, transform=transform_train),
                              sampler=RandomIdentitySampler(dataset.train, num_instances=config.DATA.NUM_INSTANCES),
                              batch_size=config.DATA.TRAIN_BATCH, num_workers=config.DATA.NUM_WORKERS,
                              pin_memory=True, drop_last=True)
-    queryloader = DataLoader(ImageDataset(dataset.query, transform=transform_test),
+    queryloader = DataLoader(ImageDataset(dataset.query, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
                              batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
                              pin_memory=True, drop_last=False, shuffle=False)
 
-    galleryloader = DataLoader(ImageDataset(dataset.gallery, transform=transform_test),
+    galleryloader = DataLoader(ImageDataset(dataset.gallery, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
                                batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
                                pin_memory=True, drop_last=False, shuffle=False)
 
