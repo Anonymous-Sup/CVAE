@@ -28,12 +28,12 @@ class VAE(nn.Module):
         self.latent_size = latent_size
         self.feature_fusion = feat_fusion
 
-        self.domain_embeding = nn.squential()
+        self.domain_embeding = nn.Squential()
         self.domain_embeding.add_module('domain_embeding_layer1', nn.Linear(encoder_layer_sizes[0], latent_size))
         self.domain_embeding.add_module('domain_embeding_activate', nn.ReLU())
 
         if self.feature_fusion:
-            self.fusion = nn.sequential()
+            self.fusion = nn.Sequential()
             self.fusion.add_module('fusion_layer1', nn.Linear(latent_size*2, latent_size))
             self.fusion.add_module('fusion_activate', nn.ReLU())
             self.flow_input_dim = latent_size
