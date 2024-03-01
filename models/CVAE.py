@@ -45,7 +45,7 @@ class VAE(nn.Module):
         self.decoder = Decoder(
             decoder_layer_sizes, latent_size)
         
-        self.flow = Flow(self.flow_input_dim)
+        # self.flow = Flow(self.flow_input_dim)
 
     def forward(self, x, domain_index_feat):
 
@@ -68,7 +68,8 @@ class VAE(nn.Module):
             # (b, 2*size) -> (b, size)
             flow_input = self.fusion(flow_input)
 
-        theta, logjcobin = flow(flow_input)
+        # theta, logjcobin = flow(flow_input)
+        theta, logjcobin = None, None
 
         recon_x = self.decoder(z)
 
