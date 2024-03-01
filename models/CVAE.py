@@ -28,7 +28,7 @@ class VAE(nn.Module):
         self.latent_size = latent_size
         self.feature_fusion = feat_fusion
 
-        self.domain_embeding = nn.Squential()
+        self.domain_embeding = nn.Sequential()
         self.domain_embeding.add_module('domain_embeding_layer1', nn.Linear(encoder_layer_sizes[0], latent_size))
         self.domain_embeding.add_module('domain_embeding_activate', nn.ReLU())
 
