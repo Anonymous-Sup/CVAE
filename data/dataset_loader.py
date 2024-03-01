@@ -48,6 +48,8 @@ class ImageDataset(Dataset):
         img_path, pid, camid, cluster_id = self.dataset[index]
         if self.tag == 'tensor':
             img = read_tensor(img_path)
+            if len(img.size()) == 2:
+                img = img.squeeze(0)
         else:
             img = read_image(img_path)
             if self.transform is not None:
