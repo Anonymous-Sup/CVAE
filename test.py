@@ -6,8 +6,8 @@ import torch.nn.functional as F
 from tools.eval_metrics import evaluate
 
 @torch.no_grad()
-def extract_midium_feature(model, dataloader, centroids):
-    features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), torch.tensor([])
+def extract_midium_feature(model, dataloader, centroids_all):
+    features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), []
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
         
         # flip_imgs = torch.flip(imgs, [3])
@@ -19,11 +19,12 @@ def extract_midium_feature(model, dataloader, centroids):
 
         pretrained_feautres = imgs
         pretrained_feautres = pretrained_feautres.cuda()
-        recon_x, means, log_var, batch_features = model(pretrained_feautres, centroids[batch_centroids])
+        # recon_x, means, log_var, z, theta, logjcobin
+        recon_x, means, log_var, batch_features, theta, logjcobin = model(pretrained_feautres, centroids_all[batch_centroids])
         features.append(batch_features.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
-        centroids = torch.cat((centroids, batch_centroids.cpu()), dim=0)
+        centroids.append(batch_centroids.cpu())
     features = torch.cat(features, 0)
 
     return features, pids, camids, centroids
