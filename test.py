@@ -7,8 +7,8 @@ from tools.eval_metrics import evaluate
 
 @torch.no_grad()
 def extract_midium_feature(model, dataloader, centroids):
-    features, pids, camids, clothes_ids, centroids = [], torch.tensor([]), torch.tensor([]), torch.tensor([]), torch.tensor([])
-    for batch_idx, (imgs, batch_pids, batch_camids, batch_clothes_ids, batch_centroids) in enumerate(dataloader):
+    features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), torch.tensor([])
+    for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
         
         # flip_imgs = torch.flip(imgs, [3])
         # imgs, flip_imgs = imgs.cuda(), flip_imgs.cuda()
@@ -23,11 +23,10 @@ def extract_midium_feature(model, dataloader, centroids):
         features.append(batch_features.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
-        clothes_ids = torch.cat((clothes_ids, batch_clothes_ids.cpu()), dim=0)
         centroids = torch.cat((centroids, batch_centroids.cpu()), dim=0)
     features = torch.cat(features, 0)
 
-    return features, pids, camids, clothes_ids, centroids
+    return features, pids, camids, centroids
 
 
 def test_cvae(run, config, model, queryloader, galleryloader, dataset):
