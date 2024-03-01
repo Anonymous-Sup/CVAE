@@ -107,7 +107,7 @@ def main(config):
     best_rank1 = -np.inf
     best_epoch = 0
     print("=> Start training")
-    for epoch in range(start_epoch, config.TRAIN.EPOCHS):
+    for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
         train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
               optimizer, trainloader, epoch, dataset.train_centroids)
