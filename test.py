@@ -34,8 +34,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset):
     since = time.time()
     model.eval()
     # Extract features 
-    qf, q_pids, q_camids, q_clothes_ids, q_centroids = extract_midium_feature(model, queryloader, dataset.query_centroids)
-    gf, g_pids, g_camids, g_clothes_ids, g_q_centroids = extract_midium_feature(model, galleryloader, dataset.gallery_centroids)
+    qf, q_pids, q_camids, q_centroids = extract_midium_feature(model, queryloader, dataset.query_centroids)
+    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(model, galleryloader, dataset.gallery_centroids)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -55,8 +55,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset):
     for i in range(m):
         distmat[i] = (- torch.mm(qf[i:i+1], gf.t())).cpu()
     distmat = distmat.numpy()
-    q_pids, q_camids, q_clothes_ids = q_pids.numpy(), q_camids.numpy(), q_clothes_ids.numpy()
-    g_pids, g_camids, g_clothes_ids = g_pids.numpy(), g_camids.numpy(), g_clothes_ids.numpy()
+    q_pids, q_camids = q_pids.numpy(), q_camids.numpy()
+    g_pids, g_camids = g_pids.numpy(), g_camids.numpy()
     time_elapsed = time.time() - since
     print('Distance computing in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
