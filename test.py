@@ -82,6 +82,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset):
 def extract_test_feature_only(dataloader):
     features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), []
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
+        print(imgs.shape)
         features.append(imgs.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
