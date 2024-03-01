@@ -94,7 +94,7 @@ def test_clip_feature(queryloader, galleryloader):
     since = time.time()
     # Extract features 
     qf, q_pids, q_camids, q_centroids = extract_test_feature_only(queryloader)
-    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(galleryloader)
+    gf, g_pids, g_camids, g_q_centroids = extract_test_feature_only(galleryloader)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
