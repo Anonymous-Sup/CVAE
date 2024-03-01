@@ -19,6 +19,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 argparser = argparse.ArgumentParser()
 argparser.add_argument('--data_root', type=str, default='/home/zhengwei/github/datasets/')
 argparser.add_argument('--dataset', type=str, default='DukeMTMC-reID', choices=['DukeMTMC-reID', 'Market-1501', 'MSMT17_V1', 'cuhk03', 'cuhk01'])
+argparser.add_argument('--pre_model', type=str, default='CLIP-l2b')
 args = argparser.parse_args()
 
 if 'cuhk' in args.dataset:
@@ -64,19 +65,19 @@ def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
 
 print("==========Extracting feature form query ==========")
 query_path = os.path.join(args.data_root, args.dataset, 'pytorch/query')
-feature_path = os.path.join(args.data_root, args.dataset, 'tensor/query')
+feature_path = os.path.join(args.data_root, args.dataset, 'tensor', args.pre_model, 'query')
 run["data/query_path"] = query_path
 extract_features(model, preprocess, query_path, feature_path, suffix)
 
 print("==========Extracting feature form gallery ==========")
 gallery_path = os.path.join(args.data_root, args.dataset, 'pytorch/gallery')
-feature_path = os.path.join(args.data_root, args.dataset, 'tensor/gallery')
+feature_path = os.path.join(args.data_root, args.dataset, 'tensor', args.pre_model, 'gallery')
 run["data/gallery_path"] = gallery_path
 extract_features(model, preprocess, gallery_path, feature_path, suffix)
 
 print("==========Extracting feature form train_all ==========")
 train_path = os.path.join(args.data_root, args.dataset, 'pytorch/train_all')
-feature_path = os.path.join(args.data_root, args.dataset, 'tensor/train_all')
+feature_path = os.path.join(args.data_root, args.dataset, 'tensor', args.pre_model, 'train_all' )
 run["data/train_path"] = train_path
 extract_features(model, preprocess, train_path, feature_path, suffix)
 

@@ -27,7 +27,7 @@ def read_tensor(tensor_path):
         raise IOError("{} does not exist".format(tensor_path))
     while not got_tensor:
         try:
-            tensor = torch.load(tensor_path)
+            tensor = torch.load(tensor_path, map_location=torch.device('cpu'))
             got_tensor = True
         except IOError:
             print("IOError incurred when reading '{}'. Will redo. Don't worry. Just chill.".format(tensor_path))

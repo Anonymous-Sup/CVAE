@@ -26,8 +26,9 @@ class DukeMTMCreID(object):
     """
     root_folder = 'DukeMTMC-reID'
 
-    def __init__(self, root='data', format_tag='tensor', pretrained='CLIP', **kwargs):
+    def __init__(self, root='data', format_tag='tensor', pretrained='CLIP', test_metrix_only=False, **kwargs):
         self.tag = format_tag
+        self.test_metrix_only = test_metrix_only
         if self.tag == 'tensor':
             self.dataset_dir = osp.join(root, self.root_folder, 'tensor', pretrained)
         else:
@@ -39,9 +40,9 @@ class DukeMTMCreID(object):
 
         self._check_before_run()
 
-        train, num_train_pids, num_train_imgs, train_centroids = self._process_dir(self.train_dir, self.tag, relabel=True)
-        query, num_query_pids, num_query_imgs, query_centroids = self._process_dir(self.query_dir, self.tag, relabel=False)
-        gallery, num_gallery_pids, num_gallery_imgs, gallery_centroids = self._process_dir(self.gallery_dir, self.tag, relabel=False)
+        train, num_train_pids, num_train_imgs, train_centroids = self._process_dir(self.train_dir, self.tag, self.test_metrix_only, relabel=True)
+        query, num_query_pids, num_query_imgs, query_centroids = self._process_dir(self.query_dir, self.tag, self.test_metrix_only, relabel=False)
+        gallery, num_gallery_pids, num_gallery_imgs, gallery_centroids = self._process_dir(self.gallery_dir, self.tag, self.test_metrix_only, relabel=False)
 
         num_total_pids = num_train_pids + num_query_pids
         num_total_imgs = num_train_imgs + num_query_imgs + num_gallery_imgs
@@ -85,13 +86,17 @@ class DukeMTMCreID(object):
         if not osp.exists(self.gallery_dir):
             raise RuntimeError("'{}' is not available".format(self.gallery_dir))
 
-    def _process_dir(self, dir_path, tag, relabel=False):
+    def _process_dir(self, dir_path, tag, test_metrix_only, relabel=False):
         if tag == 'tensor':
             img_paths = glob.glob(osp.join(dir_path, '*/*.pt'))
         else:
             img_paths = glob.glob(osp.join(dir_path, '*/*.jpg'))
 
-        _, path2label, centroids = self._process_cluster(dir_path)
+        if not test_metrix_only:
+            _, path2label, centroids = self._process_cluster(dir_path)
+        else:
+            centroids = None
+
 
         pattern = re.compile(r'([-\d]+)_c(\d)')
 
@@ -106,7 +111,10 @@ class DukeMTMCreID(object):
             pid, camid = map(int, pattern.search(img_path).groups())
             file_name = osp.basename(img_path)
             file_name = re.sub(r'\.pt$', '', file_name)
-            clurster_id = path2label[file_name]
+            if not test_metrix_only:
+                clurster_id = path2label[file_name]
+            else:
+                clurster_id = 0
             assert 1 <= camid <= 8
             camid -= 1 # index starts from 0
             if relabel: pid = pid2label[pid]

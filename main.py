@@ -1,4 +1,5 @@
 import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import sys
 import time
 import datetime
@@ -144,9 +145,12 @@ def main(config):
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    
     config = parse_option()
+    # set gpu from '0,1' to '1'
     os.environ['CUDA_VISIBLE_DEVICES'] = config.GPU
+
     set_seed(config.SEED)
     print("=> Configurations:\n-------------------------")
     print(config)

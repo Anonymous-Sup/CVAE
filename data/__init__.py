@@ -72,9 +72,10 @@ def build_dataloader(config):
     # return trainloader, queryloader, galleryloader, dataset.num_train_pids, dataset.train_centroids, dataset.query_centroids, dataset.gallery_centroids
     return trainloader, queryloader, galleryloader, dataset
 
-def build_singe_test_loader():
 
-    dataset = __factory["duke"](root="/home/zhengwei/github/datasets", format_tag="tensor", pretrained="CLIP")
+def build_singe_test_loader(root_path, pretrained):
+
+    dataset = __factory["duke"](root=root_path, format_tag="tensor", pretrained=pretrained, test_metrix_only=True)
     
     queryloader = DataLoader(ImageDataset(dataset.query, format_tag="tensor", transform=None),
                              batch_size=512, num_workers=4,

@@ -80,22 +80,19 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset):
 
 @torch.no_grad()
 def extract_test_feature_only(dataloader):
-    features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), []
-    for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
-        print(imgs.shape)
+    features, pids, camids = [], torch.tensor([]), torch.tensor([])
+    for batch_idx, (imgs, batch_pids, batch_camids, centroid) in enumerate(dataloader):
         features.append(imgs.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
-        centroids.append(batch_centroids.cpu())
     features = torch.cat(features, 0)
-    return features, pids, camids, centroids
-
+    return features, pids, camids
 
 def test_clip_feature(queryloader, galleryloader):
     since = time.time()
     # Extract features 
-    qf, q_pids, q_camids, q_centroids = extract_test_feature_only(queryloader)
-    gf, g_pids, g_camids, g_q_centroids = extract_test_feature_only(galleryloader)
+    qf, q_pids, q_camids = extract_test_feature_only(queryloader)
+    gf, g_pids, g_camids = extract_test_feature_only(galleryloader)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -132,6 +129,20 @@ def test_clip_feature(queryloader, galleryloader):
     return cmc[0]
 
 if __name__=='__main__':
-    query_loader, gallery_loader, dataset = build_singe_test_loader()
+    import argparse
+    import os
+    # set cuda 
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # /home/zhengwei/Desktop/Zhengwei/Projects/datasets/
+    # /home/zhengwei/github/datasets
+
+    parser = argparse.ArgumentParser(description="Test feature")
+    parser.add_argument("--data_root", type=str, default="/home/zhengwei/Desktop/Zhengwei/Projects/datasets/")
+    parser.add_argument("--dataset", type=str, default="duke")
+    parser.add_argument("--pretrained", type=str, default="CLIP-l2b")
+
+    args = parser.parse_args()
+
+    query_loader, gallery_loader, dataset = build_singe_test_loader(args.data_root, pretrained=args.pretrained)
     test_clip_feature(query_loader, gallery_loader)
 
