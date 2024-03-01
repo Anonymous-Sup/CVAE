@@ -17,6 +17,7 @@ from data import build_dataloader
 from models import build_model
 from losses import build_losses
 from train import train_cvae
+from test import test_cvae
 from tools.eval_metrics import evaluate
 from tools.utils import AverageMeter, save_checkpoint, set_seed
 
@@ -98,7 +99,7 @@ def main(config):
     if config.EVAL_MODE:
         print("=> Start evaluation only ")
         with torch.no_grad():
-            test(config, model, classifier, queryloader, galleryloader)
+            test_cvae(run, config, model, queryloader, galleryloader, dataset)
         return
 
     start_time = time.time()
@@ -117,7 +118,7 @@ def main(config):
             (epoch+1) % config.TEST.EVAL_STEP == 0 or (epoch+1) == config.TRAIN.MAX_EPOCH:
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                rank1 = test(config, model, classifier, queryloader, galleryloader)
+                rank1 = test_cvae(run, config, model, queryloader, galleryloader, dataset)
             
             is_best = rank1 > best_rank1
             

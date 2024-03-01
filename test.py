@@ -30,7 +30,7 @@ def extract_midium_feature(model, dataloader, centroids):
     return features, pids, camids, clothes_ids, centroids
 
 
-def test(run, config, model, queryloader, galleryloader, dataset):
+def test_cvae(run, config, model, queryloader, galleryloader, dataset):
     since = time.time()
     model.eval()
     # Extract features 
