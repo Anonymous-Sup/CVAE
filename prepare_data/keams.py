@@ -10,6 +10,7 @@ from collections import Counter
 
 argparse = argparse.ArgumentParser()
 argparse.add_argument('--type', type=str, default='train_all', choices=['train_all', 'query', 'gallery'], required=True)
+argparse.add_argument('--pretrain_type', type=str, default='CLIPreid', choices=['CLIPreid'], required=True)
 argparse.add_argument('--n_clusters', type=int, default=25, required=True)
 argparse.add_argument('--data_path', type=str, default='/home/zhengwei/Desktop/Zhengwei/Projects/datasets/DukeMTMC-reID')
 argparse.add_argument('--sim_mode', type=str, default='euclidean', choices=['euclidean', 'cosine'])
@@ -23,7 +24,7 @@ def clustering(args, tensors):
     sorted_counter = sorted(counter.items(), key=lambda x: x[0])  # sort by element
     return labels, centroids, sorted_counter
 
-dir_path =  osp.join(args.data_path, 'tensor', args.type)
+dir_path =  osp.join(args.data_path, 'tensor', args.pretrain_type, args.type)
 tensor_paths = glob.glob(osp.join(dir_path, '*/*.pt'))
 
 # 将路径下所有的tensor保存成一个全部tensor，维度为（数量，维度）

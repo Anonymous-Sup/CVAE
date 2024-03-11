@@ -139,7 +139,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description="Test feature")
     parser.add_argument("--data_root", type=str, default="/home/zhengwei/Desktop/Zhengwei/Projects/datasets/")
     parser.add_argument("--dataset", type=str, default="duke")
-    parser.add_argument("--pretrained", type=str, default="CLIP-l2b")
+    parser.add_argument("--pretrained", type=str, default="CLIPreid")
 
     args = parser.parse_args()
 

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.distributions.normal import Normal
 
 # import sys
 # # from utils import idx2onehot
@@ -17,7 +18,7 @@ def idx2onehot(idx, n):
 
 class VAE(nn.Module):
 
-    def __init__(self, encoder_layer_sizes, latent_size, decoder_layer_sizes, feat_fusion=False):
+    def __init__(self, encoder_layer_sizes, latent_size, decoder_layer_sizes, feat_fusion=True):
 
         super().__init__()
 
@@ -45,12 +46,12 @@ class VAE(nn.Module):
         self.decoder = Decoder(
             decoder_layer_sizes, latent_size)
         
-        # self.flow = Flow(self.flow_input_dim)
+        self.flow = Flow(self.flow_input_dim)
 
     def forward(self, x, domain_index_feat):
 
         if x.dim() > 2:
-            x = x.view(-1, 512)
+            x = x.view(-1, 1280)
         
         domain_index_feat= self.domain_embeding(domain_index_feat)
         
@@ -59,21 +60,24 @@ class VAE(nn.Module):
         """
         Todo: Here need a flows model as a prior of z
         """
-        z = self.reparameterize(means, log_var)
+        z_0 = self.reparameterize(means, log_var)
         
         # (b, size) -> (b, 2*size)
-        flow_input = torch.cat((z, domain_index_feat), dim=-1)
+        flow_input = torch.cat((z_0, domain_index_feat), dim=-1)
 
         if self.feature_fusion:
             # (b, 2*size) -> (b, size)
             flow_input = self.fusion(flow_input)
 
-        # theta, logjcobin = flow(flow_input)
-        theta, logjcobin = None, None
+        theta, logjcobin = self.flow(flow_input)
+    
+        # KL Loss=−(−1/2(log(2pai)+σ^2)−Jacobian)
+        # u tends to 0 and σ tends to 1
+        # kl_loss = 0.5 * torch.sum(theta**2, dim=-1) - torch.sum(logjcobin, dim=-1)
 
-        recon_x = self.decoder(z)
+        recon_x = self.decoder(z_0)
 
-        return recon_x, means, log_var, z, theta, logjcobin
+        return recon_x, means, log_var, z_0, theta, logjcobin
 
     def reparameterize(self, mu, log_var):
         std = torch.exp(0.5 * log_var)
@@ -155,6 +159,25 @@ class Decoder(nn.Module):
 
         return x
 
+
+
+class Flow(nn.Module):
+    def __init__(self, input_dim):
+
+        super().__init__()
+
+        self.f1 = nn.Squential()
+        self.f1.add_module('f1_layer1', nn.Linear(input_dim, input_dim))
+        self.f1.add_module('f1_activate', nn.LeakyReLU())
+        self.f2 = nn.Squential()
+        self.f2.add_module('f1_layer2', nn.Linear(input_dim, input_dim))
+        self.f2.add_module('f1_activate', nn.LeakyReLU())
+
+    def forward(self, x):
+        theta = self.f1(x)
+        logjcobin = self.f2(x)
+        return theta, logjcobin
+    
 # add union test code for this py
 if __name__ == '__main__':
     
@@ -163,15 +186,15 @@ if __name__ == '__main__':
     print('========Testing VAE========')
     # train(64, 512)
     vae = VAE(
-        encoder_layer_sizes=[512, 256],
+        encoder_layer_sizes=[1280, 256],
         latent_size=12,
-        decoder_layer_sizes=[256, 512],
+        decoder_layer_sizes=[256, 1280],
         conditional=False,
         num_labels=0)
     print(vae)
 
     # get FLOPs and Parameters
-    input = torch.randn(64, 512)
+    input = torch.randn(64, 1280)
     flops, params = profile(vae, inputs=(input,))
     print('FLOPs: {:.2f}M, Params: {:.2f}M'.format(flops/1e6, params/1e6))
 
