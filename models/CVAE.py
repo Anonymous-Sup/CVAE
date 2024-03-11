@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
 from torch.distributions.normal import Normal
-
-# import sys
+import sys
+sys.path.append('../normalizing-flows')
+from normflows.flows import Planar, Radial, MaskedAffineFlow, BatchNorm
+from normflows import nets
 # # from utils import idx2onehot
 
 def idx2onehot(idx, n):
@@ -46,7 +48,7 @@ class VAE(nn.Module):
         self.decoder = Decoder(
             decoder_layer_sizes, latent_size)
         
-        self.flow = Flow(self.flow_input_dim)
+        self.flows = Flows(self.flow_input_dim)
 
     def forward(self, x, domain_index_feat):
 
@@ -69,7 +71,7 @@ class VAE(nn.Module):
             # (b, 2*size) -> (b, size)
             flow_input = self.fusion(flow_input)
 
-        theta, logjcobin = self.flow(flow_input)
+        theta, logjcobin = self.flows(flow_input)
     
         # KL Loss=−(−1/2(log(2pai)+σ^2)−Jacobian)
         # u tends to 0 and σ tends to 1
@@ -159,23 +161,60 @@ class Decoder(nn.Module):
 
         return x
 
-
-
-class Flow(nn.Module):
-    def __init__(self, input_dim):
-
+class SimpleFlowModel(nn.Module):
+    def __init__(self, flows):
         super().__init__()
+        self.flows = nn.ModuleList(flows)
 
-        self.f1 = nn.Squential()
-        self.f1.add_module('f1_layer1', nn.Linear(input_dim, input_dim))
-        self.f1.add_module('f1_activate', nn.LeakyReLU())
-        self.f2 = nn.Squential()
-        self.f2.add_module('f1_layer2', nn.Linear(input_dim, input_dim))
-        self.f2.add_module('f1_activate', nn.LeakyReLU())
+    def forward(self, z):
+        ld = 0.0
+        for flow in self.flows:
+            z, ld_ = flow(z)
+            ld += ld_
+
+        return z, ld
+
+class BinaryTransform:
+    def __init__(self, thresh=0.5):
+        self.thresh = thresh
+
+    def __call__(self, x):
+        return (x > self.thresh).type(x.type())
+
+
+class ColourNormalize:
+    def __init__(self, a=0.0, b=0.0):
+        self.a = a
+        self.b = b
+
+    def __call__(self, x):
+        return (self.b - self.a) * x / 255 + self.a
+
+
+class Flows(nn.Module):
+    def __init__(self, input_dim, flow_type='Planar', K=10):
+        super().__init__()
+        if flow_type== "Planar":
+            flows = SimpleFlowModel([Planar((input_dim,)) for k in range(K)])
+        elif flow_type == "Radial":
+            flows = SimpleFlowModel([Radial((input_dim,)) for k in range(K)])
+        elif flow_type == "RealNVP":
+            b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(input_dim)])
+            flows = []
+            for i in range(K):
+                s = nets.MLP([input_dim, 8, input_dim])
+                t = nets.MLP([input_dim, 8, input_dim])
+                if i % 2 == 0:
+                    flows += [MaskedAffineFlow(b, t, s)]
+                else:
+                    flows += [MaskedAffineFlow(1 - b, t, s), BatchNorm()]
+            flows = SimpleFlowModel(
+                flows[:-1]
+            )  # Remove last Batch Norm layer to allow arbitrary output
+        self.flows = flows
 
     def forward(self, x):
-        theta = self.f1(x)
-        logjcobin = self.f2(x)
+        theta, logjcobin = self.flows(x)
         return theta, logjcobin
     
 # add union test code for this py
@@ -188,14 +227,13 @@ if __name__ == '__main__':
     vae = VAE(
         encoder_layer_sizes=[1280, 256],
         latent_size=12,
-        decoder_layer_sizes=[256, 1280],
-        conditional=False,
-        num_labels=0)
+        decoder_layer_sizes=[256, 1280]
+    )
     print(vae)
 
     # get FLOPs and Parameters
     input = torch.randn(64, 1280)
-    flops, params = profile(vae, inputs=(input,))
+    flops, params = profile(vae, inputs=(input, torch.randn(64, 1280)))
     print('FLOPs: {:.2f}M, Params: {:.2f}M'.format(flops/1e6, params/1e6))
 
     
