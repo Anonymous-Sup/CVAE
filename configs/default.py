@@ -55,12 +55,12 @@ _C.AUG.RE_PROB = 0.5
 _C.MODEL = CN()
 # Model name
 _C.MODEL.NAME = 'CVAE'
-_C.MODEL.PRETRAIN = 'CLIP'
+_C.MODEL.PRETRAIN = 'CLIPreid'
 
 _C.MODEL.ENCODER_LAYER_SIZES = [1280, 256]
 _C.MODEL.LATENT_SIZE = 12
 _C.MODEL.DECODER_LAYER_SIZES = [256, 1280]
-_C.MODEL.FEAT_FUSION = False
+_C.MODEL.FEAT_FUSION = True
 # feature dim
 _C.MODEL.FEATURE_DIM = 1280
 
@@ -96,6 +96,8 @@ _C.LOSS.PAIR_M = 0.3
 _C.TRAIN = CN()
 _C.TRAIN.START_EPOCH = 0
 _C.TRAIN.MAX_EPOCH = 60
+_C.TRAIN.AMP = False
+
 # Optimizer
 _C.TRAIN.OPTIMIZER = CN()
 _C.TRAIN.OPTIMIZER.NAME = 'adam'
@@ -109,7 +111,6 @@ _C.TRAIN.LR_SCHEDULER.NAME = 'None'   # 'None', 'MultiStepLR'
 _C.TRAIN.LR_SCHEDULER.STEPSIZE = [20, 40]
 # LR decay rate, used in StepLRScheduler
 _C.TRAIN.LR_SCHEDULER.DECAY_RATE = 0.1
-
 
 # -----------------------------------------------------------------------------
 # Testing settings
@@ -127,6 +128,8 @@ _C.TEST.START_EVAL = 0
 # -----------------------------------------------------------------------------
 # Fixed random seed
 _C.SEED = 0
+# 
+_C.AMP = True
 # Perform evaluation only
 _C.EVAL_MODE = False
 # GPU device ids for CUDA_VISIBLE_DEVICES
@@ -167,6 +170,9 @@ def update_config(config, args):
     
     if args.tag:
         config.TAG = args.tag
+
+    if args.amp:
+        config.TRAIN.AMP = args.amp
 
     # output folder
     config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG)

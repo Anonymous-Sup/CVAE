@@ -21,8 +21,9 @@ from train import train_cvae
 from test import test_cvae
 from tools.eval_metrics import evaluate
 from tools.utils import AverageMeter, save_checkpoint, set_seed
-
+from torch.cuda.amp import GradScaler, autocast
 import neptune
+
 run = neptune.init_run(
     project="Zhengwei-Lab/NIPSTransferReID",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2ODIwNTQ4Yy0xZDA3LTRhNDctOTRmMy02ZjRlMmMzYmYwZjUifQ==",
@@ -49,9 +50,24 @@ def parse_option():
     args, unparsed = parser.parse_known_args()
     config = get_config(args)
 
+    param = {
+        "amp" : config.TRAIN.AMP,
+        "optimizer": config.TRAIN.OPTIMIZER.NAME,
+        "lr": config.TRAIN.OPTIMIZER.LR,
+        "weight_decay": config.TRAIN.OPTIMIZER.WEIGHT_DECAY,
+        "scheduler": config.TRAIN.LR_SCHEDULER.NAME,
+        "step_size": config.TRAIN.LR_SCHEDULER.STEPSIZE,
+        "decay_rate": config.TRAIN.LR_SCHEDULER.DECAY_RATE,
+        "batch_size": config.DATA.TRAIN_BATCH,
+        "epoch": config.TRAIN.MAX_EPOCH,
+        "seed": config.SEED,
+    }
+    run["parameters"] = param
     return config
 
 def main(config):
+
+
     # Build dataloader
     trainloader, queryloader, galleryloader, dataset = build_dataloader(config)
 
@@ -77,15 +93,19 @@ def main(config):
     if config.TRAIN.LR_SCHEDULER.NAME != 'None':
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
                                             gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
-    
+    if config.TRAIN.AMP:
+        scaler = GradScaler()
+
     start_epoch = config.TRAIN.START_EPOCH
     
+    best_rank1 = -np.inf
     if config.MODEL.RESUME:
         print("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
         checkpoint = torch.load(config.MODEL.RESUME)
         model.load_state_dict(checkpoint['model'])
         classifier.load_state_dict(checkpoint['classifier'])
         start_epoch = checkpoint['epoch']
+        best_rank1 = checkpoint['rank1']
     
     if config.DATA.TRAIN_FORMAT != "base":
         print("=> Start Finetuning the model")
@@ -105,12 +125,15 @@ def main(config):
 
     start_time = time.time()
     train_time = 0
-    best_rank1 = -np.inf
     best_epoch = 0
     print("=> Start training")
     for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
-        train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
+        if config.TRAIN.AMP:
+            train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
+              optimizer, trainloader, epoch, dataset.train_centroids, scaler)
+        else:
+            train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
               optimizer, trainloader, epoch, dataset.train_centroids)
         train_time += round(time.time() - start_train_time)
         
@@ -120,7 +143,7 @@ def main(config):
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
                 rank1 = test_cvae(run, config, model, queryloader, galleryloader, dataset)
-            
+                run["eval/rank1"].append(rank1)
             is_best = rank1 > best_rank1
             
             if is_best: 
@@ -135,9 +158,13 @@ def main(config):
                 'optimizer': optimizer.state_dict(),
             }, is_best, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
         
+        
         if config.TRAIN.LR_SCHEDULER.NAME != 'None':
             scheduler.step()
+    
     print("=> Best Rank-1 {:.1%} achieved at epoch {}".format(best_rank1, best_epoch))
+    run["best_rank1"] = best_rank1
+    run["best_epoch"] = best_epoch
     elapsed = round(time.time() - start_time)
     elapsed = str(datetime.timedelta(seconds=elapsed))
     train_time = str(datetime.timedelta(seconds=train_time))
@@ -155,6 +182,6 @@ if __name__ == '__main__':
     print("=> Configurations:\n-------------------------")
     print(config)
     print("----------------------")
-    run['parameters'] = config
+    # run['parameters'] = config
     main(config)
     run.stop()

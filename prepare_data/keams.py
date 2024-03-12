@@ -63,7 +63,7 @@ result['path2label'] = path2label
 result['centroids'] = centroids # shape=(num_clusters, feature_dim)
 
 
-save_path = osp.join(args.data_path, 'keams_results')
+save_path = osp.join(args.data_path, 'kmeans_results', args.pretrain_type) 
 if not osp.exists(save_path):
     os.makedirs(save_path)
 same_name = '{}_{}k_{}.pt'.format(args.type, args.n_clusters, args.sim_mode)

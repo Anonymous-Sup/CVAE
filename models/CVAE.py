@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.distributions.normal import Normal
 import sys
-sys.path.append('../normalizing-flows')
+sys.path.append('/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/normalizing-flows')
 from normflows.flows import Planar, Radial, MaskedAffineFlow, BatchNorm
 from normflows import nets
 # # from utils import idx2onehot
@@ -50,13 +50,14 @@ class VAE(nn.Module):
         
         self.flows = Flows(self.flow_input_dim)
 
+    # remember to be fp16
     def forward(self, x, domain_index_feat):
 
-        if x.dim() > 2:
-            x = x.view(-1, 1280)
+        # if x.dim() > 2:
+        #     x = x.view(-1, 1280)
         
+        # self.domain_embeding = self.domain_embeding.to(dtype=x.dtype)
         domain_index_feat= self.domain_embeding(domain_index_feat)
-        
         means, log_var = self.encoder(x)
 
         """
@@ -66,20 +67,21 @@ class VAE(nn.Module):
         
         # (b, size) -> (b, 2*size)
         flow_input = torch.cat((z_0, domain_index_feat), dim=-1)
-
         if self.feature_fusion:
             # (b, 2*size) -> (b, size)
-            flow_input = self.fusion(flow_input)
+            # self.fusion = self.fusion.to(dtype=flow_input.dtype)
+            z_1 = self.fusion(flow_input)
+        
+        # self.flows = self.flows.to(dtype=z_1.dtype)
+        theta, logjcobin = self.flows(z_1)
 
-        theta, logjcobin = self.flows(flow_input)
-    
         # KL Loss=−(−1/2(log(2pai)+σ^2)−Jacobian)
         # u tends to 0 and σ tends to 1
         # kl_loss = 0.5 * torch.sum(theta**2, dim=-1) - torch.sum(logjcobin, dim=-1)
 
         recon_x = self.decoder(z_0)
 
-        return recon_x, means, log_var, z_0, theta, logjcobin
+        return recon_x, means, log_var, z_0, z_1, theta, logjcobin
 
     def reparameterize(self, mu, log_var):
         std = torch.exp(0.5 * log_var)
@@ -118,9 +120,11 @@ class Encoder(nn.Module):
         # if self.conditional:
         #     c = idx2onehot(c, n=10)
         #     x = torch.cat((x, c), dim=-1)
-
+        # self.MLP = self.MLP.to(dtype=x.dtype)
         x = self.MLP(x)
 
+        # self.linear_means = self.linear_means.to(dtype=x.dtype)
+        # self.linear_log_var = self.linear_log_var.to(dtype=x.dtype)
         means = self.linear_means(x)
         log_vars = self.linear_log_var(x)
 
@@ -157,6 +161,7 @@ class Decoder(nn.Module):
         # if self.conditional:
         #     c = idx2onehot(c, n=10)
         #     z = torch.cat((z, c), dim=-1)
+        # self.MLP = self.MLP.to(dtype=z.dtype)
         x = self.MLP(z)
 
         return x
@@ -229,11 +234,18 @@ if __name__ == '__main__':
         latent_size=12,
         decoder_layer_sizes=[256, 1280]
     )
+    vae = vae.cuda()
     print(vae)
 
     # get FLOPs and Parameters
-    input = torch.randn(64, 1280)
-    flops, params = profile(vae, inputs=(input, torch.randn(64, 1280)))
+    input_1 = torch.randn(64, 1280).to(dtype=torch.float16).cuda()
+    input_2 = torch.randn(64, 1280).to(dtype=torch.float16).cuda()
+
+
+    flops, params = profile(vae, inputs=(input_1, input_2))
+    flops = float(flops)
+    params = float(params)
+
     print('FLOPs: {:.2f}M, Params: {:.2f}M'.format(flops/1e6, params/1e6))
 
     

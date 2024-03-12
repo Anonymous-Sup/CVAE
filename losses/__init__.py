@@ -6,7 +6,7 @@ from losses.contrastive_loss import ContrastiveLoss
 from losses.arcface_loss import ArcFaceLoss
 from losses.cosface_loss import CosFaceLoss, PairwiseCosFaceLoss
 from losses.circle_loss import CircleLoss, PairwiseCircleLoss
-from losses.naive_loss_fn import KLD_loss, BCE_loss
+from losses.naive_loss_fn import KLD_loss, BCE_loss, MSE_loss
 
 def build_losses(config):
     if config.LOSS.CLA_LOSS == "crossentropy":
@@ -34,8 +34,7 @@ def build_losses(config):
     else:
         raise KeyError("Invalid pairwise loss: '{}'".format(config.LOSS.PAIR_LOSS))
     
-    
     criterion_kl = KLD_loss()
-    criterion_bce = BCE_loss(config.MODEL.FEATURE_DIM)
+    criterion_bce = MSE_loss(config.MODEL.FEATURE_DIM)
 
     return criterion_cla, criterion_pair, criterion_kl, criterion_bce
