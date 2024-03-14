@@ -6,7 +6,7 @@ import datetime
 import argparse
 import os.path as osp
 import numpy as np
-
+import gc
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -24,6 +24,9 @@ from tools.utils import AverageMeter, save_checkpoint, set_seed
 from torch.cuda.amp import GradScaler, autocast
 import neptune
 
+
+# torch.autograd.set_detect_anomaly(True)
+
 run = neptune.init_run(
     project="Zhengwei-Lab/NIPSTransferReID",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2ODIwNTQ4Yy0xZDA3LTRhNDctOTRmMy02ZjRlMmMzYmYwZjUifQ==",
@@ -37,10 +40,17 @@ def parse_option():
     parser.add_argument('--root', type=str, help="your root path to data directory")
     parser.add_argument('--dataset', type=str, default='duke', help="duke, market1501, cuhk03, msmt17")
     parser.add_argument('--format_tag', type=str, choices=['tensor', 'img'], help="Using image or pretrained features")
+    
     parser.add_argument('--train_format', type=str, required= True, choices=['base', 'normal'], help="Select the datatype for training or finetuning")
+    
+    # Parameters 
+    parser.add_argument('--vae_type', type=str, choices=['cvae'], help="Type of VAE model")
+    parser.add_argument('--flow_type', type=str, choices=['Planar', 'Radial', 'RealNVP', 'invertmlp'], help="Type of flow model")
+    parser.add_argument('--recon_loss', type=str, choices=['bce', 'mse', 'mae', 'smoothl1', 'pearson'], help="Type of reconstruction loss")
     
     # Miscs
     parser.add_argument('--output', type=str, help="your output path to save model and logs")
+    parser.add_argument('--saved_name', type=str, required=True, help="your output name to save model and logs")
     parser.add_argument('--resume', type=str, metavar='PATH')
     parser.add_argument('--amp', action='store_true', help="automatic mixed precision")
     parser.add_argument('--eval', action='store_true', help="evaluation only")
@@ -52,10 +62,13 @@ def parse_option():
 
     param = {
         "amp" : config.TRAIN.AMP,
+        'vae_type': config.MODEL.VAE_TYPE,
         "optimizer": config.TRAIN.OPTIMIZER.NAME,
         "lr": config.TRAIN.OPTIMIZER.LR,
         "weight_decay": config.TRAIN.OPTIMIZER.WEIGHT_DECAY,
         "scheduler": config.TRAIN.LR_SCHEDULER.NAME,
+        "flow_type": config.MODEL.FLOW_TYPE,
+        "recon_loss": config.LOSS.RECON_LOSS,
         "step_size": config.TRAIN.LR_SCHEDULER.STEPSIZE,
         "decay_rate": config.TRAIN.LR_SCHEDULER.DECAY_RATE,
         "batch_size": config.DATA.TRAIN_BATCH,
@@ -75,14 +88,35 @@ def main(config):
     model, classifier = build_model(config, dataset.num_train_pids)
 
     # Build loss
-    criterion_cla, criterion_pair, criterion_kl, criterion_bce = build_losses(config)
+    criterion_cla, criterion_pair, criterion_kl, criterion_recon = build_losses(config)
 
     # Build optimizer
-    parameters = list(model.parameters()) + list(classifier.parameters())
+    # select parameters beside the FLOWs parameters in the model
+    parameters = []
+    Flow_parameters = []
+    for name, param in model.named_parameters():
+        if 'FLOWs' not in name:
+            parameters.append(param)
+        else:
+            Flow_parameters.append(param)
     
+    parameters = parameters + list(classifier.parameters())
+    
+    if config.MODEL.FLOW_TYPE == 'invertmlp':
+        beta_lr = 1
+    else:
+        beta_lr = 0.1
+
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
-        optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
-                               weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+        # use adam that set different learning rate for different parameters
+        optimizer = optim.Adam([
+            {'params': parameters}, 
+            {'params': Flow_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
+            lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+
+        # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+        #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+        
     elif config.TRAIN.OPTIMIZER.NAME == 'sgd':
         optimizer = optim.SGD(parameters, lr=config.TRAIN.OPTIMIZER.LR, momentum=0.9, 
                               weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY, nesterov=True)
@@ -103,6 +137,7 @@ def main(config):
         print("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
         checkpoint = torch.load(config.MODEL.RESUME)
         model.load_state_dict(checkpoint['model'])
+        # flows_model.load_state_dict(checkpoint['flows_model'])
         classifier.load_state_dict(checkpoint['classifier'])
         start_epoch = checkpoint['epoch']
         best_rank1 = checkpoint['rank1']
@@ -112,9 +147,11 @@ def main(config):
         print("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
         checkpoint = torch.load(config.MODEL.RESUME)
         model.load_state_dict(checkpoint['model'])
+        # flows_model.load_state_dict(checkpoint['flows_model'])
         
     # Set device
     model = model.cuda()
+    # flows_model = flows_model.cuda()
     classifier = classifier.cuda()
 
     if config.EVAL_MODE:
@@ -130,10 +167,10 @@ def main(config):
     for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
         if config.TRAIN.AMP:
-            train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
+            train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
               optimizer, trainloader, epoch, dataset.train_centroids, scaler)
         else:
-            train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_bce, 
+            train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
               optimizer, trainloader, epoch, dataset.train_centroids)
         train_time += round(time.time() - start_train_time)
         
@@ -173,7 +210,8 @@ def main(config):
 
 if __name__ == '__main__':
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
+    torch.cuda.empty_cache()
+    gc.collect()
     config = parse_option()
     # set gpu from '0,1' to '1'
     os.environ['CUDA_VISIBLE_DEVICES'] = config.GPU

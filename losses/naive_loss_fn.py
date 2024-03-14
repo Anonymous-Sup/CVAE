@@ -38,3 +38,38 @@ class MSE_loss(nn.Module):
         loss = nn.functional.mse_loss(recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim), reduction='sum')
         return loss.mean()
 
+
+class MAE_loss(nn.Module):
+    def __init__(self, feature_dim):
+        super(MAE_loss, self).__init__()
+        self.feature_dim = feature_dim
+
+    def forward(self, recon_x, x):
+        loss = nn.functional.l1_loss(recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim), reduction='sum')
+        return loss.mean()
+    
+class SmoothL1_loss(nn.Module):
+    def __init__(self, feature_dim, beta=1.0):
+        super(SmoothL1_loss, self).__init__()
+        self.feature_dim = feature_dim
+        self.beta = beta
+
+    def forward(self, recon_x, x):
+        loss = nn.functional.smooth_l1_loss(recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim), beta=self.beta, reduction='sum')
+        return loss.mean()
+    
+class Pearson_loss(nn.Module):
+    def __init__(self, feature_dim):
+        super(Pearson_loss, self).__init__()
+        self.feature_dim = feature_dim
+
+    def forward(self, recon_x, x):
+        recon_x = recon_x.view(-1, self.feature_dim)
+        x = x.view(-1, self.feature_dim)
+        
+        vx = x - x.mean(dim=1, keepdim=True)
+        vy = recon_x - recon_x.mean(dim=1, keepdim=True)
+
+        corr = (vx * vy).sum(dim=1) / (vx.norm(dim=1) * vy.norm(dim=1))
+        loss = 1 - corr
+        return loss.mean()

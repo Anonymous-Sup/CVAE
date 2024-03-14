@@ -141,6 +141,9 @@ class DukeMTMCreID(object):
         path2label = cluster_resutls['path2label']
         centroids = cluster_resutls['centroids']
 
+        # distroy cluster_resutls
+        del cluster_resutls
+
         counter = Counter(labels.cpu().numpy())
         sorted_counter = sorted(counter.items(), key=lambda x: x[0])  # sort by element
         print("Clustering stastistics:", sorted_counter)

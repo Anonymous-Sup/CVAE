@@ -6,7 +6,7 @@ from losses.contrastive_loss import ContrastiveLoss
 from losses.arcface_loss import ArcFaceLoss
 from losses.cosface_loss import CosFaceLoss, PairwiseCosFaceLoss
 from losses.circle_loss import CircleLoss, PairwiseCircleLoss
-from losses.naive_loss_fn import KLD_loss, BCE_loss, MSE_loss
+from losses.naive_loss_fn import KLD_loss, BCE_loss, MSE_loss, MAE_loss, SmoothL1_loss, Pearson_loss
 
 def build_losses(config):
     if config.LOSS.CLA_LOSS == "crossentropy":
@@ -35,6 +35,16 @@ def build_losses(config):
         raise KeyError("Invalid pairwise loss: '{}'".format(config.LOSS.PAIR_LOSS))
     
     criterion_kl = KLD_loss()
-    criterion_bce = MSE_loss(config.MODEL.FEATURE_DIM)
 
-    return criterion_cla, criterion_pair, criterion_kl, criterion_bce
+    if config.LOSS.RECON_LOSS == 'bce':
+        criterion_recon = BCE_loss(config.MODEL.FEATURE_DIM)
+    elif config.LOSS.RECON_LOSS == 'mse':
+        criterion_recon = MSE_loss(config.MODEL.FEATURE_DIM)
+    elif config.LOSS.RECON_LOSS == 'mae':
+        criterion_recon = MAE_loss(config.MODEL.FEATURE_DIM)
+    elif config.LOSS.RECON_LOSS == 'smoothl1':
+        criterion_recon = SmoothL1_loss(config.MODEL.FEATURE_DIM)
+    elif config.LOSS.RECON_LOSS == 'pearson':
+        criterion_recon = Pearson_loss(config.MODEL.FEATURE_DIM)
+
+    return criterion_cla, criterion_pair, criterion_kl, criterion_recon

@@ -56,7 +56,8 @@ _C.MODEL = CN()
 # Model name
 _C.MODEL.NAME = 'CVAE'
 _C.MODEL.PRETRAIN = 'CLIPreid'
-
+_C.MODEL.VAE_TYPE = 'CVAE'
+_C.MODEL.FLOW_TYPE = 'Planar'  # 'Planar', 'Radial', 'RealNVP'
 _C.MODEL.ENCODER_LAYER_SIZES = [1280, 256]
 _C.MODEL.LATENT_SIZE = 12
 _C.MODEL.DECODER_LAYER_SIZES = [256, 1280]
@@ -90,6 +91,8 @@ _C.LOSS.PAIR_S = 16.
 # Margin
 _C.LOSS.PAIR_M = 0.3
 
+_C.LOSS.RECON_LOSS = 'mse' # 'bce', 'mse', 'mae', 'smoothl1', 'pearson'
+
 # -----------------------------------------------------------------------------
 # Training settings
 # -----------------------------------------------------------------------------
@@ -102,11 +105,11 @@ _C.TRAIN.AMP = False
 _C.TRAIN.OPTIMIZER = CN()
 _C.TRAIN.OPTIMIZER.NAME = 'adam'
 # Learning rate
-_C.TRAIN.OPTIMIZER.LR = 0.00035
-_C.TRAIN.OPTIMIZER.WEIGHT_DECAY = 5e-4
+_C.TRAIN.OPTIMIZER.LR = 1e-2  # ori: 0.00035
+_C.TRAIN.OPTIMIZER.WEIGHT_DECAY = 1e-4   # ori: 5e-4
 # LR scheduler
 _C.TRAIN.LR_SCHEDULER = CN()
-_C.TRAIN.LR_SCHEDULER.NAME = 'None'   # 'None', 'MultiStepLR'
+_C.TRAIN.LR_SCHEDULER.NAME = 'MultiStepLR'   # 'None', 'MultiStepLR'
 # Stepsize to decay learning rate
 _C.TRAIN.LR_SCHEDULER.STEPSIZE = [20, 40]
 # LR decay rate, used in StepLRScheduler
@@ -136,6 +139,7 @@ _C.EVAL_MODE = False
 _C.GPU = '1'
 # Path to output folder, overwritten by command line argument
 _C.OUTPUT = './outputs'
+_C.SAVED_NAME = ''
 # Tag of experiment, overwritten by command line argument
 _C.TAG = 'CVAE_default'
 
@@ -153,6 +157,17 @@ def update_config(config, args):
         config.DATA.DATASET = args.dataset
     if args.output:
         config.OUTPUT = args.output
+    
+    if args.saved_name:
+        config.SAVED_NAME = args.saved_name
+    
+    if args.vae_type:
+        config.MODEL.VAE_TYPE = args.vae_type
+    if args.flow_type:
+        config.MODEL.FLOW_TYPE = args.flow_type
+    
+    if args.recon_loss:
+        config.LOSS.RECON_LOSS = args.recon_loss
 
     if args.gpu:
         config.GPU = args.gpu
@@ -175,7 +190,7 @@ def update_config(config, args):
         config.TRAIN.AMP = args.amp
 
     # output folder
-    config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG)
+    config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, config.SAVED_NAME + "_" + config.MODEL.FLOW_TYPE+"_"+config.LOSS.RECON_LOSS)
 
     config.freeze()
 

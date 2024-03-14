@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from tools.eval_metrics import evaluate
 from data import build_singe_test_loader
+from torch.cuda.amp import autocast
 
 @torch.no_grad()
 def extract_midium_feature(model, dataloader, centroids_all):
@@ -21,7 +22,9 @@ def extract_midium_feature(model, dataloader, centroids_all):
         pretrained_feautres = imgs
         pretrained_feautres = pretrained_feautres.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
-        recon_x, means, log_var, batch_features, theta, logjcobin = model(pretrained_feautres, centroids_all[batch_centroids])
+        with autocast():
+            recon_x, mean, log_var, batch_features, batch_features_flow, theta, logjacobin = model(pretrained_feautres, centroids_all[batch_centroids])
+        
         features.append(batch_features.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
@@ -69,11 +72,10 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset):
     time_elapsed = time.time() - since
     print('Using {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
-    run["test/cmc"] = cmc
-    run["test/mAP"] = mAP
-    run["test/top1"] = cmc[0]
-    run["test/top5"] = cmc[4]
-    run["test/top10"] = cmc[9]
+    run["test/mAP"].append(mAP)
+    run["test/top1"].append(cmc[0])
+    run["test/top5"].append(cmc[4])
+    run["test/top10"].append(cmc[9])
 
     return cmc[0]
 
@@ -87,6 +89,7 @@ def extract_test_feature_only(dataloader):
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
     features = torch.cat(features, 0)
     return features, pids, camids
+
 
 def test_clip_feature(queryloader, galleryloader):
     since = time.time()
