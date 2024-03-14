@@ -18,9 +18,9 @@ python main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --train_format base \
 --gpu 0 \
 --amp \
---saved_name kl_claude_theta \
+--saved_name kl_yuke \
 --vae_type cvae \
---flow_type Radial \
+--flow_type RealNVP \
 --recon_loss pearson \
 
 

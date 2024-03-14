@@ -49,8 +49,8 @@ class Flows(nn.Module):
             b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(input_dim)])
             flows = []
             for i in range(K):
-                s = nets.MLP([input_dim, 8, input_dim])
-                t = nets.MLP([input_dim, 8, input_dim])
+                s = nets.MLP([input_dim, 8, input_dim], init_zeros=True)
+                t = nets.MLP([input_dim, 8, input_dim], init_zeros=True)
                 if i % 2 == 0:
                     flows += [MaskedAffineFlow(b, t, s)]
                 else:
@@ -62,6 +62,7 @@ class Flows(nn.Module):
             raise ValueError("Invalid flow type: {}".format(flow_type))
         self.flows = flows
 
+
     def forward(self, x):
         theta, logjcobin = self.flows(x)
         return theta, logjcobin
@@ -69,6 +70,7 @@ class Flows(nn.Module):
     def inverse(self, theta):
         z, logjcobin = self.flows.inverse(theta)
         return z, logjcobin
+
     
 
 class InvertibleMLPFlow(nn.Module):

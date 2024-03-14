@@ -30,6 +30,7 @@ class VAE(nn.Module):
         self.decoder = Decoder(
             decoder_layer_sizes, latent_size)
         
+        self.apply(self.init_weights)
     # remember to be fp16
     def forward(self, x):
         return True
@@ -44,6 +45,11 @@ class VAE(nn.Module):
         recon_x = self.decoder(z, c)
 
         return recon_x
+
+    def init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.xavier_uniform_(m.weight)
+            nn.init.constant_(m.bias, 0)
 
 
 class Encoder(nn.Module):
@@ -62,7 +68,6 @@ class Encoder(nn.Module):
             self.MLP.add_module(
                 name="L{:d}".format(i), module=nn.Linear(in_size, out_size))
             self.MLP.add_module(name="A{:d}".format(i), module=nn.ReLU())
-
         self.linear_means = nn.Linear(layer_sizes[-1], latent_size)
         self.linear_log_var = nn.Linear(layer_sizes[-1], latent_size)
 

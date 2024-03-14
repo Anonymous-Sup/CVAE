@@ -61,6 +61,7 @@ def parse_option():
     config = get_config(args)
 
     param = {
+        'saved_name': args.saved_name,
         "amp" : config.TRAIN.AMP,
         'vae_type': config.MODEL.VAE_TYPE,
         "optimizer": config.TRAIN.OPTIMIZER.NAME,

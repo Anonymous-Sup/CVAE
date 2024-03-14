@@ -69,7 +69,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
             # kld_theta = (
             #     -torch.sum(prior.log_prob(theta), dim=-1)
-            #     + torch.sum(q0.log_prob(theta), dim=-1)
+            #     + torch.sum(q0.log_prob(z), dim=-1)
             #     - logjacobin.view(-1)
             # )
             # logjacobin = logjacobin.unsqueeze(-1)
@@ -77,9 +77,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # kl_loss_z = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
 
 
-            mu_q = theta.mean(0)
-            sigma_q = torch.exp(logjacobin).mean(0)
-            kld_theta = 0.5 * (-sigma_q.log() - 1 + sigma_q + mu_q.pow(2))
+            # mu_q = theta.mean(0)
+            # sigma_q = torch.exp(logjacobin).mean(0)
+            # kld_theta = 0.5 * (-sigma_q.log() - 1 + sigma_q + mu_q.pow(2))
             
             # Ensure sigma_q is positive and non-zero
             # sigma_q = torch.clamp(sigma_q, min=1e-8)
@@ -91,17 +91,24 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # kld_theta = -torch.logsumexp(log_likelihood, dim=0)
 
 
-            kld_theta = kld_theta.mean()
+            base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
+            prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin
+            q0 = Normal(mean, torch.exp(0.5 * log_var))
+            posterior = torch.sum(q0.log_prob(z), dim=-1)
+
+            kld_theta = (posterior - prior).mean()
             kl_loss = kld_theta
 
-
+            # print("posterior: {}, prior: {}".format(posterior.mean(), prior.mean()))
+            print("mean: {}, log_var: {}, z: {}".format(mean.mean(), log_var.mean(), z.mean()))
 
             # bce or mse
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
             beta = 0.5
             loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
-            # loss = cls_loss  + bce_loss
+
+            # loss = cls_loss + recon_loss
 
         optimizer.zero_grad()
         if config.TRAIN.AMP:
