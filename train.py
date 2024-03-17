@@ -120,6 +120,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 posterior = torch.sum(q0.log_prob(z), dim=-1)
 
                 kl_loss = (posterior - prior).mean()
+
+                kl_loss = kl_loss.clamp(2.0)
+                
                 kld_theta = kl_loss
             # kl loss between z (prior) and z_1 (post)
             # kl_z_z1 = kl_divergence(z.detach(), z_1)
@@ -155,6 +158,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         optimizer.zero_grad()
         if config.TRAIN.AMP:
             scaler.scale(loss).backward()
+
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(optimizer)
             scaler.update()

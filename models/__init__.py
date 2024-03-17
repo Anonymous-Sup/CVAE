@@ -1,12 +1,13 @@
 from models.CVAE import VAE
 from models.Classifier import Classifier, NormalizedClassifier
-from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW
+from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX
 from models.NIPS import NIPS
 
 __factory = {
     'CVAE': VAE
 }
 
+test_only_x_input = True
 
 def build_model(config, num_classes):
 
@@ -15,11 +16,19 @@ def build_model(config, num_classes):
         flows_model = InvertibleMLPFlow(config.MODEL.LATENT_SIZE, config.MODEL.LATENT_SIZE, 1)
     
     elif config.MODEL.FLOW_TYPE == 'yuke_mlpflow':
-        flows_model = YuKeMLPFLOW(
-            latent_size=config.MODEL.LATENT_SIZE,
-            hidden_dim=768,
-            output_dim=1,
-            num_layers=3)
+        if test_only_x_input:
+            flows_model = YuKeMLPFLOW_onlyX(
+                latent_size=config.MODEL.LATENT_SIZE,
+                hidden_dim=64,
+                output_dim=config.MODEL.LATENT_SIZE,
+                num_layers=3
+            )
+        else:
+            flows_model = YuKeMLPFLOW(
+                latent_size=config.MODEL.LATENT_SIZE,
+                hidden_dim=768,
+                output_dim=1,
+                num_layers=3)
     else:
         flows_model = Flows(config.MODEL.LATENT_SIZE, flow_type=config.MODEL.FLOW_TYPE, K=10)
 

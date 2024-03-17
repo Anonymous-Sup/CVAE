@@ -29,6 +29,8 @@ class NIPS(nn.Module):
         self.VAE = VAE
         self.FLOWs = FLOWs
 
+        self.latent_size = latent_size
+
         if hidden_dim is None:
             self.hidden_dim = 768 # default hidden_dim 12 * 64
             print("hidden_dim is not specified, set to be {}".format(self.hidden_dim))
@@ -58,17 +60,34 @@ class NIPS(nn.Module):
         domain_index_feat = self.normalization(domain_index_feat)
 
         means, log_var = self.VAE.encoder(x)
+        # 64, 12
         z_0 = self.VAE.reparameterize(means, log_var)
 
-        flow_input = torch.cat((z_0, domain_index_feat), dim=-1)
+        
+        # 64, 12, 64
+        domian_dim =  int(self.hidden_dim/self.latent_size)
+        U = domain_index_feat.view(-1, self.latent_size, domian_dim)
+        # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
+        flow_input = torch.cat((z_0.unsqueeze(-1), U), dim=-1)
+        # (64, 12, 65) -> (64, 65*12)
+        # flow_input = flow_input.view(-1, self.latent_size * (1 + self.hidden_dim/self.latent_size))
+
+        # flow_input = torch.cat((z_0, domain_index_feat), dim=-1)
         # z_1 = self.fusion(flow_input)
-        z_1 = flow_input
+        '''
+        Ablation test Mar17 20:23
+        z_1 = z_0
+        test_only_x_input = True
+
+        origin: z_1 = flow_input
+        '''
+        z_1 = z_0
 
         theta, logjcobin = self.FLOWs(z_1)
 
         recon_x = self.VAE.decoder(z_0)
 
-        return recon_x, means, log_var, z_0, theta, logjcobin, domain_index_feat
+        return recon_x, means, log_var, z_0, z_1, theta, logjcobin, domain_index_feat, flow_input
     
     def init_weights(self, m):
         if isinstance(m, nn.Linear):

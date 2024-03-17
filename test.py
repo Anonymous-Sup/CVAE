@@ -23,7 +23,7 @@ def extract_midium_feature(model, dataloader, centroids_all):
         pretrained_feautres = pretrained_feautres.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
         with autocast():
-            recon_x, mean, log_var, batch_features, batch_features_flow, theta, logjacobin = model(pretrained_feautres, centroids_all[batch_centroids])
+            recon_x, mean, log_var, batch_features, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, centroids_all[batch_centroids])
         
         features.append(batch_features.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
