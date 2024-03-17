@@ -18,9 +18,9 @@ python main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --train_format base \
 --gpu 0 \
 --amp \
---saved_name vae_flow_highD-U_noReID \
+--saved_name vae_yukeflow_highD-U_noReID \
 --vae_type cvae \
---flow_type Planar \
+--flow_type yuke_mlpflow \
 --recon_loss mse \
 
 

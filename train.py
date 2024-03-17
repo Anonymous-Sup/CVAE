@@ -114,9 +114,10 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 kld_theta = kl_loss
             else:
                 base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
-                prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin
+                prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
+                
                 q0 = Normal(mean, torch.exp(0.5 * log_var))
-                posterior = torch.sum(q0.log_prob(z_1), dim=-1)
+                posterior = torch.sum(q0.log_prob(z), dim=-1)
 
                 kl_loss = (posterior - prior).mean()
                 kld_theta = kl_loss

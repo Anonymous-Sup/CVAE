@@ -6,6 +6,7 @@ sys.path.append('/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/normalizing-flows
 from normflows.flows import Planar, Radial, MaskedAffineFlow, BatchNorm
 from normflows import nets
 # # from utils import idx2onehot
+from functorch import vmap, jacfwd, grad
 
 
 class SimpleFlowModel(nn.Module):
@@ -138,3 +139,76 @@ class InvertibleMLPFlow(nn.Module):
                         z_u = sublayer(z_u)
         z = z_u[:, :self.latent_dim]
         return z
+    
+class MLP(nn.Module):
+    """A simple MLP with ReLU activations"""
+
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, leaky_relu_slope=0.2):
+        super().__init__()
+        layers = []
+        for l in range(num_layers):
+            if l == 0:
+                layers.append(nn.Linear(input_dim, hidden_dim))
+                layers.append(nn.LeakyReLU(leaky_relu_slope))
+            else:
+                layers.append(nn.Linear(hidden_dim, hidden_dim))
+                layers.append(nn.LeakyReLU(leaky_relu_slope))
+        layers.append(nn.Linear(hidden_dim, output_dim))
+
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.net(x)
+    
+
+class YuKeMLPFLOW(nn.Module):
+
+    def __init__(
+            self,
+            latent_size,
+            hidden_dim=768,
+            output_dim=1,
+            num_layers=3 ):
+        super().__init__()
+
+        self.latent_size = latent_size
+
+        self.flows = nn.ModuleList([MLP(input_dim=hidden_dim+latent_size, 
+                                        hidden_dim=hidden_dim,
+                                        output_dim=output_dim,  
+                                        num_layers=num_layers) for _ in range(latent_size)])
+        
+        # self.fc = MLP(input_dim=embedding_dim, hidden_dim=hidden_dim,
+        #               output_dim=hidden_dim, num_layers=num_layers)
+
+    def forward(self, x):
+        
+        # 64, 12
+        batch_size, x_dim = x.shape
+
+        # # 64, 12*64
+        # _, hiddem_dim = domain_embedding.shape
+
+        sum_log_abs_det_jacobian = 0
+        residuals = []
+        
+        for i in range(self.latent_size):
+            # (batch_size, hidden_dim + x_dim)
+            batch_inputs = x[:,i]
+            residual = self.flows[i](batch_inputs)  # (batch_size, 1)
+
+            J = jacfwd(self.flows[i])
+
+            data_J = vmap(J)(batch_inputs).squeeze()
+
+            logabsdet = torch.log(torch.abs(data_J[:, -1]))
+
+            sum_log_abs_det_jacobian += logabsdet
+
+            residuals.append(residual)
+
+        residuals = torch.cat(residuals, dim=-1)
+        residuals = residuals.reshape(batch_size, -1)
+        log_abs_det_jacobian = sum_log_abs_det_jacobian.reshape(batch_size, -1)
+
+        return residuals, log_abs_det_jacobian

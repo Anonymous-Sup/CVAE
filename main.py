@@ -45,7 +45,7 @@ def parse_option():
     
     # Parameters 
     parser.add_argument('--vae_type', type=str, choices=['cvae'], help="Type of VAE model")
-    parser.add_argument('--flow_type', type=str, choices=['Planar', 'Radial', 'RealNVP', 'invertmlp'], help="Type of flow model")
+    parser.add_argument('--flow_type', type=str, choices=['Planar', 'Radial', 'RealNVP', 'invertmlp', "yuke_mlpflow"], help="Type of flow model")
     parser.add_argument('--recon_loss', type=str, choices=['bce', 'mse', 'mae', 'smoothl1', 'pearson'], help="Type of reconstruction loss")
     
     # Miscs

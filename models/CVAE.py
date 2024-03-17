@@ -84,8 +84,9 @@ class Encoder(nn.Module):
         self.linear_means = nn.Linear(layer_sizes[-1], latent_size)
         self.linear_log_var = nn.Linear(layer_sizes[-1], latent_size)
         
-        # self.ac_fn = nn.ReLU()
-        self.ac_fn = None
+        # add leak relu
+        self.ac_fn = nn.LeakyReLU(0.2)
+        # self.ac_fn = None
 
     def forward(self, x):
 

@@ -36,7 +36,8 @@ class NIPS(nn.Module):
             self.hidden_dim = hidden_dim
 
         self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.hidden_dim, number_layers=3)
-        self.fusion = MLP(latent_size+self.hidden_dim, self.hidden_dim, latent_size, number_layers=3)
+        
+        # self.fusion = MLP(latent_size+self.hidden_dim, self.hidden_dim, latent_size, number_layers=3)
     
         # self.domain_embeding.add_module('domain_embeding_layer1', nn.Linear(feature_dim, self.hidden_dim[0]))
         # self.domain_embeding.add_module('domain_embeding_activate', nn.ELU())
@@ -60,13 +61,14 @@ class NIPS(nn.Module):
         z_0 = self.VAE.reparameterize(means, log_var)
 
         flow_input = torch.cat((z_0, domain_index_feat), dim=-1)
-        z_1 = self.fusion(flow_input)
+        # z_1 = self.fusion(flow_input)
+        z_1 = flow_input
 
         theta, logjcobin = self.FLOWs(z_1)
 
         recon_x = self.VAE.decoder(z_0)
 
-        return recon_x, means, log_var, z_0, z_1, theta, logjcobin, domain_index_feat, flow_input
+        return recon_x, means, log_var, z_0, theta, logjcobin, domain_index_feat
     
     def init_weights(self, m):
         if isinstance(m, nn.Linear):
