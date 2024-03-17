@@ -83,6 +83,9 @@ class Encoder(nn.Module):
         # 1280 -> 256 -> 12
         self.linear_means = nn.Linear(layer_sizes[-1], latent_size)
         self.linear_log_var = nn.Linear(layer_sizes[-1], latent_size)
+        
+        # self.ac_fn = nn.ReLU()
+        self.ac_fn = None
 
     def forward(self, x):
 
@@ -95,7 +98,12 @@ class Encoder(nn.Module):
         # self.linear_means = self.linear_means.to(dtype=x.dtype)
         # self.linear_log_var = self.linear_log_var.to(dtype=x.dtype)
         means = self.linear_means(x)
+        
         log_vars = self.linear_log_var(x)
+
+        if self.ac_fn is not None:
+            means = self.ac_fn(means)
+            log_vars = self.ac_fn(log_vars)
 
         return means, log_vars
 

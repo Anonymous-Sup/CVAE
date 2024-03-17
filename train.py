@@ -55,7 +55,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # classifier = classifier.to(imgs_tensor.dtype)
         # return recon_x, means, log_var, z_0, z_1, theta, logjcobin
         with autocast():
-            recon_x, mean, log_var, z, z_1, theta, logjacobin= model(imgs_tensor, centroids[clusterids])
+            recon_x, mean, log_var, z, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
         
             outputs = classifier(z)
             outputs_theta = classifier(theta)
@@ -116,7 +116,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
                 prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin
                 q0 = Normal(mean, torch.exp(0.5 * log_var))
-                posterior = torch.sum(q0.log_prob(z), dim=-1)
+                posterior = torch.sum(q0.log_prob(z_1), dim=-1)
 
                 kl_loss = (posterior - prior).mean()
                 kld_theta = kl_loss
@@ -134,7 +134,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             beta = 0.5
             # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
 
-            loss = cls_loss + recon_loss + kl_loss 
+            loss = recon_loss + kl_loss 
+            # loss = loss + cls_loss
+
 
             # if is the last batch
             if batch_idx == len(trainloader)-1:
@@ -146,10 +148,13 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 plot_histogram(run, logjacobin, "logjacobin")
                 plot_histogram(run, recon_x, "recon_x")
                 plot_histogram(run, imgs_tensor, "imgs_tensor")
+                plot_histogram(run, domian_feature, "domian_feature")
+                plot_histogram(run, flow_input, "flow_input")
 
         optimizer.zero_grad()
         if config.TRAIN.AMP:
             scaler.scale(loss).backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(optimizer)
             scaler.update()
         else:
