@@ -5,6 +5,21 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.distributions.normal import Normal
 from tools.utils import AverageMeter
 import torch.nn.functional as F
+from utils import plot_histogram
+
+def kl_divergence(z_0, z_1):
+    # Calculate the mean and log-variance of z_0 along the batch dimension
+    mean_z0 = torch.mean(z_0, dim=0)
+    log_var_z0 = torch.log(torch.var(z_0, dim=0, unbiased=False) + 1e-5)
+    
+    # Calculate the mean and log-variance of z_1 along the batch dimension
+    mean_z1 = torch.mean(z_1, dim=0)
+    log_var_z1 = torch.log(torch.var(z_1, dim=0, unbiased=False) + 1e-5)
+    
+    # Calculate the KL divergence between z_1 and z_0 for each feature
+    kl_div = 0.5 * torch.sum(log_var_z0 - log_var_z1 + (torch.exp(log_var_z1) + (mean_z1 - mean_z0)**2) / torch.exp(log_var_z0) - 1)
+    
+    return kl_div
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
               optimizer, trainloader, epoch, centroids, scaler=None):
@@ -13,6 +28,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     classifier.train()
     centroids.cuda()
 
+    only_cvae = False
+    if only_cvae:
+        print("=> Only CVAE and its loss")
     batch_cls_loss = AverageMeter()
     batch_cls_loss_theta = AverageMeter()
     batch_pair_loss = AverageMeter()
@@ -90,25 +108,44 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # # kld_theta = -log_likelihood.sum()
             # kld_theta = -torch.logsumexp(log_likelihood, dim=0)
 
+            if only_cvae:
+                kl_loss = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
+                kl_loss = kl_loss.mean()
+                kld_theta = kl_loss
+            else:
+                base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
+                prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin
+                q0 = Normal(mean, torch.exp(0.5 * log_var))
+                posterior = torch.sum(q0.log_prob(z), dim=-1)
 
-            base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
-            prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin
-            q0 = Normal(mean, torch.exp(0.5 * log_var))
-            posterior = torch.sum(q0.log_prob(z), dim=-1)
-
-            kld_theta = (posterior - prior).mean()
-            kl_loss = kld_theta
+                kl_loss = (posterior - prior).mean()
+                kld_theta = kl_loss
+            # kl loss between z (prior) and z_1 (post)
+            # kl_z_z1 = kl_divergence(z.detach(), z_1)
+            # kld_theta = kl_z_z1.mean()
 
             # print("posterior: {}, prior: {}".format(posterior.mean(), prior.mean()))
-            print("mean: {}, log_var: {}, z: {}".format(mean.mean(), log_var.mean(), z.mean()))
+            # print("mean: {}, log_var: {}, z: {}".format(mean.mean(), log_var.mean(), z.mean()))
 
+            # print("mean: {}, log_var: {}, theta: {}".format(mean, log_var, theta))
             # bce or mse
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
             beta = 0.5
-            loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
+            # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
 
-            # loss = cls_loss + recon_loss
+            loss = cls_loss + recon_loss + kl_loss 
+
+            # if is the last batch
+            if batch_idx == len(trainloader)-1:
+                plot_histogram(run, mean, "mean")
+                plot_histogram(run, log_var, "log_var")
+                plot_histogram(run, z, "z")
+                plot_histogram(run, z_1, "z_1")
+                plot_histogram(run, theta, "theta")
+                plot_histogram(run, logjacobin, "logjacobin")
+                plot_histogram(run, recon_x, "recon_x")
+                plot_histogram(run, imgs_tensor, "imgs_tensor")
 
         optimizer.zero_grad()
         if config.TRAIN.AMP:

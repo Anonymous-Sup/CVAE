@@ -25,14 +25,25 @@ class VAE(nn.Module):
 
         self.latent_size = latent_size
 
+        self.ac_fn = 'elu'
+
+        if self.ac_fn == 'relu':
+            self.ac_fn = nn.ReLU()
+        elif self.ac_fn == 'leaky_relu':
+            self.ac_fn = nn.LeakyReLU()
+        elif self.ac_fn == 'elu':
+            self.ac_fn = nn.ELU()
+    
         self.encoder = Encoder(
-            encoder_layer_sizes, latent_size)
+            encoder_layer_sizes, latent_size, self.ac_fn)
         self.decoder = Decoder(
-            decoder_layer_sizes, latent_size)
+            decoder_layer_sizes, latent_size, self.ac_fn)
         
-        self.apply(self.init_weights)
+        # self.encoder.apply(self.init_weights)
+        # self.decoder.apply(self.init_weights)
+
     # remember to be fp16
-    def forward(self, x):
+    def forward(self, x, y):
         return True
 
     def reparameterize(self, mu, log_var):
@@ -49,25 +60,27 @@ class VAE(nn.Module):
     def init_weights(self, m):
         if isinstance(m, nn.Linear):
             nn.init.xavier_uniform_(m.weight)
-            nn.init.constant_(m.bias, 0)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0)
 
 
 class Encoder(nn.Module):
 
-    def __init__(self, layer_sizes, latent_size):
+    def __init__(self, layer_sizes, latent_size, ac_fn):
 
         super().__init__()
 
         # self.conditional = conditional
         # if self.conditional:
         #     layer_sizes[0] += num_labels
-
         self.MLP = nn.Sequential()
 
         for i, (in_size, out_size) in enumerate(zip(layer_sizes[:-1], layer_sizes[1:])):
             self.MLP.add_module(
                 name="L{:d}".format(i), module=nn.Linear(in_size, out_size))
-            self.MLP.add_module(name="A{:d}".format(i), module=nn.ReLU())
+            if i+1 < len(layer_sizes):
+                self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
+        # 1280 -> 256 -> 12
         self.linear_means = nn.Linear(layer_sizes[-1], latent_size)
         self.linear_log_var = nn.Linear(layer_sizes[-1], latent_size)
 
@@ -89,7 +102,7 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
 
-    def __init__(self, layer_sizes, latent_size):
+    def __init__(self, layer_sizes, latent_size, ac_fn):
 
         super().__init__()
 
@@ -104,13 +117,14 @@ class Decoder(nn.Module):
         input_size = latent_size
 
         # (12+256, [256,512])
+        # 12 -> 256 -> 1280
         for i, (in_size, out_size) in enumerate(zip([input_size]+layer_sizes[:-1], layer_sizes)):
             self.MLP.add_module(
                 name="L{:d}".format(i), module=nn.Linear(in_size, out_size))
             if i+1 < len(layer_sizes):
-                self.MLP.add_module(name="A{:d}".format(i), module=nn.ReLU())
-            else:
-                self.MLP.add_module(name="sigmoid", module=nn.Sigmoid())
+                self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
+            # else:
+            #     self.MLP.add_module(name="sigmoid", module=nn.Sigmoid())
 
     def forward(self, z):
 
@@ -119,6 +133,7 @@ class Decoder(nn.Module):
         #     z = torch.cat((z, c), dim=-1)
         # self.MLP = self.MLP.to(dtype=z.dtype)
         x = self.MLP(z)
+        x = x / x.norm(dim=-1, keepdim=True)
 
         return x
 
@@ -165,6 +180,7 @@ class VAE_backup(nn.Module):
         
         domain_index_feat= self.domain_embeding(domain_index_feat)
         means, log_var = self.encoder(x)
+
         z_0 = self.reparameterize(means, log_var)
         
         # (b, size) -> (b, 2*size)
@@ -180,6 +196,7 @@ class VAE_backup(nn.Module):
 
     def reparameterize(self, mu, log_var):
         std = torch.exp(0.5 * log_var)
+        # std = torch.sqrt(torch.exp(log_var))
         eps = torch.randn_like(std)
         return mu + eps * std
 
@@ -207,8 +224,8 @@ if __name__ == '__main__':
     print(vae)
 
     # get FLOPs and Parameters
-    input_1 = torch.randn(64, 1280).to(dtype=torch.float16).cuda()
-    input_2 = torch.randn(64, 1280).to(dtype=torch.float16).cuda()
+    input_1 = torch.randn(64, 1280).cuda()
+    input_2 = torch.randn(64, 1280).cuda()
 
 
     flops, params = profile(vae, inputs=(input_1, input_2))

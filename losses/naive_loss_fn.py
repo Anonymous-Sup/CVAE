@@ -17,12 +17,11 @@ class BCE_loss(nn.Module):
     def __init__(self, feature_dim):
         super(BCE_loss, self).__init__()
         self.feature_dim = feature_dim
-
-    def forward(self, recon_x, x):
+        self.bce_with_logits_loss = torch.nn.BCEWithLogitsLoss(reduction='sum')
+    def forward(self, recon_x ,x):
         # torch.nn.functional.binary_cross_entropy 
         # and torch.nn.BCELoss are unsafe to autocast.
-        loss = nn.functional.binary_cross_entropy_with_logits(
-            recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim), reduction='sum')
+        loss = self.bce_with_logits_loss(recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim))
         return loss.mean()
 
 class MSE_loss(nn.Module):
@@ -34,7 +33,7 @@ class MSE_loss(nn.Module):
         # normalize recon_x
         # recon_x /= recon_x.norm(dim=-1, keepdim=True)
         # x /= x.norm(dim=-1, keepdim=True)
-
+        # torch.nn.functional.sigmoid(recon_x)
         loss = nn.functional.mse_loss(recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim), reduction='sum')
         return loss.mean()
 

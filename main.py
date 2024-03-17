@@ -80,8 +80,6 @@ def parse_option():
     return config
 
 def main(config):
-
-
     # Build dataloader
     trainloader, queryloader, galleryloader, dataset = build_dataloader(config)
 
@@ -106,7 +104,7 @@ def main(config):
     if config.MODEL.FLOW_TYPE == 'invertmlp':
         beta_lr = 1
     else:
-        beta_lr = 0.1
+        beta_lr = 1
 
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters

@@ -25,7 +25,7 @@ def build_model(config, num_classes):
     else:
         raise KeyError("Invalid model name, got '{}', but expected to be one of {}".format(config.MODEL.NAME, __factory.keys()))
 
-    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, latent_size=config.MODEL.LATENT_SIZE)
+    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=None, latent_size=config.MODEL.LATENT_SIZE)
     
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     
