@@ -15,15 +15,9 @@ def idx2onehot(idx, n):
 
 class VAE(nn.Module):
 
-    def __init__(self, encoder_layer_sizes, latent_size, decoder_layer_sizes):
+    def __init__(self, feature_dim, hidden_dim, output_dim, n_layers):
 
         super().__init__()
-
-        assert type(encoder_layer_sizes) == list
-        assert type(latent_size) == int
-        assert type(decoder_layer_sizes) == list
-
-        self.latent_size = latent_size
 
         self.ac_fn = 'elu'
 
@@ -35,9 +29,9 @@ class VAE(nn.Module):
             self.ac_fn = nn.ELU()
     
         self.encoder = Encoder(
-            encoder_layer_sizes, latent_size, self.ac_fn)
+            feature_dim, hidden_dim, output_dim, n_layers, self.ac_fn)
         self.decoder = Decoder(
-            decoder_layer_sizes, latent_size, self.ac_fn)
+            output_dim, hidden_dim, feature_dim, n_layers, self.ac_fn)
         
         # self.encoder.apply(self.init_weights)
         # self.decoder.apply(self.init_weights)
@@ -66,23 +60,30 @@ class VAE(nn.Module):
 
 class Encoder(nn.Module):
 
-    def __init__(self, layer_sizes, latent_size, ac_fn):
+    def __init__(self, input_dim, hiden_dim, out_dim, n_layers, ac_fn):
 
         super().__init__()
 
         # self.conditional = conditional
         # if self.conditional:
         #     layer_sizes[0] += num_labels
-        self.MLP = nn.Sequential()
-
-        for i, (in_size, out_size) in enumerate(zip(layer_sizes[:-1], layer_sizes[1:])):
-            self.MLP.add_module(
-                name="L{:d}".format(i), module=nn.Linear(in_size, out_size))
-            if i+1 < len(layer_sizes):
+        self.MLP = nn.Sequential()  
+        # at least 3 layers,         
+        for i in range(n_layers):
+            if i == 0:
+                self.MLP.add_module(
+                    name="L{:d}".format(i), module=nn.Linear(input_dim, hiden_dim))
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
+            else:
+                self.MLP.add_module(
+                    name="L{:d}".format(i), module=nn.Linear(hiden_dim, hiden_dim))
+                self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
+        self.MLP.add_module(
+            name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim))
+        
         # 1280 -> 256 -> 12
-        self.linear_means = nn.Linear(layer_sizes[-1], latent_size)
-        self.linear_log_var = nn.Linear(layer_sizes[-1], latent_size)
+        self.linear_means = nn.Linear(out_dim, out_dim)
+        self.linear_log_var = nn.Linear(out_dim, out_dim)
         
         # add leak relu
         self.ac_fn = nn.LeakyReLU(0.2)
@@ -90,50 +91,40 @@ class Encoder(nn.Module):
 
     def forward(self, x):
 
-        # if self.conditional:
-        #     c = idx2onehot(c, n=10)
-        #     x = torch.cat((x, c), dim=-1)
-        # self.MLP = self.MLP.to(dtype=x.dtype)
         x = self.MLP(x)
-
-        # self.linear_means = self.linear_means.to(dtype=x.dtype)
-        # self.linear_log_var = self.linear_log_var.to(dtype=x.dtype)
-        means = self.linear_means(x)
         
+        means = self.linear_means(x)
         log_vars = self.linear_log_var(x)
 
         if self.ac_fn is not None:
             means = self.ac_fn(means)
             log_vars = self.ac_fn(log_vars)
 
-        return means, log_vars
+        return x, means, log_vars
 
 
 class Decoder(nn.Module):
 
-    def __init__(self, layer_sizes, latent_size, ac_fn):
+    def __init__(self, input_dim, hiden_dim, out_dim, n_layers, ac_fn):
 
         super().__init__()
 
         self.MLP = nn.Sequential()
-
-        # self.conditional = conditional
-        # if self.conditional:
-        #     input_size = latent_size + num_labels
-        # else:
-            # input_size = latent_size
         
-        input_size = latent_size
-
-        # (12+256, [256,512])
         # 12 -> 256 -> 1280
-        for i, (in_size, out_size) in enumerate(zip([input_size]+layer_sizes[:-1], layer_sizes)):
-            self.MLP.add_module(
-                name="L{:d}".format(i), module=nn.Linear(in_size, out_size))
-            if i+1 < len(layer_sizes):
+        for i in range(n_layers):
+            if i == 0:
+                self.MLP.add_module(
+                    name="L{:d}".format(i), module=nn.Linear(input_dim, hiden_dim))
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
-            # else:
-            #     self.MLP.add_module(name="sigmoid", module=nn.Sigmoid())
+            else:
+                self.MLP.add_module(
+                    name="L{:d}".format(i), module=nn.Linear(hiden_dim, hiden_dim))
+                self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
+        
+        self.MLP.add_module(
+            name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim))
+        
 
     def forward(self, z):
 

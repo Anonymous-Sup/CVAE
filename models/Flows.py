@@ -261,3 +261,54 @@ class YuKeMLPFLOW_onlyX(nn.Module):
         log_abs_det_jacobian = sum_log_abs_det_jacobian.reshape(batch_size, -1)
 
         return residual, log_abs_det_jacobian
+    
+class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
+
+    def __init__(
+            self,
+            latent_size=12,
+            hidden_dim=64,
+            output_dim=1,
+            num_layers=3
+            ):
+        super().__init__()
+
+        self.latent_size = latent_size
+        self.flows = nn.ModuleList([MLP(input_dim=1, 
+                                hidden_dim=hidden_dim,
+                                output_dim=output_dim,  
+                                num_layers=num_layers) for _ in range(latent_size)])
+
+        # self.fc = MLP(input_dim=embedding_dim, hidden_dim=hidden_dim,
+        #               output_dim=hidden_dim, num_layers=num_layers)
+
+    def forward(self, x):        
+        # batch_size, latent_dim
+        # 64, 12
+        batch_size, latent_dim = x.shape
+
+        sum_log_abs_det_jacobian = 0
+        residuals = []
+        
+        for i in range(self.latent_size):
+
+            # 64, 1
+            batch_inputs = x[:, i]
+            batch_inputs = batch_inputs.reshape(-1, 1)
+
+            residual = self.flows[i](batch_inputs)  # (batch_size,1) --> (batch_size, 1)
+            J = jacfwd(self.flows[i])
+
+            data_J = vmap(J)(batch_inputs).squeeze()
+            data_J = data_J.unsqueeze(1)
+            logabsdet = torch.log(torch.abs(data_J[:, -1]))
+            sum_log_abs_det_jacobian += logabsdet
+
+            residuals.append(residual)
+
+        residuals = torch.cat(residuals, dim=-1)
+        
+        residuals = residuals.reshape(batch_size, -1)
+        log_abs_det_jacobian = sum_log_abs_det_jacobian.reshape(batch_size, -1)
+
+        return residuals, log_abs_det_jacobian

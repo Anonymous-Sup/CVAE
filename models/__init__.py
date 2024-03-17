@@ -1,6 +1,6 @@
 from models.CVAE import VAE
 from models.Classifier import Classifier, NormalizedClassifier
-from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX
+from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ
 from models.NIPS import NIPS
 
 __factory = {
@@ -17,16 +17,21 @@ def build_model(config, num_classes):
     
     elif config.MODEL.FLOW_TYPE == 'yuke_mlpflow':
         if test_only_x_input:
-            flows_model = YuKeMLPFLOW_onlyX(
-                latent_size=config.MODEL.LATENT_SIZE,
-                hidden_dim=64,
-                output_dim=config.MODEL.LATENT_SIZE,
-                num_layers=3
+            # flows_model = YuKeMLPFLOW_onlyX(
+            #     latent_size=config.MODEL.LATENT_SIZE,
+            #     hidden_dim=64,
+            #     output_dim=config.MODEL.LATENT_SIZE,
+            #     num_layers=3
+            # )
+            flows_model = YuKeMLPFLOW_onlyX_seperateZ(latent_size=12,
+            hidden_dim=64,
+            output_dim=1,
+            num_layers=3
             )
         else:
             flows_model = YuKeMLPFLOW(
                 latent_size=config.MODEL.LATENT_SIZE,
-                hidden_dim=768,
+                hidden_dim=64,
                 output_dim=1,
                 num_layers=3)
     else:
@@ -35,9 +40,11 @@ def build_model(config, num_classes):
     print("Initializing vae model: {}".format(config.MODEL.VAE_TYPE))
     if config.MODEL.VAE_TYPE == 'cvae':
         vae_model = VAE(
-            encoder_layer_sizes=config.MODEL.ENCODER_LAYER_SIZES,
-            latent_size=config.MODEL.LATENT_SIZE,
-            decoder_layer_sizes=config.MODEL.DECODER_LAYER_SIZES)
+            feature_dim=config.MODEL.FEATURE_DIM,
+            hidden_dim=256,
+            output_dim=config.MODEL.LATENT_SIZE, 
+            n_layers=4
+    )
     else:
         raise KeyError("Invalid model name, got '{}', but expected to be one of {}".format(config.MODEL.NAME, __factory.keys()))
 

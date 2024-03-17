@@ -40,16 +40,6 @@ class NIPS(nn.Module):
         self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.hidden_dim, number_layers=3)
         
         # self.fusion = MLP(latent_size+self.hidden_dim, self.hidden_dim, latent_size, number_layers=3)
-    
-        # self.domain_embeding.add_module('domain_embeding_layer1', nn.Linear(feature_dim, self.hidden_dim[0]))
-        # self.domain_embeding.add_module('domain_embeding_activate', nn.ELU())
-        # self.domain_embeding.add_module('domain_embeding_layer2', nn.Linear(self.hidden_dim[0], latent_size))
-        
-        # self.fusion = nn.Sequential()
-        # self.fusion.add_module('fusion_layer1', nn.Linear(latent_size*2, latent_size))
-        # self.fusion.add_module('fusion_activate', nn.ELU())
-        # self.fusion.add_module('fusion_layer2', nn.Linear(latent_size, latent_size))
-
 
         # self.domain_embeding.apply(self.init_weights)
         # self.fusion.apply(self.init_weights)
@@ -59,16 +49,17 @@ class NIPS(nn.Module):
         domain_index_feat= self.domain_embeding(domain_index)
         domain_index_feat = self.normalization(domain_index_feat)
 
-        means, log_var = self.VAE.encoder(x)
+        # (64,12)
+        x_proj, means, log_var = self.VAE.encoder(x)
+
         # 64, 12
         z_0 = self.VAE.reparameterize(means, log_var)
 
-        
         # 64, 12, 64
         domian_dim =  int(self.hidden_dim/self.latent_size)
         U = domain_index_feat.view(-1, self.latent_size, domian_dim)
         # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
-        flow_input = torch.cat((z_0.unsqueeze(-1), U), dim=-1)
+        flow_input = torch.cat((x_proj.unsqueeze(-1), U), dim=-1)
         # (64, 12, 65) -> (64, 65*12)
         # flow_input = flow_input.view(-1, self.latent_size * (1 + self.hidden_dim/self.latent_size))
 
@@ -76,18 +67,18 @@ class NIPS(nn.Module):
         # z_1 = self.fusion(flow_input)
         '''
         Ablation test Mar17 20:23
-        z_1 = z_0
+        z_1 = x_proj
         test_only_x_input = True
 
         origin: z_1 = flow_input
         '''
-        z_1 = z_0
+        z_1 = x_proj
 
         theta, logjcobin = self.FLOWs(z_1)
 
-        recon_x = self.VAE.decoder(z_0)
+        recon_x = self.VAE.decoder(x_proj)
 
-        return recon_x, means, log_var, z_0, z_1, theta, logjcobin, domain_index_feat, flow_input
+        return recon_x, means, log_var, z_0, x_proj, z_1, theta, logjcobin, domain_index_feat, flow_input
     
     def init_weights(self, m):
         if isinstance(m, nn.Linear):

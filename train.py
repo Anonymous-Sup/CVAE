@@ -55,9 +55,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # classifier = classifier.to(imgs_tensor.dtype)
         # return recon_x, means, log_var, z_0, z_1, theta, logjcobin
         with autocast():
-            recon_x, mean, log_var, z, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
+            recon_x, mean, log_var, z, x_proj, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
         
-            outputs = classifier(z)
+            outputs = classifier(x_proj)
             outputs_theta = classifier(theta)
 
             _, preds = torch.max(outputs.data, 1)
@@ -66,7 +66,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             cls_loss = criterion_cla(outputs, pids)
             cls_loss_theta = criterion_cla(outputs_theta, pids)
 
-            pair_loss = criterion_pair(z, pids)
+            pair_loss = criterion_pair(x_proj, pids)
 
             # # initial kl with N(0,1)
             # # kl_loss = criterion_kl(mean, log_var)
@@ -135,10 +135,10 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # bce or mse
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
-            beta = 0.5
+            beta = 0.02
             # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
 
-            loss = recon_loss + kl_loss 
+            loss = recon_loss + beta * kl_loss 
             # loss = loss + cls_loss
 
 
