@@ -1,6 +1,6 @@
 from models.CVAE import VAE
 from models.Classifier import Classifier, NormalizedClassifier
-from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ
+from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ, YuKeMLPFLOW_onlyX_seperateZ_init
 from models.NIPS import NIPS
 
 __factory = {
