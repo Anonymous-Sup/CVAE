@@ -5,7 +5,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.distributions.normal import Normal
 from tools.utils import AverageMeter
 import torch.nn.functional as F
-from utils import plot_histogram
+from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix
 
 def kl_divergence(z_0, z_1):
     # Calculate the mean and log-variance of z_0 along the batch dimension
@@ -118,9 +118,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 
                 q0 = Normal(mean, torch.exp(0.5 * log_var))
                 posterior = torch.sum(q0.log_prob(z), dim=-1)
-
                 kl_loss = (posterior - prior).mean()
-
                 kl_loss = kl_loss.clamp(2.0)
                 
                 kld_theta = kl_loss
@@ -135,7 +133,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # bce or mse
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
-            beta = 0.02
+            beta = 0.5
             # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
 
             loss = recon_loss + beta * kl_loss 
@@ -158,7 +156,6 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         optimizer.zero_grad()
         if config.TRAIN.AMP:
             scaler.scale(loss).backward()
-
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(optimizer)
             scaler.update()
