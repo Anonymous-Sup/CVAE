@@ -124,7 +124,7 @@ class DukeMTMCreID(object):
         num_imgs = len(dataset)
         return dataset, num_pids, num_imgs, centroids
 
-    def _process_cluster(self, dir_path, n_clusters=25, sim_mode='euclidean'):
+    def _process_cluster(self, dir_path, n_clusters=129, sim_mode='euclidean'):
 
         # n_clusters selected bt 12*2+1 = 25 or 36*2+1 = 73 or 64*2+1 = 129
         if 'train' in dir_path:

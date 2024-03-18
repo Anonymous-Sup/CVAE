@@ -81,7 +81,7 @@ class Encoder(nn.Module):
         self.MLP.add_module(
             name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim))
         
-        # 1280 -> 256 -> 12
+        # 1280 -> 256 -> 36
         self.linear_means = nn.Linear(out_dim, out_dim)
         self.linear_log_var = nn.Linear(out_dim, out_dim)
         

@@ -7,10 +7,10 @@ __factory = {
     'CVAE': VAE
 }
 
-test_only_x_input = False
+test_only_x_input = True
 
 def build_model(config, num_classes):
-
+    
     print("Initializing Flow model: {}".format(config.MODEL.FLOW_TYPE))
     if config.MODEL.FLOW_TYPE == 'invertmlp':
         flows_model = InvertibleMLPFlow(config.MODEL.LATENT_SIZE, config.MODEL.LATENT_SIZE, 1)
@@ -24,12 +24,15 @@ def build_model(config, num_classes):
             #     num_layers=3
             # )
             flows_model = YuKeMLPFLOW_onlyX_seperateZ(
-                latent_size=12,
+                latent_size=config.MODEL.LATENT_SIZE,
                 hidden_dim=64,
                 output_dim=1,
                 num_layers=4
             )
         else:
+            '''
+             todo: if latent_size is not is there is a problm about hidden_dim
+            '''
             flows_model = YuKeMLPFLOW(
                 latent_size=config.MODEL.LATENT_SIZE,
                 hidden_dim=64,
@@ -49,6 +52,10 @@ def build_model(config, num_classes):
     else:
         raise KeyError("Invalid model name, got '{}', but expected to be one of {}".format(config.MODEL.NAME, __factory.keys()))
 
+    # 768 = latent_size * hiden_dim = 12*64
+    # if latent_size is not 12, there is a problem
+    # maybe 36*24 = 864
+    # maybe 64*12 = 768
     model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=768, latent_size=config.MODEL.LATENT_SIZE)
     
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
