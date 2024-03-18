@@ -7,7 +7,7 @@ __factory = {
     'CVAE': VAE
 }
 
-test_only_x_input = True
+test_only_x_input = False
 
 def build_model(config, num_classes):
 
@@ -23,17 +23,18 @@ def build_model(config, num_classes):
             #     output_dim=config.MODEL.LATENT_SIZE,
             #     num_layers=3
             # )
-            flows_model = YuKeMLPFLOW_onlyX_seperateZ(latent_size=12,
-            hidden_dim=64,
-            output_dim=1,
-            num_layers=3
+            flows_model = YuKeMLPFLOW_onlyX_seperateZ(
+                latent_size=12,
+                hidden_dim=64,
+                output_dim=1,
+                num_layers=4
             )
         else:
             flows_model = YuKeMLPFLOW(
                 latent_size=config.MODEL.LATENT_SIZE,
                 hidden_dim=64,
                 output_dim=1,
-                num_layers=3)
+                num_layers=4)
     else:
         flows_model = Flows(config.MODEL.LATENT_SIZE, flow_type=config.MODEL.FLOW_TYPE, K=10)
 

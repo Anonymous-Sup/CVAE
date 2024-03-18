@@ -23,6 +23,7 @@ from tools.eval_metrics import evaluate
 from tools.utils import AverageMeter, save_checkpoint, set_seed
 from torch.cuda.amp import GradScaler, autocast
 import neptune
+from utils import EarlyStopping
 
 
 # torch.autograd.set_detect_anomaly(True)
@@ -88,6 +89,8 @@ def main(config):
 
     # Build loss
     criterion_cla, criterion_pair, criterion_kl, criterion_recon = build_losses(config)
+
+    early_stopping = EarlyStopping(patience=100, threshold=1.0)
 
     # Build optimizer
     # select parameters beside the FLOWs parameters in the model
@@ -166,8 +169,12 @@ def main(config):
     for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
         if config.TRAIN.AMP:
-            train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
-              optimizer, trainloader, epoch, dataset.train_centroids, scaler)
+            state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
+              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler)
+            if state == False:
+                print("=> Early stopping at epoch {}".format(epoch))
+                break
+
         else:
             train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
               optimizer, trainloader, epoch, dataset.train_centroids)

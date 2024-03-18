@@ -19,12 +19,12 @@ class VAE(nn.Module):
 
         super().__init__()
 
-        self.ac_fn = 'elu'
+        self.ac_fn = 'leaky_relu'
 
         if self.ac_fn == 'relu':
             self.ac_fn = nn.ReLU()
         elif self.ac_fn == 'leaky_relu':
-            self.ac_fn = nn.LeakyReLU()
+            self.ac_fn = nn.LeakyReLU(0.2)
         elif self.ac_fn == 'elu':
             self.ac_fn = nn.ELU()
     
@@ -216,9 +216,10 @@ if __name__ == '__main__':
     print('========Testing VAE========')
     # train(64, 512)
     vae = VAE(
-        encoder_layer_sizes=[1280, 256],
-        latent_size=12,
-        decoder_layer_sizes=[256, 1280]
+        feature_dim = 1280,
+        hidden_dim=256, 
+        output_dim=12, 
+        n_layers=4
     )
     vae = vae.cuda()
     print(vae)
@@ -227,6 +228,9 @@ if __name__ == '__main__':
     input_1 = torch.randn(64, 1280).cuda()
     input_2 = torch.randn(64, 1280).cuda()
 
+    x, mean, var = vae.encoder(input_1)
+
+    print("encoded X=", x.shape)
 
     flops, params = profile(vae, inputs=(input_1, input_2))
     flops = float(flops)

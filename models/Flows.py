@@ -213,55 +213,6 @@ class YuKeMLPFLOW(nn.Module):
 
         return residuals, log_abs_det_jacobian
     
-
-class YuKeMLPFLOW_onlyX(nn.Module):
-
-    def __init__(
-            self,
-            latent_size=12,
-            hidden_dim=64,
-            output_dim=12,
-            num_layers=3
-            ):
-        super().__init__()
-
-        self.latent_size = latent_size
-        self.flows = MLP(input_dim=latent_size, 
-                        hidden_dim=hidden_dim,
-                        output_dim=output_dim,  
-                        num_layers=num_layers)
-
-        # self.fc = MLP(input_dim=embedding_dim, hidden_dim=hidden_dim,
-        #               output_dim=hidden_dim, num_layers=num_layers)
-
-    def forward(self, x):
-        
-        # batch_size, latent_dim, hidden_dim+1
-        # 64, 12, 64+1
-        batch_size, latent_dim = x.shape
-
-        sum_log_abs_det_jacobian = 0
-        
-        # (batch_size, hidden_dim + x_dim)
-        # 64, 12
-        batch_inputs = x
-
-        residual = self.flows(batch_inputs)  # (batch_size, 1)
-
-        J = jacfwd(self.flows)
-
-        # what is this shape?
-        data_J = vmap(J)(batch_inputs).squeeze()
-
-        logabsdet = torch.log(torch.abs(data_J[:, -1]))
-
-        sum_log_abs_det_jacobian += logabsdet
-
-        residual = residual.reshape(batch_size, -1)
-        log_abs_det_jacobian = sum_log_abs_det_jacobian.reshape(batch_size, -1)
-
-        return residual, log_abs_det_jacobian
-    
 class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
 
     def __init__(
@@ -312,3 +263,58 @@ class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
         log_abs_det_jacobian = sum_log_abs_det_jacobian.reshape(batch_size, -1)
 
         return residuals, log_abs_det_jacobian
+    
+
+
+
+
+
+
+class YuKeMLPFLOW_onlyX(nn.Module):
+
+    def __init__(
+            self,
+            latent_size=12,
+            hidden_dim=64,
+            output_dim=12,
+            num_layers=3
+            ):
+        super().__init__()
+
+        self.latent_size = latent_size
+        self.flows = MLP(input_dim=latent_size, 
+                        hidden_dim=hidden_dim,
+                        output_dim=output_dim,  
+                        num_layers=num_layers)
+
+        # self.fc = MLP(input_dim=embedding_dim, hidden_dim=hidden_dim,
+        #               output_dim=hidden_dim, num_layers=num_layers)
+
+    def forward(self, x):
+        
+        # batch_size, latent_dim, hidden_dim+1
+        # 64, 12, 64+1
+        batch_size, latent_dim = x.shape
+
+        sum_log_abs_det_jacobian = 0
+        
+        # (batch_size, hidden_dim + x_dim)
+        # 64, 12
+        batch_inputs = x
+
+        residual = self.flows(batch_inputs)  # (batch_size, 1)
+
+        J = jacfwd(self.flows)
+
+        # what is this shape?
+        data_J = vmap(J)(batch_inputs).squeeze()
+
+        logabsdet = torch.log(torch.abs(data_J[:, -1]))
+
+        sum_log_abs_det_jacobian += logabsdet
+
+        residual = residual.reshape(batch_size, -1)
+        log_abs_det_jacobian = sum_log_abs_det_jacobian.reshape(batch_size, -1)
+
+        return residual, log_abs_det_jacobian
+    

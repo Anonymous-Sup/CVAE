@@ -7,22 +7,9 @@ from tools.utils import AverageMeter
 import torch.nn.functional as F
 from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix
 
-def kl_divergence(z_0, z_1):
-    # Calculate the mean and log-variance of z_0 along the batch dimension
-    mean_z0 = torch.mean(z_0, dim=0)
-    log_var_z0 = torch.log(torch.var(z_0, dim=0, unbiased=False) + 1e-5)
-    
-    # Calculate the mean and log-variance of z_1 along the batch dimension
-    mean_z1 = torch.mean(z_1, dim=0)
-    log_var_z1 = torch.log(torch.var(z_1, dim=0, unbiased=False) + 1e-5)
-    
-    # Calculate the KL divergence between z_1 and z_0 for each feature
-    kl_div = 0.5 * torch.sum(log_var_z0 - log_var_z1 + (torch.exp(log_var_z1) + (mean_z1 - mean_z0)**2) / torch.exp(log_var_z0) - 1)
-    
-    return kl_div
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
-              optimizer, trainloader, epoch, centroids, scaler=None):
+              optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None):
     
     model.train()
     classifier.train()
@@ -113,6 +100,11 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 kl_loss = kl_loss.mean()
                 kld_theta = kl_loss
             else:
+
+                # theta = torch.nan_to_num(theta)
+                # mean = torch.nan_to_num(mean)
+                # log_var = torch.nan_to_num(log_var)
+                # z = torch.nan_to_num(z)
                 base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
                 prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
                 
@@ -122,6 +114,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 kl_loss = kl_loss.clamp(2.0)
                 
                 kld_theta = kl_loss
+            
             # kl loss between z (prior) and z_1 (post)
             # kl_z_z1 = kl_divergence(z.detach(), z_1)
             # kld_theta = kl_z_z1.mean()
@@ -133,25 +126,38 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # bce or mse
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
-            beta = 0.5
+            beta = 0.2
             # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
 
             loss = recon_loss + beta * kl_loss 
             # loss = loss + cls_loss
 
+            if early_stopping(kl_loss):
+                print("Early stopping at epoch: {}".format(epoch))
+                return False
+
 
             # if is the last batch
             if batch_idx == len(trainloader)-1:
-                plot_histogram(run, mean, "mean")
-                plot_histogram(run, log_var, "log_var")
-                plot_histogram(run, z, "z")
-                plot_histogram(run, z_1, "z_1")
-                plot_histogram(run, theta, "theta")
-                plot_histogram(run, logjacobin, "logjacobin")
-                plot_histogram(run, recon_x, "recon_x")
-                plot_histogram(run, imgs_tensor, "imgs_tensor")
-                plot_histogram(run, domian_feature, "domian_feature")
-                plot_histogram(run, flow_input, "flow_input")
+                plot_correlation_matrix(run, x_proj, "1-correlation z")
+                print("image_tensor: {}".format(imgs_tensor))
+                print("x_proj.shape:{}, {}".format(x_proj.shape, x_proj))
+                plot_pair_seperate(run, x_proj, "1-spedistribute z")
+
+                plot_correlation_matrix(run, theta, "1-correlation theta")
+                plot_pair_seperate(run, theta, "1-spedistribute theta")
+
+                plot_histogram(run, mean, "2-mean")
+                plot_histogram(run, log_var, "2-log_var")
+                plot_histogram(run, z, "2-reparameterized z_0")
+                plot_histogram(run, domian_feature, "3-domian_feature")
+                plot_histogram(run, z_1, "3-flowinput-z_1")
+                plot_histogram(run, theta, "4-theta")
+                plot_histogram(run, logjacobin, "4-logjacobin")
+                # plot_histogram(run, recon_x, "recon_x")
+                # plot_histogram(run, imgs_tensor, "imgs_tensor")
+                
+                # plot_histogram(run, flow_input, "flow_input")
 
         optimizer.zero_grad()
         if config.TRAIN.AMP:
@@ -201,13 +207,15 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             pair_loss=batch_pair_loss, kl_loss=batch_kl_loss, kld_theta=batch_kld_theta,
             bce_loss=batch_recon_loss, acc=batch_acc, theta_acc=batch_theta_acc)
           )
+
     # run["train/epoch/loss"].append(batch_loss)
     # run["train/epoch/acc"].append(batch_acc)
     # run["train/epoch/theta_acc"].append(batch_theta_acc)
     # run["train/epoch/cls_loss"].append(batch_cls_loss)
     # run["train/epoch/cls_loss_theta"].append(batch_cls_loss_theta)
     # run["train/epoch/pair_loss"].append(batch_pair_loss)
-    # run["train/epoch/kl_loss"].append(batch_kl_loss)
+    run["train/epoch/kl_loss"].append(batch_kl_loss.avg)
     # run["train/epoch/kld_theta"].append(batch_kld_theta)
-    # run["train/epoch/bce_loss"].append(batch_bce_loss)
+    run["train/epoch/recon_loss"].append(batch_recon_loss.avg)
+    return True
 

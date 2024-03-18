@@ -116,3 +116,21 @@ def plot_correlation_matrix(run, tensor, title):
 
     # Close the figure to free up memory
     plt.close(fig)
+
+
+class EarlyStopping:
+    def __init__(self, patience=5, threshold=0.01):
+        self.patience = patience
+        self.threshold = threshold
+        self.counter = 0
+        self.best_loss = np.inf
+
+    def __call__(self, kl_loss):
+        if kl_loss < self.best_loss:
+            self.best_loss = kl_loss
+            self.counter = 0
+        elif kl_loss >= self.best_loss + self.threshold:
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False

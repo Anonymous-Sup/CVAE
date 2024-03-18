@@ -72,7 +72,7 @@ class NIPS(nn.Module):
 
         origin: z_1 = flow_input
         '''
-        z_1 = x_proj
+        z_1 = flow_input
 
         theta, logjcobin = self.FLOWs(z_1)
 
