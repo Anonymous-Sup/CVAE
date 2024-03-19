@@ -5,19 +5,23 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.distributions.normal import Normal
 from tools.utils import AverageMeter
 import torch.nn.functional as F
-from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D
+from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D, print_gradients, plot_scatterNN
 
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
               optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None):
     
+    if not config.TRAIN.AMP:
+        centroids = centroids.float()
+        print("=> centroids.dtype: {}".format(centroids.dtype))
+
     model.train()
     classifier.train()
     centroids.cuda()
 
-    only_cvae = False
+    only_cvae = True
     if only_cvae:
-        print("=> Only CVAE and its loss")
+        print("=> Only CVAE KL")
     batch_cls_loss = AverageMeter()
     batch_cls_loss_theta = AverageMeter()
     batch_pair_loss = AverageMeter()
@@ -33,9 +37,15 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     end = time.time()
     # run["train/epoch"].append(epoch)
 
+
     for batch_idx, (imgs_tensor, pids, camids, clusterids) in enumerate(trainloader):
         if epoch < 1 and batch_idx <= 20:
             plot_scatter_1D(run, clusterids, "5-domian index")
+        # convert fp16 tensor to fp32
+            
+        if not config.TRAIN.AMP:
+            imgs_tensor = imgs_tensor.float()
+
         imgs_tensor, pids, camids, clusterids = imgs_tensor.cuda(), pids.cuda(), camids.cuda(), clusterids.cuda()
 
         run["train/batch/load_time"].append(time.time() - end)
@@ -43,7 +53,57 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # model = model.to(imgs_tensor.dtype)
         # classifier = classifier.to(imgs_tensor.dtype)
         # return recon_x, means, log_var, z_0, z_1, theta, logjcobin
-        with autocast():
+        
+        """
+        if amp is enabled, the forward pass will be autocast
+
+        else not 
+        """
+        if config.TRAIN.AMP:
+            with autocast():
+                recon_x, mean, log_var, z, x_proj, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
+            
+                outputs = classifier(x_proj)
+                outputs_theta = classifier(theta)
+
+                _, preds = torch.max(outputs.data, 1)
+                _, preds_theta = torch.max(outputs_theta.data, 1)
+
+                cls_loss = criterion_cla(outputs, pids)
+                cls_loss_theta = criterion_cla(outputs_theta, pids)
+
+                pair_loss = criterion_pair(x_proj, pids)
+
+                if only_cvae:
+                    
+                    posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
+                    
+                    base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
+                    prior = torch.sum(base_dist.log_prob(theta + 1e-8), dim=-1)
+                
+                    kl_loss = (posterior-prior).mean()
+                    kld_theta = kl_loss
+                else:
+                    base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
+                    prior = torch.sum(base_dist.log_prob(theta + 1e-8), dim=-1) + logjacobin.sum(-1)
+        
+                    # q0 = Normal(mean, torch.exp(0.5 * log_var))
+                    
+                    q0 = Normal(mean, torch.clamp(torch.exp(0.5 * log_var), min=1e-8))
+                    posterior = torch.sum(q0.log_prob(z), dim=-1)
+                    kl_loss = (posterior - prior).mean()
+
+                    # kl_loss = kl_loss.clamp(2.0)            
+                    kld_theta = kl_loss
+        
+                recon_loss = criterion_recon(recon_x, imgs_tensor)
+
+                beta = 0.05
+                # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
+
+                loss = recon_loss + beta * kl_loss 
+                    # loss = loss + cls_loss
+        else:
             recon_x, mean, log_var, z, x_proj, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
         
             outputs = classifier(x_proj)
@@ -57,119 +117,75 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
             pair_loss = criterion_pair(x_proj, pids)
 
-            # # initial kl with N(0,1)
-            # # kl_loss = criterion_kl(mean, log_var)
-            # normal_kl = torch.nn.KLDivLoss(reduction='batchmean')
-
-            # # Q0 and prior
-            # q0 = Normal(mean, torch.exp((0.5 * log_var)))
-            # prior = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
-            
-            # # prior_tensor = prior.sample((theta.size(0),))
-            # # theta = F.log_softmax(theta, dim=1)
-            # # prior_tensor = F.softmax(prior_tensor, dim=1)
-            # # kl_loss_1 = normal_kl(theta, prior_tensor)
-            # # logjacobin = logjacobin.unsqueeze(1)
-            # # kl_2 =  F.log_softmax(theta+logjacobin, dim=1)
-            # # z = F.softmax(z, dim=1)
-            # # kl_loss_2 = normal_kl(kl_2, z)
-
-            # kld_theta = (
-            #     -torch.sum(prior.log_prob(theta), dim=-1)
-            #     + torch.sum(q0.log_prob(z), dim=-1)
-            #     - logjacobin.view(-1)
-            # )
-            # logjacobin = logjacobin.unsqueeze(-1)
-            # kld_theta = 0.5 * (-logjacobin - 1 + torch.exp(logjacobin) + theta.pow(2))
-            # kl_loss_z = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
-
-
-            # mu_q = theta.mean(0)
-            # sigma_q = torch.exp(logjacobin).mean(0)
-            # kld_theta = 0.5 * (-sigma_q.log() - 1 + sigma_q + mu_q.pow(2))
-            
-            # Ensure sigma_q is positive and non-zero
-            # sigma_q = torch.clamp(sigma_q, min=1e-8)
-            # kld_theta = 0.5 * (sigma_q.log() + mu_q.pow(2) / sigma_q - 1)
-
-            # prior = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
-            # log_likelihood = prior.log_prob(theta) + logjacobin.unsqueeze(-1)
-            # # kld_theta = -log_likelihood.sum()
-            # kld_theta = -torch.logsumexp(log_likelihood, dim=0)
-
             if only_cvae:
-                kl_loss = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
-                kl_loss = kl_loss.mean()
+                
+                posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
+                
+                base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
+                prior = torch.sum(base_dist.log_prob(theta + 1e-8), dim=-1)
+            
+                kl_loss = (posterior-prior).mean()
                 kld_theta = kl_loss
             else:
-
-                # theta = torch.nan_to_num(theta)
-                # mean = torch.nan_to_num(mean)
-                # log_var = torch.nan_to_num(log_var)
-                # z = torch.nan_to_num(z)
                 base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
                 prior = torch.sum(base_dist.log_prob(theta + 1e-8), dim=-1) + logjacobin.sum(-1)
+    
+                # q0 = Normal(mean, torch.exp(0.5 * log_var))
                 
-                q0 = Normal(mean, torch.exp(0.5 * log_var))
-                posterior = torch.sum(q0.log_prob(z + 1e-8), dim=-1)
+                q0 = Normal(mean, torch.clamp(torch.exp(0.5 * log_var), min=1e-8))
+                posterior = torch.sum(q0.log_prob(z), dim=-1)
                 kl_loss = (posterior - prior).mean()
 
-                kl_loss = kl_loss.clamp(2.0)
-                
+                # kl_loss = kl_loss.clamp(2.0)            
                 kld_theta = kl_loss
-            
-            # kl loss between z (prior) and z_1 (post)
-            # kl_z_z1 = kl_divergence(z.detach(), z_1)
-            # kld_theta = kl_z_z1.mean()
-
-            # print("posterior: {}, prior: {}".format(posterior.mean(), prior.mean()))
-            # print("mean: {}, log_var: {}, z: {}".format(mean.mean(), log_var.mean(), z.mean()))
-
-            # print("mean: {}, log_var: {}, theta: {}".format(mean, log_var, theta))
-            # bce or mse
+    
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
             beta = 0.05
             # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
 
             loss = recon_loss + beta * kl_loss 
-            # loss = loss + cls_loss
+                # loss = loss + cls_loss
+        
+        if early_stopping(kl_loss):
+            print("Early stopping at epoch: {}".format(epoch))
+            return False
 
-            if early_stopping(kl_loss):
-                print("Early stopping at epoch: {}".format(epoch))
-                return False
+        # if is the last batch
+        if batch_idx == len(trainloader)-1:
+            plot_scatterNN(run, x_proj, "0-N by N for z")
+            plot_correlation_matrix(run, x_proj, "1-correlation z")
+            print("image_tensor: {}".format(imgs_tensor))
+            print("x_proj.shape:{}, {}".format(x_proj.shape, x_proj))
+            plot_pair_seperate(run, x_proj, "1-spedistribute z")
 
+            plot_correlation_matrix(run, theta, "1-correlation theta")
+            plot_pair_seperate(run, theta, "1-spedistribute theta")
 
-            # if is the last batch
-            if batch_idx == len(trainloader)-1:
-                plot_correlation_matrix(run, x_proj, "1-correlation z")
-                print("image_tensor: {}".format(imgs_tensor))
-                print("x_proj.shape:{}, {}".format(x_proj.shape, x_proj))
-                plot_pair_seperate(run, x_proj, "1-spedistribute z")
-
-                plot_correlation_matrix(run, theta, "1-correlation theta")
-                plot_pair_seperate(run, theta, "1-spedistribute theta")
-
-                plot_histogram(run, mean, "2-mean")
-                plot_histogram(run, log_var, "2-log_var")
-                plot_histogram(run, z, "2-reparameterized z_0")
-                plot_histogram(run, domian_feature, "3-domian_feature")
-                plot_histogram(run, z_1, "3-flowinput-z_1")
-                plot_histogram(run, theta, "4-theta")
-                plot_histogram(run, logjacobin, "4-logjacobin")
-                # plot_histogram(run, recon_x, "recon_x")
-                # plot_histogram(run, imgs_tensor, "imgs_tensor")
-                
-                # plot_histogram(run, flow_input, "flow_input")
+            plot_histogram(run, mean, "2-mean")
+            plot_histogram(run, log_var, "2-log_var")
+            plot_histogram(run, z, "2-reparameterized z_0")
+            plot_histogram(run, domian_feature, "3-domian_feature")
+            plot_histogram(run, z_1, "3-flowinput-z_1")
+            plot_histogram(run, theta, "4-theta")
+            plot_histogram(run, logjacobin, "4-logjacobin")
+            # plot_histogram(run, recon_x, "recon_x")
+            # plot_histogram(run, imgs_tensor, "imgs_tensor")
+            
+            # plot_histogram(run, flow_input, "flow_input")
 
         optimizer.zero_grad()
         if config.TRAIN.AMP:
             scaler.scale(loss).backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
             scaler.step(optimizer)
             scaler.update()
         else:
             loss.backward()
+            # print("Gradients before clipping:")
+            # print_gradients(model)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=12.0)
+
             optimizer.step()
         
         batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))

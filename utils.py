@@ -158,6 +158,36 @@ def plot_scatter_1D(run, tensor, title):
     # Close the figure to free up memory
     plt.close(fig)
 
+def plot_scatterNN(run, tensor, title):
+    # Convert the tensor to a numpy array
+    array = tensor.detach().cpu().numpy()
+
+    # Create a new figure with 12x12 subplots
+    fig, axs = plt.subplots(12, 12, figsize=(20, 20))
+
+    # Iterate over each pair of dimensions
+    for i in range(12):
+        for j in range(12):
+            # Plot the scatter plot for the current pair of dimensions on the corresponding subplot
+            axs[i, j].scatter(array[:, i], array[:, j], alpha=0.6)
+
+            # Set the title and labels
+            axs[i, j].set_title("dim {} vs dim {}".format(i, j))
+            axs[i, j].set_xlabel('dim {}'.format(i))
+            axs[i, j].set_ylabel('dim {}'.format(j))
+
+    # Adjust the layout
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+
+    # Save the figure to a file
+    # fig.savefig("scatter_plot.png", format='png')
+    run["train/histograms/{}".format(title)].append(fig)
+    # Close the figure to free up memory
+    plt.close(fig)
+
 class EarlyStopping:
     def __init__(self, patience=5, threshold=0.01):
         self.patience = patience
@@ -174,3 +204,11 @@ class EarlyStopping:
             if self.counter >= self.patience:
                 return True
         return False
+    
+
+def print_gradients(model):
+    for name, param in model.named_parameters():
+        if param.grad is not None:
+            print(f"Gradient of {name}: {param.grad.norm(2)}")
+        else:
+            print(f"Gradient of {name}: None")

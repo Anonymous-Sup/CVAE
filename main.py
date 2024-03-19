@@ -176,8 +176,11 @@ def main(config):
                 break
 
         else:
-            train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
-              optimizer, trainloader, epoch, dataset.train_centroids)
+            state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
+              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping)
+            if state == False:
+                print("=> Early stopping at epoch {}".format(epoch))
+                break
         train_time += round(time.time() - start_train_time)
         
         
