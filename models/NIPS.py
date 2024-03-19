@@ -51,6 +51,7 @@ class NIPS(nn.Module):
 
         # (64,12)
         x_proj, means, log_var = self.VAE.encoder(x)
+        x_proj = self.normalization(x_proj)
 
         # 64, 12
         z_0 = self.VAE.reparameterize(means, log_var)
@@ -59,7 +60,7 @@ class NIPS(nn.Module):
         domian_dim =  int(self.hidden_dim/self.latent_size)
         U = domain_index_feat.view(-1, self.latent_size, domian_dim)
         # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
-        flow_input = torch.cat((x_proj.unsqueeze(-1), U), dim=-1)
+        flow_input = torch.cat((U, x_proj.unsqueeze(-1)), dim=-1)
         # (64, 12, 65) -> (64, 65*12)
         # flow_input = flow_input.view(-1, self.latent_size * (1 + self.hidden_dim/self.latent_size))
 

@@ -7,7 +7,7 @@ from normflows.flows import Planar, Radial, MaskedAffineFlow, BatchNorm
 from normflows import nets
 # # from utils import idx2onehot
 from functorch import vmap, jacfwd, grad
-from torch.autograd.functional import jacobian
+import torch.autograd.functional as F
 
 class SimpleFlowModel(nn.Module):
     def __init__(self, flows):
@@ -194,14 +194,20 @@ class YuKeMLPFLOW(nn.Module):
             # (batch_size, hidden_dim + x_dim)
 
             batch_inputs = x[:, i, :]
-
+            
             residual = self.flows[i](batch_inputs)  # (batch_size, 1)
+            # print("batch_inputs:{}".format(batch_inputs))
+            # print("residual:{}".format(residual))
+           
 
             J = jacfwd(self.flows[i])
-
             data_J = vmap(J)(batch_inputs).squeeze()
 
-            logabsdet = torch.log(torch.abs(data_J[:, -1]))
+            # data_J = torch.where(torch.isnan(data_J), torch.zeros_like(data_J), data_J)
+            logabsdet = torch.log(torch.abs(data_J[:, -1]) + 1e-8)
+
+            # print("data_J:{}".format(data_J))
+            print("logabsdet:{}".format(logabsdet))
 
             sum_log_abs_det_jacobian += logabsdet
 
@@ -251,12 +257,12 @@ class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
             batch_inputs = batch_inputs.reshape(-1, 1)
 
             residual = self.flows[i](batch_inputs)  # (batch_size,1) --> (batch_size, 1)
-            
+            # print("residual:{}".format(residual))
             J = jacfwd(self.flows[i])
             
             
             # data_J.shape (64, 1, 1) --> (64)
-            # batch, input dim, output dim
+            # batch, input dim, output dim?
             data_J = vmap(J)(batch_inputs).squeeze()
 
             # add for single dim input

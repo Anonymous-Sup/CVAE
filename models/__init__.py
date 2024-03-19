@@ -31,7 +31,7 @@ def build_model(config, num_classes):
             )
         else:
             '''
-             todo: if latent_size is not is there is a problm about hidden_dim
+             todo: if latent_size is not 12 is there is a problm about hidden_dim
             '''
             flows_model = YuKeMLPFLOW(
                 latent_size=config.MODEL.LATENT_SIZE,
@@ -56,7 +56,11 @@ def build_model(config, num_classes):
     # if latent_size is not 12, there is a problem
     # maybe 36*24 = 864
     # maybe 64*12 = 768
-    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=768, latent_size=config.MODEL.LATENT_SIZE)
+    if config.MODEL.LATENT_SIZE == 12:
+        nips_hidden_dim = 768
+    else:
+        nips_hidden_dim = 864
+    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, latent_size=config.MODEL.LATENT_SIZE)
     
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     

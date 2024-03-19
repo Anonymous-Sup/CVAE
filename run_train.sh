@@ -18,7 +18,7 @@ python main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --train_format base \
 --gpu 0 \
 --amp \
---saved_name l4vaeRelu_yukeflow-noU-64z_noReID_clamp \
+--saved_name l4vaeRelu_yukeflow-noU-12z_noReID_clamp \
 --vae_type cvae \
 --flow_type yuke_mlpflow \
 --recon_loss mse \

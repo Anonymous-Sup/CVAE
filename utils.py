@@ -117,6 +117,46 @@ def plot_correlation_matrix(run, tensor, title):
     # Close the figure to free up memory
     plt.close(fig)
 
+def plot_scatter_2D(run, tensor, title):
+    # Create a new figure
+    fig, ax = plt.subplots(figsize=(6, 6))
+    # Create a scatter plot from the tensor
+    ax.scatter(tensor[:, 0].detach().cpu().numpy(), tensor[:, 1].detach().cpu().numpy(), alpha=0.6)
+    # Set the title of the plot
+    ax.set_title(title)
+    ax.set_xlabel('Sample')
+    ax.set_ylabel('Domain index')
+    ax.grid(True)
+
+    # Show the plot
+    # plt.show()
+    # Save the figure to a file
+    # fig.savefig("scatter_plot.png", format='png')
+    run["train/histograms/{}".format(title)].append(fig)
+
+    # Close the figure to free up memory
+    plt.close(fig)
+
+# plot_scatter函数用于绘制散点图, for tensor(64)
+def plot_scatter_1D(run, tensor, title):
+    # Create a new figure
+    fig, ax = plt.subplots(figsize=(6, 4))
+    # Plot the scatter plot
+    ax.scatter(range(tensor.size(0)), tensor.detach().cpu().numpy(), alpha=0.6)
+
+    # Set the title and labels
+    ax.set_title(title)
+    ax.set_xlabel('Index')
+    ax.set_ylabel('Value')
+
+    # Show the plot
+    # plt.show()
+    run["train/histograms/{}".format(title)].append(fig)
+    # Save the figure to a file
+    # fig.savefig("scatter_plot.png", format='png')
+
+    # Close the figure to free up memory
+    plt.close(fig)
 
 class EarlyStopping:
     def __init__(self, patience=5, threshold=0.01):

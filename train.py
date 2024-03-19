@@ -5,7 +5,7 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.distributions.normal import Normal
 from tools.utils import AverageMeter
 import torch.nn.functional as F
-from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix
+from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D
 
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
@@ -34,6 +34,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     # run["train/epoch"].append(epoch)
 
     for batch_idx, (imgs_tensor, pids, camids, clusterids) in enumerate(trainloader):
+        if epoch < 1 and batch_idx <= 20:
+            plot_scatter_1D(run, clusterids, "5-domian index")
         imgs_tensor, pids, camids, clusterids = imgs_tensor.cuda(), pids.cuda(), camids.cuda(), clusterids.cuda()
 
         run["train/batch/load_time"].append(time.time() - end)
@@ -106,11 +108,12 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 # log_var = torch.nan_to_num(log_var)
                 # z = torch.nan_to_num(z)
                 base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
-                prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
+                prior = torch.sum(base_dist.log_prob(theta + 1e-8), dim=-1) + logjacobin.sum(-1)
                 
                 q0 = Normal(mean, torch.exp(0.5 * log_var))
-                posterior = torch.sum(q0.log_prob(z), dim=-1)
+                posterior = torch.sum(q0.log_prob(z + 1e-8), dim=-1)
                 kl_loss = (posterior - prior).mean()
+
                 kl_loss = kl_loss.clamp(2.0)
                 
                 kld_theta = kl_loss
@@ -126,7 +129,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # bce or mse
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
-            beta = 0.2
+            beta = 0.05
             # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
 
             loss = recon_loss + beta * kl_loss 
@@ -180,14 +183,16 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         batch_loss.update(loss.item(), pids.size(0))
         batch_time.update(time.time() - end)
 
+        run['train/batch/1_prior'].append(prior.mean().item())
+        run['train/batch/1_posterior'].append(posterior.mean().item())
         run["train/batch/cls_loss"].append(cls_loss.item())
         run["train/batch/pair_loss"].append(pair_loss.item())
-        run["train/batch/kl_loss"].append(kl_loss.item())
+        run["train/batch/0_kl_loss"].append(kl_loss.item())
         run["train/batch/kld_theta"].append(kld_theta.item())
-        run["train/batch/recon_loss"].append(recon_loss.item())
+        run["train/batch/0_recon_loss"].append(recon_loss.item())
         run["train/batch/loss"].append(loss.item())
         run["train/batch/acc"].append((torch.sum(preds == pids.data)).float()/pids.size(0))
-        run["train/batch/batch_time"].append(time.time() - end)
+        # run["train/batch/batch_time"].append(time.time() - end)
         end = time.time()
 
     print('Epoch:{0} '

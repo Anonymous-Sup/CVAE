@@ -29,7 +29,7 @@ def build_dataset(config):
     # dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, split_id=config.DATA.SPLIT_ID,
     #                                          cuhk03_labeled=config.DATA.CUHK03_LABELED, 
     #                                          cuhk03_classic_split=config.DATA.CUHK03_CLASSIC_SPLIT)
-    dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, format_tag=config.DATA.FORMAT_TAG, pretrained=config.MODEL.PRETRAIN)
+    dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, format_tag=config.DATA.FORMAT_TAG, pretrained=config.MODEL.PRETRAIN, latent_size=config.MODEL.LATENT_SIZE)
     return dataset
 
 def build_transforms(config):
