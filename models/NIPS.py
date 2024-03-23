@@ -10,12 +10,12 @@ class MLP(nn.Module):
         layers = []
         for l in range(number_layers):
             if l == 0:
-                layers.append(nn.Linear(input_dim, hidden_dim))
+                layers.append(nn.Linear(input_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leak_relu_slope))
             else:
-                layers.append(nn.Linear(hidden_dim, hidden_dim))
+                layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leak_relu_slope))
-        layers.append(nn.Linear(hidden_dim, output_dim))
+        layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
         self.MLP = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -23,13 +23,14 @@ class MLP(nn.Module):
         return x
 
 class NIPS(nn.Module):
-    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, latent_size):
+    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, latent_size, only_x=False):
         super(NIPS, self).__init__()
 
         self.VAE = VAE
         self.FLOWs = FLOWs
 
         self.latent_size = latent_size
+        self.only_x_input = only_x
 
         if hidden_dim is None:
             self.hidden_dim = 768 # default hidden_dim 12 * 64
@@ -46,12 +47,14 @@ class NIPS(nn.Module):
 
     def forward(self, x, domain_index):
         
-        domain_index_feat= self.domain_embeding(domain_index)
-        domain_index_feat = self.normalization(domain_index_feat)
+        domain_feature= self.domain_embeding(domain_index)
+
+        domain_index_feat = self.normalization(domain_feature)
 
         # (64,12)
         x_proj, means, log_var = self.VAE.encoder(x)
-        x_proj = self.normalization(x_proj)
+
+        x_proj_norm = self.normalization(x_proj)
 
         # 64, 12
         z_0 = self.VAE.reparameterize(means, log_var)
@@ -60,7 +63,7 @@ class NIPS(nn.Module):
         domian_dim =  int(self.hidden_dim/self.latent_size)
         U = domain_index_feat.view(-1, self.latent_size, domian_dim)
         # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
-        flow_input = torch.cat((U, x_proj.unsqueeze(-1)), dim=-1)
+        flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
         # (64, 12, 65) -> (64, 65*12)
         # flow_input = flow_input.view(-1, self.latent_size * (1 + self.hidden_dim/self.latent_size))
 
@@ -73,13 +76,16 @@ class NIPS(nn.Module):
 
         origin: z_1 = flow_input
         '''
-        z_1 = x_proj
+        if self.only_x_input:
+            z_1 = x_proj_norm
+        else:
+            z_1 = flow_input
 
         theta, logjcobin = self.FLOWs(z_1)
 
-        recon_x = self.VAE.decoder(x_proj)
+        recon_x = self.VAE.decoder(x_proj_norm)
 
-        return recon_x, means, log_var, z_0, x_proj, z_1, theta, logjcobin, domain_index_feat, flow_input
+        return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_index_feat, flow_input
     
     def init_weights(self, m):
         if isinstance(m, nn.Linear):

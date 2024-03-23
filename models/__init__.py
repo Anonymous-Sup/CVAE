@@ -7,8 +7,6 @@ __factory = {
     'CVAE': VAE
 }
 
-test_only_x_input = True
-
 def build_model(config, num_classes):
     
     print("Initializing Flow model: {}".format(config.MODEL.FLOW_TYPE))
@@ -16,7 +14,7 @@ def build_model(config, num_classes):
         flows_model = InvertibleMLPFlow(config.MODEL.LATENT_SIZE, config.MODEL.LATENT_SIZE, 1)
     
     elif config.MODEL.FLOW_TYPE == 'yuke_mlpflow':
-        if test_only_x_input:
+        if config.MODEL.ONLY_X_INPUT:
             # flows_model = YuKeMLPFLOW_onlyX(
             #     latent_size=config.MODEL.LATENT_SIZE,
             #     hidden_dim=64,
@@ -60,7 +58,8 @@ def build_model(config, num_classes):
         nips_hidden_dim = 768
     else:
         nips_hidden_dim = 864
-    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, latent_size=config.MODEL.LATENT_SIZE)
+    
+    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT)
     
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     

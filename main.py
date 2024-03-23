@@ -49,6 +49,10 @@ def parse_option():
     parser.add_argument('--flow_type', type=str, choices=['Planar', 'Radial', 'RealNVP', 'invertmlp', "yuke_mlpflow"], help="Type of flow model")
     parser.add_argument('--recon_loss', type=str, choices=['bce', 'mse', 'mae', 'smoothl1', 'pearson'], help="Type of reconstruction loss")
     
+    # debug
+    parser.add_argument('only_x_input', action='store_true', help="Use only x as input for flow model")
+    parser.add_argument('only_cvae_kl', action='store_true', help="Use orginal kl loss for cvae model")
+
     # Miscs
     parser.add_argument('--output', type=str, help="your output path to save model and logs")
     parser.add_argument('--saved_name', type=str, required=True, help="your output name to save model and logs")

@@ -73,6 +73,10 @@ _C.MODEL.RESUME = ''
 _C.MODEL.RES4_STRIDE = 1
 
 
+# ----For debug-----
+_C.MODEL.ONLY_X_INPUT = False
+_C.MODEL.ONLY_CVAE_KL = False
+
 # -----------------------------------------------------------------------------
 # Losses for training 
 # -----------------------------------------------------------------------------
@@ -176,6 +180,11 @@ def update_config(config, args):
         config.DATA.TRAIN_FORMAT = args.train_format
     if args.format_tag:
         config.DATA.FORMAT_TAG = args.format_tag
+
+    if args.only_x_input:
+        config.MODEL.ONLY_X_INPUT = args.only_x_input
+    if args.only_cvae_kl:
+        config.MODEL.ONLY_CVAE_KL = args.only_cvae_kl
 
     if args.resume:
         config.MODEL.RESUME = args.resume

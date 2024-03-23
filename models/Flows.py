@@ -8,6 +8,29 @@ from normflows import nets
 # # from utils import idx2onehot
 from functorch import vmap, jacfwd, grad
 import torch.autograd.functional as F
+import torch.nn.init as init
+
+
+
+def kaiming_init(m):
+    if isinstance(m, (nn.Linear, nn.Conv2d)):
+        init.kaiming_normal_(m.weight)
+        if m.bias is not None:
+            m.bias.data.fill_(0)
+    elif isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d)):
+        m.weight.data.fill_(1)
+        if m.bias is not None:
+            m.bias.data.fill_(0)
+
+def normal_init(m, mean, std):
+    if isinstance(m, (nn.Linear, nn.Conv2d)):
+        m.weight.data.normal_(mean, std)
+        if m.bias.data is not None:
+            m.bias.data.zero_()
+    elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d)):
+        m.weight.data.fill_(1)
+        if m.bias.data is not None:
+            m.bias.data.zero_()
 
 class SimpleFlowModel(nn.Module):
     def __init__(self, flows):
@@ -148,12 +171,12 @@ class MLP(nn.Module):
         layers = []
         for l in range(num_layers):
             if l == 0:
-                layers.append(nn.Linear(input_dim, hidden_dim))
+                layers.append(nn.Linear(input_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leaky_relu_slope))
             else:
-                layers.append(nn.Linear(hidden_dim, hidden_dim))
+                layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leaky_relu_slope))
-        layers.append(nn.Linear(hidden_dim, output_dim))
+        layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
 
         self.net = nn.Sequential(*layers)
 
@@ -178,6 +201,7 @@ class YuKeMLPFLOW(nn.Module):
                                         output_dim=output_dim,  
                                         num_layers=num_layers) for _ in range(latent_size)])
 
+        self.flows.apply(kaiming_init)
         # self.fc = MLP(input_dim=embedding_dim, hidden_dim=hidden_dim,
         #               output_dim=hidden_dim, num_layers=num_layers)
 
@@ -185,6 +209,7 @@ class YuKeMLPFLOW(nn.Module):
         
         # batch_size, latent_dim, hidden_dim+1
         # 64, 12, 64+1
+        assert len(x.shape) == 3
         batch_size, latent_dim, feat_dim = x.shape
 
         sum_log_abs_det_jacobian = 0
@@ -207,7 +232,7 @@ class YuKeMLPFLOW(nn.Module):
             logabsdet = torch.log(torch.abs(data_J[:, -1]) + 1e-8)
 
             # print("data_J:{}".format(data_J))
-            print("logabsdet:{}".format(logabsdet))
+            # print("logabsdet:{}".format(logabsdet))
 
             sum_log_abs_det_jacobian += logabsdet
 
@@ -218,7 +243,8 @@ class YuKeMLPFLOW(nn.Module):
         log_abs_det_jacobian = sum_log_abs_det_jacobian.reshape(batch_size, -1)
 
         return residuals, log_abs_det_jacobian
-    
+
+
 class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
 
     def __init__(
@@ -235,16 +261,13 @@ class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
                                 hidden_dim=hidden_dim,
                                 output_dim=output_dim,  
                                 num_layers=num_layers) for _ in range(latent_size)])
-        # for flow in self.flows:
-        #     for param in flow.parameters():
-        #         if len(param.shape) > 1:  # weights
-        #             nn.init.xavier_normal_(param)
-        #         else:  # biases
-        #             nn.init.zeros_(param)
+        
+        self.flows.apply(kaiming_init)
 
     def forward(self, x):        
         # batch_size, latent_dim
         # 64, 12
+        assert len(x.shape) == 2
         batch_size, latent_dim = x.shape
 
         sum_log_abs_det_jacobian = 0
@@ -277,6 +300,13 @@ class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
         
         residuals = residuals.reshape(batch_size, -1)
         log_abs_det_jacobian = sum_log_abs_det_jacobian.reshape(batch_size, -1)
+
+
+        # print parameters in flows
+        # for i, flow in enumerate(self.flows):
+        #     print("Flow #{}".format(i))
+        #     for name, param in flow.named_parameters():
+        #         print("Parameter {}: {}".format(name, param))
 
         return residuals, log_abs_det_jacobian
     

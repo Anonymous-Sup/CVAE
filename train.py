@@ -19,8 +19,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     classifier.train()
     centroids.cuda()
 
-    only_cvae = True
-    if only_cvae:
+    if config.MODEL.ONLY_CVAE_KL:
         print("=> Only CVAE KL")
     batch_cls_loss = AverageMeter()
     batch_cls_loss_theta = AverageMeter()
@@ -93,7 +92,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                     posterior = torch.sum(q0.log_prob(z), dim=-1)
                     kl_loss = (posterior - prior).mean()
 
-                    # kl_loss = kl_loss.clamp(2.0)            
+                    kl_loss = kl_loss.clamp(2.0)            
                     kld_theta = kl_loss
         
                 recon_loss = criterion_recon(recon_x, imgs_tensor)
@@ -104,9 +103,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 loss = recon_loss + beta * kl_loss 
                     # loss = loss + cls_loss
         else:
-            recon_x, mean, log_var, z, x_proj, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
+            recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
         
-            outputs = classifier(x_proj)
+            outputs = classifier(x_proj_norm)
             outputs_theta = classifier(theta)
 
             _, preds = torch.max(outputs.data, 1)
@@ -115,9 +114,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             cls_loss = criterion_cla(outputs, pids)
             cls_loss_theta = criterion_cla(outputs_theta, pids)
 
-            pair_loss = criterion_pair(x_proj, pids)
+            pair_loss = criterion_pair(x_proj_norm, pids)
 
-            if only_cvae:
+            if config.MODEL.ONLY_CVAE_KL:
                 
                 posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
                 
@@ -136,7 +135,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 posterior = torch.sum(q0.log_prob(z), dim=-1)
                 kl_loss = (posterior - prior).mean()
 
-                # kl_loss = kl_loss.clamp(2.0)            
+                kl_loss = kl_loss.clamp(2.0)            
                 kld_theta = kl_loss
     
             recon_loss = criterion_recon(recon_x, imgs_tensor)
@@ -154,10 +153,12 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # if is the last batch
         if batch_idx == len(trainloader)-1:
             plot_scatterNN(run, x_proj, "0-N by N for z")
-            plot_correlation_matrix(run, x_proj, "1-correlation z")
+            plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
+            
+            plot_correlation_matrix(run, x_proj_norm, "1-correlation z")
             print("image_tensor: {}".format(imgs_tensor))
-            print("x_proj.shape:{}, {}".format(x_proj.shape, x_proj))
-            plot_pair_seperate(run, x_proj, "1-spedistribute z")
+            print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm))
+            plot_pair_seperate(run, x_proj_norm, "1-spedistribute z")
 
             plot_correlation_matrix(run, theta, "1-correlation theta")
             plot_pair_seperate(run, theta, "1-spedistribute theta")
@@ -184,7 +185,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             loss.backward()
             # print("Gradients before clipping:")
             # print_gradients(model)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=12.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
 
             optimizer.step()
         

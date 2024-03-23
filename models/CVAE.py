@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 def idx2onehot(idx, n):
 
     assert torch.max(idx).item() < n
@@ -12,6 +11,9 @@ def idx2onehot(idx, n):
     onehot.scatter_(1, idx, 1)
     
     return onehot
+
+
+
 
 class VAE(nn.Module):
 
@@ -72,18 +74,19 @@ class Encoder(nn.Module):
         for i in range(n_layers):
             if i == 0:
                 self.MLP.add_module(
-                    name="L{:d}".format(i), module=nn.Linear(input_dim, hiden_dim))
+                    name="L{:d}".format(i), module=nn.Linear(input_dim, hiden_dim, bias=False))
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
             else:
                 self.MLP.add_module(
-                    name="L{:d}".format(i), module=nn.Linear(hiden_dim, hiden_dim))
+                    name="L{:d}".format(i), module=nn.Linear(hiden_dim, hiden_dim, bias=False))
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
         self.MLP.add_module(
-            name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim))
+            name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim, bias=False))
+        self.MLP.add_module(name="A{:d}".format(i), module=nn.ReLU())
         
         # 1280 -> 256 -> 36
-        self.linear_means = nn.Linear(out_dim, out_dim)
-        self.linear_log_var = nn.Linear(out_dim, out_dim)
+        self.linear_means = nn.Linear(out_dim, out_dim, bias=False)
+        self.linear_log_var = nn.Linear(out_dim, out_dim, bias=False)
         
         # add leak relu
         self.ac_fn = nn.LeakyReLU(0.2)
@@ -115,15 +118,15 @@ class Decoder(nn.Module):
         for i in range(n_layers):
             if i == 0:
                 self.MLP.add_module(
-                    name="L{:d}".format(i), module=nn.Linear(input_dim, hiden_dim))
+                    name="L{:d}".format(i), module=nn.Linear(input_dim, hiden_dim, bias=False))
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
             else:
                 self.MLP.add_module(
-                    name="L{:d}".format(i), module=nn.Linear(hiden_dim, hiden_dim))
+                    name="L{:d}".format(i), module=nn.Linear(hiden_dim, hiden_dim, bias=False))
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
         
         self.MLP.add_module(
-            name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim))
+            name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim, bias=False))
         
 
     def forward(self, z):
