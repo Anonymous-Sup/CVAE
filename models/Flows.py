@@ -229,7 +229,7 @@ class YuKeMLPFLOW(nn.Module):
             data_J = vmap(J)(batch_inputs).squeeze()
 
             # data_J = torch.where(torch.isnan(data_J), torch.zeros_like(data_J), data_J)
-            logabsdet = torch.log(torch.abs(data_J[:, -1]) + 1e-8)
+            logabsdet = torch.log(torch.abs(data_J[:, -1]))
 
             # print("data_J:{}".format(data_J))
             # print("logabsdet:{}".format(logabsdet))

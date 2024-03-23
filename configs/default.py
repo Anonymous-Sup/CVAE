@@ -182,9 +182,12 @@ def update_config(config, args):
         config.DATA.FORMAT_TAG = args.format_tag
 
     if args.only_x_input:
-        config.MODEL.ONLY_X_INPUT = args.only_x_input
+        print("Use only x as input for flow model")
+        config.MODEL.ONLY_X_INPUT = True
+
     if args.only_cvae_kl:
-        config.MODEL.ONLY_CVAE_KL = args.only_cvae_kl
+        print("Use original kl loss for cvae model")
+        config.MODEL.ONLY_CVAE_KL = True
 
     if args.resume:
         config.MODEL.RESUME = args.resume

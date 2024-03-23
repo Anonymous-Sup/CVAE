@@ -50,8 +50,8 @@ def parse_option():
     parser.add_argument('--recon_loss', type=str, choices=['bce', 'mse', 'mae', 'smoothl1', 'pearson'], help="Type of reconstruction loss")
     
     # debug
-    parser.add_argument('only_x_input', action='store_true', help="Use only x as input for flow model")
-    parser.add_argument('only_cvae_kl', action='store_true', help="Use orginal kl loss for cvae model")
+    parser.add_argument('--only_x_input', action='store_true', help="Use only x as input for flow model")
+    parser.add_argument('--only_cvae_kl', action='store_true', help="Use orginal kl loss for cvae model")
 
     # Miscs
     parser.add_argument('--output', type=str, help="your output path to save model and logs")
@@ -68,6 +68,8 @@ def parse_option():
     param = {
         'saved_name': args.saved_name,
         "amp" : config.TRAIN.AMP,
+        'only_x_input': args.only_x_input,
+        'only_cvae_kl': args.only_cvae_kl,
         'vae_type': config.MODEL.VAE_TYPE,
         "optimizer": config.TRAIN.OPTIMIZER.NAME,
         "lr": config.TRAIN.OPTIMIZER.LR,

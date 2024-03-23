@@ -23,6 +23,9 @@
 # --flow_type yuke_mlpflow \
 # --recon_loss mse \
 
+# --only_cvae_kl \
+# --only_x_input
+
 
 python main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
@@ -30,9 +33,7 @@ python main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --format_tag tensor \
 --train_format base \
 --gpu 0 \
---saved_name fp32_l4vaeRelu_yukeflow-noU-12z_noReID_clamp \
+--saved_name fp32_l4vaeRelu_yukeflowkl-wU-12z_noReID_clamp \
 --vae_type cvae \
 --flow_type yuke_mlpflow \
---recon_loss mse \
---only_cvae_kl \
---only_x_input
+--recon_loss mse
