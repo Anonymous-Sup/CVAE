@@ -3,6 +3,7 @@ import datetime
 import torch
 from torch.cuda.amp import GradScaler, autocast
 from torch.distributions.normal import Normal
+from torch.distributions import MultivariateNormal
 from tools.utils import AverageMeter
 import torch.nn.functional as F
 from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D, print_gradients, plot_scatterNN
@@ -21,6 +22,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
     if config.MODEL.ONLY_CVAE_KL:
         print("=> Only CVAE KL")
+
+    useMultiG = False
+
+    if useMultiG:
+        print("=> Use Multivariate Gaussian As the Prior")
+    else:
+        print("=> Use Normal Gaussian As the Prior")
+    
     batch_cls_loss = AverageMeter()
     batch_cls_loss_theta = AverageMeter()
     batch_pair_loss = AverageMeter()
@@ -103,8 +112,12 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 loss = recon_loss + beta * kl_loss 
                     # loss = loss + cls_loss
         else:
-            recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
-        
+            if config.MODEL.USE_CENTROID:
+                domain_index = centroids[clusterids]
+            else:
+                domain_index = clusterids
+            
+            recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
             outputs = classifier(x_proj_norm)
             outputs_theta = classifier(theta)
 
@@ -120,14 +133,26 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 
                 posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
                 
-                base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
-                prior = torch.sum(base_dist.log_prob(theta), dim=-1)
+                if useMultiG:
+                    base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
+                    prior = base_dist.log_prob(theta) + logjacobin.sum(-1)
+                else:
+                    base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
+                    prior = torch.sum(base_dist.log_prob(theta), dim=-1)
             
                 kl_loss = (posterior - prior).mean()
+                kl_loss = kl_loss.clamp(2.0)
                 kld_theta = kl_loss
+            
             else:
-                base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
-                prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
+                if useMultiG:
+                    base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
+                    # (64)
+                    prior = base_dist.log_prob(theta) + logjacobin.sum(-1)
+                else:
+                    base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
+                    # (64,12)
+                    prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
     
                 # q0 = Normal(mean, torch.exp(0.5 * log_var))
                 q0 = Normal(mean, torch.clamp(torch.exp(0.5 * log_var), min=1e-8))
@@ -145,9 +170,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             loss = recon_loss + beta * kl_loss 
                 # loss = loss + cls_loss
         
-        if early_stopping(kl_loss):
-            print("Early stopping at epoch: {}".format(epoch))
-            return False
+        # if early_stopping(kl_loss):
+        #     print("Early stopping at epoch: {}".format(epoch))
+        #     return False
 
         # if is the last batch
         if batch_idx == len(trainloader)-1:

@@ -8,10 +8,12 @@ from data import build_singe_test_loader
 from torch.cuda.amp import autocast
 
 @torch.no_grad()
-def extract_midium_feature(model, dataloader, centroids_all):
+def extract_midium_feature(config, model, dataloader, centroids_all):
     features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), []
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
-        
+        if not config.TRAIN.AMP:
+            imgs = imgs.float()
+
         # flip_imgs = torch.flip(imgs, [3])
         # imgs, flip_imgs = imgs.cuda(), flip_imgs.cuda()
         # batch_features = model(imgs)
@@ -22,8 +24,17 @@ def extract_midium_feature(model, dataloader, centroids_all):
         pretrained_feautres = imgs
         pretrained_feautres = pretrained_feautres.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
-        with autocast():
-            recon_x, mean, log_var, z_0, batch_features, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, centroids_all[batch_centroids])
+
+        if config.MODEL.USE_CENTROID:
+            domain_index = centroids[batch_centroids].cuda()
+        else:
+            domain_index = batch_centroids.cuda()
+        
+        if config.TRAIN.AMP:
+            with autocast():
+                recon_x, mean, log_var, z_0, batch_features, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
+        else:
+            recon_x, mean, log_var, z_0, batch_features, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
         
         features.append(batach_features_norm.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
@@ -37,8 +48,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset):
     since = time.time()
     model.eval()
     # Extract features 
-    qf, q_pids, q_camids, q_centroids = extract_midium_feature(model, queryloader, dataset.query_centroids)
-    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(model, galleryloader, dataset.gallery_centroids)
+    qf, q_pids, q_camids, q_centroids = extract_midium_feature(config, model, queryloader, dataset.query_centroids)
+    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(config, model, galleryloader, dataset.gallery_centroids)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))

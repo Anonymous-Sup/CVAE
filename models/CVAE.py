@@ -1,18 +1,6 @@
 import torch
 import torch.nn as nn
 
-def idx2onehot(idx, n):
-
-    assert torch.max(idx).item() < n
-
-    if idx.dim() == 1:
-        idx = idx.unsqueeze(1)
-    onehot = torch.zeros(idx.size(0), n).to(idx.device)
-    onehot.scatter_(1, idx, 1)
-    
-    return onehot
-
-
 
 
 class VAE(nn.Module):
@@ -82,7 +70,7 @@ class Encoder(nn.Module):
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
         self.MLP.add_module(
             name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim, bias=False))
-        self.MLP.add_module(name="A{:d}".format(i), module=nn.ReLU())
+        self.MLP.add_module(name="A{:d}".format(n_layers), module=ac_fn)
         
         # 1280 -> 256 -> 36
         self.linear_means = nn.Linear(out_dim, out_dim, bias=False)

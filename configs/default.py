@@ -76,6 +76,7 @@ _C.MODEL.RES4_STRIDE = 1
 # ----For debug-----
 _C.MODEL.ONLY_X_INPUT = False
 _C.MODEL.ONLY_CVAE_KL = False
+_C.MODEL.USE_CENTROID = False
 
 # -----------------------------------------------------------------------------
 # Losses for training 
@@ -188,6 +189,10 @@ def update_config(config, args):
     if args.only_cvae_kl:
         print("Use original kl loss for cvae model")
         config.MODEL.ONLY_CVAE_KL = True
+
+    if args.use_centroid:
+        print("Use centroid as domain embedding")
+        config.MODEL.USE_CENTROID = True
 
     if args.resume:
         config.MODEL.RESUME = args.resume

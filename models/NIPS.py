@@ -1,6 +1,17 @@
 import torch
 import torch.nn as nn
 
+def idx2onehot(idx, n):
+    # (64, 25)
+    assert torch.max(idx).item() < n
+
+    if idx.dim() == 1:
+        idx = idx.unsqueeze(1)
+    
+    onehot = torch.zeros(idx.size(0), n).to(idx.device)
+    onehot.scatter_(1, idx, 1)
+    
+    return onehot
 
 
 class MLP(nn.Module):
@@ -16,6 +27,7 @@ class MLP(nn.Module):
                 layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leak_relu_slope))
         layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
+        layers.append(nn.ReLU())
         self.MLP = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -23,7 +35,7 @@ class MLP(nn.Module):
         return x
 
 class NIPS(nn.Module):
-    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, latent_size, only_x=False):
+    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, latent_size, only_x=False, use_centroid=False):
         super(NIPS, self).__init__()
 
         self.VAE = VAE
@@ -31,6 +43,7 @@ class NIPS(nn.Module):
 
         self.latent_size = latent_size
         self.only_x_input = only_x
+        self.use_centroid = use_centroid
 
         if hidden_dim is None:
             self.hidden_dim = 768 # default hidden_dim 12 * 64
@@ -38,23 +51,38 @@ class NIPS(nn.Module):
         else:
             self.hidden_dim = hidden_dim
 
-        self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.hidden_dim, number_layers=3)
-        
+        if self.use_centroid:
+            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.hidden_dim, number_layers=4)
+        else:
+            # 50 --> 768 --> 768
+            self.domain_embeding = MLP(25*2, self.hidden_dim, self.hidden_dim, number_layers=4)
         # self.fusion = MLP(latent_size+self.hidden_dim, self.hidden_dim, latent_size, number_layers=3)
-
-        # self.domain_embeding.apply(self.init_weights)
-        # self.fusion.apply(self.init_weights)
 
     def forward(self, x, domain_index):
         
-        domain_feature= self.domain_embeding(domain_index)
+        if self.use_centroid:
+            assert len(domain_index.size()) == 2
+        else:
+            assert len(domain_index.size()) == 1
+            domain_index = idx2onehot(domain_index, 50)
 
-        domain_index_feat = self.normalization(domain_feature)
+        domain_feature = self.domain_embeding(domain_index)
+        domain_feature = domain_feature
+        # print("domain_feature", domain_feature)
+        if torch.isnan(domain_feature).any():
+            print("domain_feature has nan")
+        # domain_index_feat = self.normalization(domain_feature)
+        # domain_index_feat = domain_feature / domain_feature.norm(dim=1, keepdim=True)
+        domain_index_feat = domain_feature
+        if torch.isnan(domain_index_feat).any():
+            print("domain_feature after normalization has nan")
 
         # (64,12)
         x_proj, means, log_var = self.VAE.encoder(x)
 
-        x_proj_norm = self.normalization(x_proj)
+        # x_proj_norm = self.normalization(x_proj)
+        x_proj_norm = x_proj / x_proj.norm(dim=1, keepdim=True)
+        # x_proj_norm = x_proj
 
         # 64, 12
         z_0 = self.VAE.reparameterize(means, log_var)
@@ -64,6 +92,7 @@ class NIPS(nn.Module):
         U = domain_index_feat.view(-1, self.latent_size, domian_dim)
         # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
         flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
+        # print("flow_input", flow_input)
         # (64, 12, 65) -> (64, 65*12)
         # flow_input = flow_input.view(-1, self.latent_size * (1 + self.hidden_dim/self.latent_size))
 
@@ -87,11 +116,7 @@ class NIPS(nn.Module):
 
         return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_index_feat, flow_input
     
-    def init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            nn.init.xavier_uniform_(m.weight)
-            nn.init.constant_(m.bias, 0)
-    
+
     def normalization(self, x):
         # x_normalized = x / x.norm(dim=1, keepdim=True)
         # 手动计算均值和标准差进行归一化

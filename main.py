@@ -52,7 +52,7 @@ def parse_option():
     # debug
     parser.add_argument('--only_x_input', action='store_true', help="Use only x as input for flow model")
     parser.add_argument('--only_cvae_kl', action='store_true', help="Use orginal kl loss for cvae model")
-
+    parser.add_argument('--use_centroid', action='store_true', help="Use centroid as domain index")
     # Miscs
     parser.add_argument('--output', type=str, help="your output path to save model and logs")
     parser.add_argument('--saved_name', type=str, required=True, help="your output name to save model and logs")
@@ -68,8 +68,9 @@ def parse_option():
     param = {
         'saved_name': args.saved_name,
         "amp" : config.TRAIN.AMP,
-        'only_x_input': args.only_x_input,
-        'only_cvae_kl': args.only_cvae_kl,
+        'only_x_input': config.MODEL.ONLY_X_INPUT,
+        'only_cvae_kl': config.MODEL.ONLY_CVAE_KL,
+        'use_centroid': config.MODEL.USE_CENTROID,
         'vae_type': config.MODEL.VAE_TYPE,
         "optimizer": config.TRAIN.OPTIMIZER.NAME,
         "lr": config.TRAIN.OPTIMIZER.LR,
