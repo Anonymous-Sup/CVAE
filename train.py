@@ -129,8 +129,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
             pair_loss = criterion_pair(x_proj_norm, pids)
 
-            if config.MODEL.ONLY_CVAE_KL:
-                
+            if config.MODEL.ONLY_CVAE_KL:  
                 posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
                 
                 if useMultiG:
@@ -143,7 +142,6 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 kl_loss = (posterior - prior).mean()
                 kl_loss = kl_loss.clamp(2.0)
                 kld_theta = kl_loss
-            
             else:
                 if useMultiG:
                     base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
@@ -165,10 +163,10 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
             beta = 0.05
-            # loss = cls_loss  + beta *(kl_loss + kld_theta) + recon_loss
-
-            loss = recon_loss + beta * kl_loss 
-                # loss = loss + cls_loss
+            if config.MODEL.TRAIN_STAGE == 'klstage':
+                loss = recon_loss + beta * kl_loss
+            elif config.MODEL.TRAIN_STAGE == 'reidstage':
+                loss = recon_loss + cls_loss
         
         # if early_stopping(kl_loss):
         #     print("Early stopping at epoch: {}".format(epoch))
@@ -180,8 +178,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
             
             plot_correlation_matrix(run, x_proj_norm, "1-correlation z")
-            print("image_tensor: {}".format(imgs_tensor))
-            print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm))
+            print("image_tensor: {}".format(imgs_tensor[0, :]))
+            print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm[0, :]))
             plot_pair_seperate(run, x_proj_norm, "1-spedistribute z")
 
             plot_correlation_matrix(run, theta, "1-correlation theta")

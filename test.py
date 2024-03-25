@@ -13,6 +13,7 @@ def extract_midium_feature(config, model, dataloader, centroids_all):
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
         if not config.TRAIN.AMP:
             imgs = imgs.float()
+            centroids_all = centroids_all.float()
 
         # flip_imgs = torch.flip(imgs, [3])
         # imgs, flip_imgs = imgs.cuda(), flip_imgs.cuda()
@@ -26,7 +27,7 @@ def extract_midium_feature(config, model, dataloader, centroids_all):
         # recon_x, means, log_var, z, theta, logjcobin
 
         if config.MODEL.USE_CENTROID:
-            domain_index = centroids[batch_centroids].cuda()
+            domain_index = centroids_all[batch_centroids].cuda()
         else:
             domain_index = batch_centroids.cuda()
         

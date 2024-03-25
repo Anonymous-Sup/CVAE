@@ -1,7 +1,7 @@
 import os
 import yaml
 from yacs.config import CfgNode as CN
-
+import datetime
 
 _C = CN()
 # -----------------------------------------------------------------------------
@@ -67,6 +67,7 @@ _C.MODEL.FEATURE_DIM = 1280
 
 # Model path for resuming
 _C.MODEL.RESUME = ''
+_C.MODEL.TRAIN_STAGE = '' # 'klstage', 'reidstage'
 
 # -----For ResNet--------
 # The stride for laery4 in resnet
@@ -77,6 +78,7 @@ _C.MODEL.RES4_STRIDE = 1
 _C.MODEL.ONLY_X_INPUT = False
 _C.MODEL.ONLY_CVAE_KL = False
 _C.MODEL.USE_CENTROID = False
+_C.MODEL.CONDITIONAL = False
 
 # -----------------------------------------------------------------------------
 # Losses for training 
@@ -127,7 +129,7 @@ _C.TEST = CN()
 # Similarity for testing
 _C.TEST.DISTANCE = 'cosine'
 # Perform evaluation after every N epochs (set to -1 to test after training)
-_C.TEST.EVAL_STEP = 5
+_C.TEST.EVAL_STEP = 5   # 5
 # Start to evaluate after specific epoch
 _C.TEST.START_EVAL = 0
 
@@ -193,10 +195,19 @@ def update_config(config, args):
     if args.use_centroid:
         print("Use centroid as domain embedding")
         config.MODEL.USE_CENTROID = True
+    # if args.conditionalvae:
+    #     print("Use conditional vae, instead of additional domain embedding")
+    #     config.MODEL.CONDITIONAL = True
 
     if args.resume:
         config.MODEL.RESUME = args.resume
-    
+
+    if args.train_stage:
+        config.MODEL.TRAIN_STAGE = args.train_stage
+        if 'reid' in args.train_stage:
+            if not args.resume:
+                raise ValueError("Need to specify the model path for resuming")
+
     if args.eval:
         config.EVAL_MODE = True
     
@@ -206,8 +217,12 @@ def update_config(config, args):
     if args.amp:
         config.TRAIN.AMP = args.amp
 
+    datetime_today = str(datetime.date.today())
     # output folder
-    config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, config.SAVED_NAME + "_" + config.MODEL.FLOW_TYPE+"_"+config.LOSS.RECON_LOSS)
+    if 'reid' in args.train_stage:
+        config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid')
+    else:
+        config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, datetime_today, config.SAVED_NAME + "_" + config.MODEL.FLOW_TYPE+"_"+config.LOSS.RECON_LOSS)
 
     config.freeze()
 

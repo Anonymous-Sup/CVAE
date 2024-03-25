@@ -42,8 +42,10 @@ def parse_option():
     parser.add_argument('--dataset', type=str, default='duke', help="duke, market1501, cuhk03, msmt17")
     parser.add_argument('--format_tag', type=str, choices=['tensor', 'img'], help="Using image or pretrained features")
     
+    # Training
     parser.add_argument('--train_format', type=str, required= True, choices=['base', 'normal'], help="Select the datatype for training or finetuning")
-    
+    parser.add_argument('--train_stage', type=str, choices=['klstage', 'reidstage'], required=True, help="Select the stage for training")
+
     # Parameters 
     parser.add_argument('--vae_type', type=str, choices=['cvae'], help="Type of VAE model")
     parser.add_argument('--flow_type', type=str, choices=['Planar', 'Radial', 'RealNVP', 'invertmlp', "yuke_mlpflow"], help="Type of flow model")
@@ -53,6 +55,7 @@ def parse_option():
     parser.add_argument('--only_x_input', action='store_true', help="Use only x as input for flow model")
     parser.add_argument('--only_cvae_kl', action='store_true', help="Use orginal kl loss for cvae model")
     parser.add_argument('--use_centroid', action='store_true', help="Use centroid as domain index")
+
     # Miscs
     parser.add_argument('--output', type=str, help="your output path to save model and logs")
     parser.add_argument('--saved_name', type=str, required=True, help="your output name to save model and logs")
@@ -67,6 +70,7 @@ def parse_option():
 
     param = {
         'saved_name': args.saved_name,
+        'train_stage': args.train_stage,
         "amp" : config.TRAIN.AMP,
         'only_x_input': config.MODEL.ONLY_X_INPUT,
         'only_cvae_kl': config.MODEL.ONLY_CVAE_KL,
@@ -142,14 +146,25 @@ def main(config):
     start_epoch = config.TRAIN.START_EPOCH
     
     best_rank1 = -np.inf
-    if config.MODEL.RESUME:
-        print("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
-        checkpoint = torch.load(config.MODEL.RESUME)
+
+    
+    if config.MODEL.TRAIN_STAGE == 'reidstage':
+        print("=> Start Training REID model")
+        print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+        checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
         model.load_state_dict(checkpoint['model'])
+        print("orginal best rank1 = {}".format(checkpoint['rank1']))
+
         # flows_model.load_state_dict(checkpoint['flows_model'])
-        classifier.load_state_dict(checkpoint['classifier'])
-        start_epoch = checkpoint['epoch']
-        best_rank1 = checkpoint['rank1']
+    else:
+        if config.MODEL.RESUME:
+            print("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
+            checkpoint = torch.load(config.MODEL.RESUME)
+            model.load_state_dict(checkpoint['model'])
+            # flows_model.load_state_dict(checkpoint['flows_model'])
+            classifier.load_state_dict(checkpoint['classifier'])
+            start_epoch = checkpoint['epoch']
+            best_rank1 = checkpoint['rank1']
     
     if config.DATA.TRAIN_FORMAT != "base":
         print("=> Start Finetuning the model")
@@ -196,7 +211,7 @@ def main(config):
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
                 rank1 = test_cvae(run, config, model, queryloader, galleryloader, dataset)
-                run["eval/rank1"].append(rank1)
+                # run["eval/rank1"].append(rank1)
             is_best = rank1 > best_rank1
             
             if is_best: 

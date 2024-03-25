@@ -17,7 +17,7 @@ class VAE(nn.Module):
             self.ac_fn = nn.LeakyReLU(0.2)
         elif self.ac_fn == 'elu':
             self.ac_fn = nn.ELU()
-    
+
         self.encoder = Encoder(
             feature_dim, hidden_dim, output_dim, n_layers, self.ac_fn)
         self.decoder = Decoder(
