@@ -27,7 +27,7 @@ class MLP(nn.Module):
                 layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leak_relu_slope))
         layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
-        layers.append(nn.ReLU())
+        layers.append(nn.LeakyReLU(leak_relu_slope))
         self.MLP = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -73,7 +73,7 @@ class NIPS(nn.Module):
             print("domain_feature has nan")
         # domain_index_feat = self.normalization(domain_feature)
         # domain_index_feat = domain_feature / domain_feature.norm(dim=1, keepdim=True)
-        domain_index_feat = domain_feature
+        domain_index_feat = self.normalize_l2(domain_feature)
         if torch.isnan(domain_index_feat).any():
             print("domain_feature after normalization has nan")
 
@@ -81,7 +81,7 @@ class NIPS(nn.Module):
         x_proj, means, log_var = self.VAE.encoder(x)
 
         # x_proj_norm = self.normalization(x_proj)
-        x_proj_norm = x_proj / x_proj.norm(dim=1, keepdim=True)
+        x_proj_norm = self.normalize_l2(x_proj)
         # x_proj_norm = x_proj
 
         # 64, 12
@@ -124,3 +124,13 @@ class NIPS(nn.Module):
         std = torch.std(x, dim=0)
         x_normalized = (x - mean) / std
         return x_normalized
+    
+    def normalize_l2(self, x, axis=-1):
+        """Normalizing to unit length along the specified dimension.
+        Args:
+        x: pytorch Variable
+        Returns:
+        x: pytorch Variable, same shape as input
+        """
+        x = 1. * x / (torch.norm(x, 2, axis, keepdim=True).expand_as(x) + 1e-12)
+        return x

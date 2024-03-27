@@ -6,8 +6,8 @@ from torch.distributions.normal import Normal
 from torch.distributions import MultivariateNormal
 from tools.utils import AverageMeter
 import torch.nn.functional as F
-from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D, print_gradients, plot_scatterNN
-
+from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D
+from utils import plot_histogram_seperate, print_gradients, plot_scatterNN
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
               optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None):
@@ -23,7 +23,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     if config.MODEL.ONLY_CVAE_KL:
         print("=> Only CVAE KL")
 
-    useMultiG = False
+    useMultiG = True
 
     if useMultiG:
         print("=> Use Multivariate Gaussian As the Prior")
@@ -82,7 +82,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
                 pair_loss = criterion_pair(x_proj, pids)
 
-                if only_cvae:
+                if config.MODEL.ONLY_CVAE_KL:
                     
                     posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
                     
@@ -159,14 +159,16 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
                 kl_loss = kl_loss.clamp(2.0)            
                 kld_theta = kl_loss
-    
+
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
             beta = 0.05
             if config.MODEL.TRAIN_STAGE == 'klstage':
-                loss = recon_loss + beta * kl_loss
+                loss = recon_loss + beta * kl_loss 
+                loss = loss + pair_loss
+                # loss = loss + cls_loss
             elif config.MODEL.TRAIN_STAGE == 'reidstage':
-                loss = recon_loss + cls_loss
+                loss = cls_loss + recon_loss + pair_loss
         
         # if early_stopping(kl_loss):
         #     print("Early stopping at epoch: {}".format(epoch))
@@ -189,6 +191,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             plot_histogram(run, log_var, "2-log_var")
             plot_histogram(run, z, "2-reparameterized z_0")
             plot_histogram(run, domian_feature, "3-domian_feature")
+            # print("domian_feature: {}".format(domian_feature[0, :]))
             plot_histogram(run, z_1, "3-flowinput-z_1")
             plot_histogram(run, theta, "4-theta")
             plot_histogram(run, logjacobin, "4-logjacobin")
@@ -206,9 +209,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         else:
             loss.backward()
             # print("Gradients before clipping:")
-            # print_gradients(model)
+            # print_gradients(classifier)
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
-
             optimizer.step()
         
         batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))

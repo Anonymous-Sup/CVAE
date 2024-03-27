@@ -11,9 +11,9 @@ __all__ = ['Classifier', 'NormalizedClassifier']
 class Classifier(nn.Module):
     def __init__(self, feature_dim, num_classes):
         super().__init__()
-        self.classifier = nn.Linear(feature_dim, num_classes)
+        self.classifier = nn.Linear(feature_dim, num_classes, bias=False)
         init.normal_(self.classifier.weight.data, std=0.001)
-        init.constant_(self.classifier.bias.data, 0.0)
+        # init.constant_(self.classifier.bias.data, 0.0)
 
     def forward(self, x):
         y = self.classifier(x)

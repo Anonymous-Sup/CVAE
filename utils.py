@@ -33,6 +33,43 @@ def plot_histogram(run, tensor, title):
     # 关闭plt，避免重复显示图像
     plt.close(fig)
 
+def plot_histogram_seperate(run, tensor, title):
+    # Calculate the number of rows and columns for the subplots
+    num_dims = tensor.size(1)
+    num_cols = 4
+    num_rows = math.ceil(num_dims / num_cols)
+
+    # Create a new figure and subplots
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=(6 * num_cols, 4 * num_rows))
+
+    # Flatten the axes array to make iterating over it easier
+    axs = axs.flatten()
+
+    # Iterate over each dimension in the second axis of the tensor
+    for i in range(num_dims):
+        # Plot the histogram for the current dimension on the corresponding subplot
+        axs[i].hist(tensor[:,i].detach().cpu().numpy().flatten(), bins=30, alpha=0.6, color='g')
+        axs[i].set_title("{} - dim_{}".format(title, i))
+        axs[i].set_xlabel('Value')
+        axs[i].set_ylabel('Frequency')
+        axs[i].grid(True)
+
+    # Remove any unused subplots
+    for i in range(num_dims, num_rows * num_cols):
+        fig.delaxes(axs[i])
+
+    # Show the plot
+    plt.tight_layout()
+    # plt.show()
+
+    run["train/histograms/{}".format(title)].append(fig)
+    # Save the figure to a file
+    # fig.savefig("plot.png", format='png')
+
+    # Close the figure to free up memory
+    plt.close(fig)
+
+
 # plot for each second dim in the tensor
 def plot_pair(run, tensor, title):
         
@@ -162,19 +199,22 @@ def plot_scatterNN(run, tensor, title):
     # Convert the tensor to a numpy array
     array = tensor.detach().cpu().numpy()
 
-    # Create a new figure with 12x12 subplots
-    fig, axs = plt.subplots(12, 12, figsize=(20, 20))
+    # fig_num = array.shape[1]
+    fig_num = 12
 
+    # Create a new figure with n*n subplots
+    fig, axs = plt.subplots(fig_num, fig_num, figsize=(20,20))
+
+    
     # Iterate over each pair of dimensions
-    for i in range(12):
-        for j in range(12):
-            # Plot the scatter plot for the current pair of dimensions on the corresponding subplot
+    for i in range(fig_num):
+        for j in range(fig_num):
+            # Create a scatter plot for the current pair of dimensions
             axs[i, j].scatter(array[:, i], array[:, j], alpha=0.6)
-
-            # Set the title and labels
-            axs[i, j].set_title("dim {} vs dim {}".format(i, j))
-            axs[i, j].set_xlabel('dim {}'.format(i))
-            axs[i, j].set_ylabel('dim {}'.format(j))
+            axs[i, j].set_title('dim_{} vs dim_{}'.format(i, j))
+            axs[i, j].set_xlabel('dim_{}'.format(i))
+            axs[i, j].set_ylabel('dim_{}'.format(j))
+            axs[i, j].grid(True)
 
     # Adjust the layout
     plt.tight_layout()

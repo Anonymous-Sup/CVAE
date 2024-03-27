@@ -112,7 +112,7 @@ _C.TRAIN.AMP = False
 _C.TRAIN.OPTIMIZER = CN()
 _C.TRAIN.OPTIMIZER.NAME = 'adam'
 # Learning rate
-_C.TRAIN.OPTIMIZER.LR = 1e-2  # ori: 0.00035
+_C.TRAIN.OPTIMIZER.LR = 1e-4  # ori: 0.00035
 _C.TRAIN.OPTIMIZER.WEIGHT_DECAY = 1e-4   # ori: 5e-4
 # LR scheduler
 _C.TRAIN.LR_SCHEDULER = CN()
@@ -184,6 +184,9 @@ def update_config(config, args):
     if args.format_tag:
         config.DATA.FORMAT_TAG = args.format_tag
 
+    if args.reid_loss:
+        config.LOSS.CLA_LOSS = args.reid_loss
+
     if args.only_x_input:
         print("Use only x as input for flow model")
         config.MODEL.ONLY_X_INPUT = True
@@ -220,7 +223,7 @@ def update_config(config, args):
     datetime_today = str(datetime.date.today())
     # output folder
     if 'reid' in args.train_stage:
-        config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid')
+        config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid_'+config.LOSS.CLA_LOSS)
     else:
         config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, datetime_today, config.SAVED_NAME + "_" + config.MODEL.FLOW_TYPE+"_"+config.LOSS.RECON_LOSS)
 
@@ -230,5 +233,4 @@ def get_config(args):
     """Get a yacs CfgNode object with default values."""
     config = _C.clone()
     update_config(config, args)
-
     return config

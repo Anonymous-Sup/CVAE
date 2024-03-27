@@ -50,7 +50,8 @@ def parse_option():
     parser.add_argument('--vae_type', type=str, choices=['cvae'], help="Type of VAE model")
     parser.add_argument('--flow_type', type=str, choices=['Planar', 'Radial', 'RealNVP', 'invertmlp', "yuke_mlpflow"], help="Type of flow model")
     parser.add_argument('--recon_loss', type=str, choices=['bce', 'mse', 'mae', 'smoothl1', 'pearson'], help="Type of reconstruction loss")
-    
+    parser.add_argument('--reid_loss', type=str, choices=['crossentropy', 'crossentropylabelsmooth', 'arcface', 'cosface', 'circle'], help="Type of reid loss")
+
     # debug
     parser.add_argument('--only_x_input', action='store_true', help="Use only x as input for flow model")
     parser.add_argument('--only_cvae_kl', action='store_true', help="Use orginal kl loss for cvae model")
@@ -111,21 +112,35 @@ def main(config):
         if 'FLOWs' not in name:
             parameters.append(param)
         else:
+            # if config.MODEL.TRAIN_STAGE == 'reidstage':
+            #     param.requires_grad = False
             Flow_parameters.append(param)
     
-    parameters = parameters + list(classifier.parameters())
-    
+    parameters = parameters
+    cla_parameters = list(classifier.parameters())
+
     if config.MODEL.FLOW_TYPE == 'invertmlp':
         beta_lr = 1
     else:
         beta_lr = 1
 
+    if config.MODEL.TRAIN_STAGE == 'reidstage':
+        alpha_lr = 1
+    else:
+        alpha_lr = 1
+
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
+        # if config.MODEL.TRAIN_STAGE == 'reidstage':
+        #     optimizer = optim.Adam(parameters, 
+        #                            lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
+        #                            weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+        # else:
         optimizer = optim.Adam([
             {'params': parameters}, 
+            {'params': cla_parameters, 'lr': config.TRAIN.OPTIMIZER.LR},
             {'params': Flow_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
-            lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
 
         # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
         #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)

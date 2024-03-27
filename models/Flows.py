@@ -189,6 +189,7 @@ class YuKeMLPFLOW(nn.Module):
     def __init__(
             self,
             latent_size,
+            input_dim=64,
             hidden_dim=64,
             output_dim=1,
             num_layers=3
@@ -196,7 +197,7 @@ class YuKeMLPFLOW(nn.Module):
         super().__init__()
 
         self.latent_size = latent_size
-        self.flows = nn.ModuleList([MLP(input_dim=hidden_dim+1, 
+        self.flows = nn.ModuleList([MLP(input_dim=input_dim+1, 
                                         hidden_dim=hidden_dim,
                                         output_dim=output_dim,  
                                         num_layers=num_layers) for _ in range(latent_size)])
