@@ -25,14 +25,13 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --train_format base \
 --train_stage klstage \
 --gpu 0 \
---saved_name fp32_l4vaeleakRelu-lre4_yukeflowkl-MultivG-wUlkrelu-UindexC-64z_tripnoReID_clamp \
+--saved_name fp32_l4vaeleakRelu-lre4_yukeflowkl-NormG-wUlkrelu-Uindex-12z_tripnoReID_clamp \
 --vae_type cvae \
 --flow_type yuke_mlpflow \
 --recon_loss mse \
 --reid_loss crossentropy \
 --only_cvae_kl \
---use_centroid \
-> train_kltrip_64.log 2>&1 & 
+> train_kltrip_idx12_NG.log 2>&1 & 
 
 
 

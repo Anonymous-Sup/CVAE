@@ -55,7 +55,9 @@ class NIPS(nn.Module):
             self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.hidden_dim, number_layers=4)
         else:
             # 50 --> 768 --> 768
-            self.domain_embeding = MLP(25*2, self.hidden_dim, self.hidden_dim, number_layers=4)
+            # # 12-->25*2=50 or 36-->73*2=146 or 64-->129*2=258
+            self.domain_len = 2*(2*self.latent_size+1) 
+            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.hidden_dim, number_layers=4)
         # self.fusion = MLP(latent_size+self.hidden_dim, self.hidden_dim, latent_size, number_layers=3)
 
     def forward(self, x, domain_index):
@@ -64,7 +66,7 @@ class NIPS(nn.Module):
             assert len(domain_index.size()) == 2
         else:
             assert len(domain_index.size()) == 1
-            domain_index = idx2onehot(domain_index, 50)
+            domain_index = idx2onehot(domain_index, self.domain_len)
 
         domain_feature = self.domain_embeding(domain_index)
         domain_feature = domain_feature
