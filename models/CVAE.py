@@ -70,7 +70,9 @@ class Encoder(nn.Module):
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
         self.MLP.add_module(
             name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim, bias=False))
-        self.MLP.add_module(name="A{:d}".format(n_layers), module=ac_fn)
+        
+        # ensure the flow inputs has no negative value
+        self.MLP.add_module(name="A{:d}".format(n_layers), module=nn.ReLU())
         
         # 1280 -> 256 -> 36
         self.linear_means = nn.Linear(out_dim, out_dim, bias=False)

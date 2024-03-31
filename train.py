@@ -23,12 +23,15 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     if config.MODEL.ONLY_CVAE_KL:
         print("=> Only CVAE KL")
 
-    useMultiG = True
 
-    if useMultiG:
+    if config.MODEL.GAUSSIAN == 'MultivariateNormal':
         print("=> Use Multivariate Gaussian As the Prior")
-    else:
+        useMultiG = True
+    elif config.MODEL.GAUSSIAN == 'Normal':
         print("=> Use Normal Gaussian As the Prior")
+        useMultiG = False
+    else:
+        raise ValueError("Gaussian type {} is not supported".format(config.MODEL.GAUSSIAN))
     
     batch_cls_loss = AverageMeter()
     batch_cls_loss_theta = AverageMeter()
@@ -118,6 +121,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 domain_index = clusterids
             
             recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+            
             outputs = classifier(x_proj_norm)
             outputs_theta = classifier(theta)
 
@@ -134,10 +138,13 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 
                 if useMultiG:
                     base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
-                    prior = base_dist.log_prob(theta) + logjacobin.sum(-1)
+                    # Here is a Jcobin! 
+                    prior = base_dist.log_prob(theta)
+                    # prior = prior + logjacobin.sum(-1)
                 else:
                     base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
                     prior = torch.sum(base_dist.log_prob(theta), dim=-1)
+                    # prior = prior + logjacobin.sum(-1)
             
                 kl_loss = (posterior - prior).mean()
                 kl_loss = kl_loss.clamp(2.0)
@@ -165,7 +172,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             beta = 0.05
             if config.MODEL.TRAIN_STAGE == 'klstage':
                 loss = recon_loss + beta * kl_loss 
-                loss = loss + pair_loss
+                # loss = loss + pair_loss
                 # loss = loss + cls_loss
             elif config.MODEL.TRAIN_STAGE == 'reidstage':
                 loss = cls_loss + recon_loss + pair_loss
@@ -191,7 +198,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             plot_histogram(run, log_var, "2-log_var")
             plot_histogram(run, z, "2-reparameterized z_0")
             plot_histogram(run, domian_feature, "3-domian_feature")
-            # print("domian_feature: {}".format(domian_feature[0, :]))
+            print("domian_feature+Z: {}".format(flow_input[0, :2, -10:])) # print the last 10 elements
             plot_histogram(run, z_1, "3-flowinput-z_1")
             plot_histogram(run, theta, "4-theta")
             plot_histogram(run, logjacobin, "4-logjacobin")

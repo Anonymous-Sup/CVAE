@@ -13,6 +13,21 @@ def idx2onehot(idx, n):
     
     return onehot
 
+def weights_init_kaiming(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out')
+        nn.init.constant_(m.bias, 0.0)
+
+    elif classname.find('Conv') != -1:
+        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
+        if m.bias is not None:
+            nn.init.constant_(m.bias, 0.0)
+    elif classname.find('BatchNorm') != -1:
+        if m.affine:
+            nn.init.constant_(m.weight, 1.0)
+            nn.init.constant_(m.bias, 0.0)
+
 
 class MLP(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, number_layers=3, leak_relu_slope=0.2):
@@ -27,8 +42,7 @@ class MLP(nn.Module):
                 layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leak_relu_slope))
         layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
-        # now is the base version
-        layers.append(nn.LeakyReLU(leak_relu_slope))
+        # layers.append(nn.LeakyReLU(leak_relu_slope)) 
         self.MLP = nn.Sequential(*layers)
 
     def forward(self, x):
@@ -36,7 +50,7 @@ class MLP(nn.Module):
         return x
 
 class NIPS(nn.Module):
-    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, latent_size, only_x=False, use_centroid=False):
+    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False):
         super(NIPS, self).__init__()
 
         self.VAE = VAE
@@ -47,19 +61,27 @@ class NIPS(nn.Module):
         self.use_centroid = use_centroid
 
         if hidden_dim is None:
-            self.hidden_dim = 768 # default hidden_dim 12 * 64
+            self.hidden_dim = 64 # default hidden_dim 164
             print("hidden_dim is not specified, set to be {}".format(self.hidden_dim))
         else:
             self.hidden_dim = hidden_dim
+        
+        self.out_dim = out_dim
 
         if self.use_centroid:
-            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.hidden_dim, number_layers=4)
+            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.out_dim, number_layers=4)
         else:
-            # 50 --> 768 --> 768
-            # # 12-->25*2=50 or 36-->73*2=146 or 64-->129*2=258
+            # 50 --> 64 --> 64
+            # hidden_dim = 64
             self.domain_len = 2*(2*self.latent_size+1) 
-            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.hidden_dim, number_layers=4)
+            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4)
+        
         # self.fusion = MLP(latent_size+self.hidden_dim, self.hidden_dim, latent_size, number_layers=3)
+
+        # add batch_norm for domain_embeding
+        # self.bn = nn.BatchNorm1d(self.out_dim)
+        # self.bn.bias.requires_grad_(False)
+        # self.bn.apply(weights_init_kaiming)
 
     def forward(self, x, domain_index):
         
@@ -70,14 +92,13 @@ class NIPS(nn.Module):
             domain_index = idx2onehot(domain_index, self.domain_len)
 
         domain_feature = self.domain_embeding(domain_index)
-        domain_feature = domain_feature
-        # print("domain_feature", domain_feature)
         if torch.isnan(domain_feature).any():
             print("domain_feature has nan")
-        # domain_index_feat = self.normalization(domain_feature)
-        # domain_index_feat = domain_feature / domain_feature.norm(dim=1, keepdim=True)
-        domain_index_feat = self.normalize_l2(domain_feature)
-        if torch.isnan(domain_index_feat).any():
+        
+        # domain_feature_norm = self.normalization(domain_feature)
+        # domain_feature_norm = self.normalize_l2(domain_feature)
+        domain_feature_norm = self.normalize_l2(domain_feature)
+        if torch.isnan(domain_feature_norm).any():
             print("domain_feature after normalization has nan")
 
         # (64,12)
@@ -89,35 +110,36 @@ class NIPS(nn.Module):
 
         # 64, 12
         z_0 = self.VAE.reparameterize(means, log_var)
-
+        
+        '''
+        common for a wihle
+        testing cat u with each dim of z
+        '''
         # 64, 12, 64
-        domian_dim =  int(self.hidden_dim/self.latent_size)
-        U = domain_index_feat.view(-1, self.latent_size, domian_dim)
-        # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
+        # domian_dim =  int(self.hidden_dim/self.latent_size)
+        # U = domain_index_feat.view(-1, self.latent_size, domian_dim)
+        # # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
+        # flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
+        
+        U = domain_feature_norm.unsqueeze(1)
+        U = U.repeat(1, x_proj_norm.size(1), 1)
+        # (64,12) --> (64, 12, 1) + (64, 12, 64) --> (64, 12, 65)
         flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
-        # print("flow_input", flow_input)
-        # (64, 12, 65) -> (64, 65*12)
-        # flow_input = flow_input.view(-1, self.latent_size * (1 + self.hidden_dim/self.latent_size))
 
-        # flow_input = torch.cat((z_0, domain_index_feat), dim=-1)
-        # z_1 = self.fusion(flow_input)
-        '''
-        Ablation test Mar17 20:23
-        z_1 = x_proj
-        test_only_x_input = True
 
-        origin: z_1 = flow_input
-        '''
         if self.only_x_input:
             z_1 = x_proj_norm
         else:
             z_1 = flow_input
 
+        # if self.out_dim == 64:
         theta, logjcobin = self.FLOWs(z_1)
+        # else:
+        #     theta, logjcobin = self.FLOWs(z_1)
 
         recon_x = self.VAE.decoder(x_proj_norm)
 
-        return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_index_feat, flow_input
+        return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_feature_norm, flow_input
     
 
     def normalization(self, x):
@@ -137,3 +159,24 @@ class NIPS(nn.Module):
         """
         x = 1. * x / (torch.norm(x, 2, axis, keepdim=True).expand_as(x) + 1e-12)
         return x
+    
+    def min_max_normalization(self, tensor):
+        min_val = torch.min(tensor)
+        max_val = torch.max(tensor)
+        if max_val - min_val == 0:
+            print("Max and Min are equal in Nolmalization!")
+            return tensor
+        normalized_tensor = (tensor - min_val) / (max_val - min_val)
+        return normalized_tensor
+    
+    def normalize_l2_01(self, x, axis=-1):
+        """Normalizing to unit length along the specified dimension.
+        Args:
+        x: pytorch Variable
+        Returns:
+        x: pytorch Variable, same shape as input
+        """
+        x = 1. * x / (torch.norm(x, 2, axis, keepdim=True).expand_as(x) + 1e-12)
+        x = self.min_max_normalization(x)
+        return x
+    

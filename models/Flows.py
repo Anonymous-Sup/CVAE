@@ -206,8 +206,10 @@ class YuKeMLPFLOW(nn.Module):
         # self.fc = MLP(input_dim=embedding_dim, hidden_dim=hidden_dim,
         #               output_dim=hidden_dim, num_layers=num_layers)
 
+
     def forward(self, x):
-        
+        # for single input with already cat U and Z 
+
         # batch_size, latent_dim, hidden_dim+1
         # 64, 12, 64+1
         assert len(x.shape) == 3
@@ -217,26 +219,19 @@ class YuKeMLPFLOW(nn.Module):
         residuals = []
         
         for i in range(self.latent_size):
-            # (batch_size, hidden_dim + x_dim)
-
+            
+            # (batch_size, latent_size, hidden_dim + x_dim)
             batch_inputs = x[:, i, :]
             
             residual = self.flows[i](batch_inputs)  # (batch_size, 1)
             # print("batch_inputs:{}".format(batch_inputs))
             # print("residual:{}".format(residual))
            
-
             J = jacfwd(self.flows[i])
             data_J = vmap(J)(batch_inputs).squeeze()
 
-            # data_J = torch.where(torch.isnan(data_J), torch.zeros_like(data_J), data_J)
             logabsdet = torch.log(torch.abs(data_J[:, -1]))
-
-            # print("data_J:{}".format(data_J))
-            # print("logabsdet:{}".format(logabsdet))
-
             sum_log_abs_det_jacobian += logabsdet
-
             residuals.append(residual)
 
         residuals = torch.cat(residuals, dim=-1)
@@ -311,8 +306,6 @@ class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
 
         return residuals, log_abs_det_jacobian
     
-
-
 
 # above fuctions are abndon
 class YuKeMLPFLOW_onlyX_seperateZ_init(nn.Module):

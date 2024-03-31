@@ -51,6 +51,7 @@ def parse_option():
     parser.add_argument('--flow_type', type=str, choices=['Planar', 'Radial', 'RealNVP', 'invertmlp', "yuke_mlpflow"], help="Type of flow model")
     parser.add_argument('--recon_loss', type=str, choices=['bce', 'mse', 'mae', 'smoothl1', 'pearson'], help="Type of reconstruction loss")
     parser.add_argument('--reid_loss', type=str, choices=['crossentropy', 'crossentropylabelsmooth', 'arcface', 'cosface', 'circle'], help="Type of reid loss")
+    parser.add_argument('--gaussian', type=str, choices=['Normal', 'MultivariateNormal'], help="Type of gaussion distribution")
 
     # debug
     parser.add_argument('--only_x_input', action='store_true', help="Use only x as input for flow model")
@@ -72,6 +73,7 @@ def parse_option():
     param = {
         'saved_name': args.saved_name,
         'train_stage': args.train_stage,
+        'gaussian': config.MODEL.GAUSSIAN,
         "amp" : config.TRAIN.AMP,
         'only_x_input': config.MODEL.ONLY_X_INPUT,
         'only_cvae_kl': config.MODEL.ONLY_CVAE_KL,
@@ -233,18 +235,24 @@ def main(config):
                 best_rank1 = rank1
                 best_epoch = epoch + 1
             
+            if (epoch+1) == config.TRAIN.MAX_EPOCH:
+                final_epoch = True
+            else:
+                final_epoch = False
             save_checkpoint({
                 'epoch': epoch,
                 'model': model.state_dict(),
                 'classifier': classifier.state_dict(),
                 'rank1': rank1,
+                'best_epoch': best_epoch,
                 'optimizer': optimizer.state_dict(),
-            }, is_best, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
+            }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
         
         
         if config.TRAIN.LR_SCHEDULER.NAME != 'None':
             scheduler.step()
     
+
     print("=> Best Rank-1 {:.1%} achieved at epoch {}".format(best_rank1, best_epoch))
     run["best_rank1"] = best_rank1
     run["best_epoch"] = best_epoch
