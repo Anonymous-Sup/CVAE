@@ -27,6 +27,7 @@ class MLP(nn.Module):
                 layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leak_relu_slope))
         layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
+        # now is the base version
         layers.append(nn.LeakyReLU(leak_relu_slope))
         self.MLP = nn.Sequential(*layers)
 
