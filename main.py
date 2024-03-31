@@ -125,7 +125,7 @@ def main(config):
         beta_lr = 1
 
     if config.MODEL.TRAIN_STAGE == 'reidstage':
-        alpha_lr = 1
+        alpha_lr = 10
     else:
         alpha_lr = 1
 
@@ -138,9 +138,9 @@ def main(config):
         # else:
         optimizer = optim.Adam([
             {'params': parameters}, 
-            {'params': cla_parameters, 'lr': config.TRAIN.OPTIMIZER.LR},
+            {'params': cla_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr},
             {'params': Flow_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
-            lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
 
         # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
         #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)

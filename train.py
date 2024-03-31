@@ -23,7 +23,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     if config.MODEL.ONLY_CVAE_KL:
         print("=> Only CVAE KL")
 
-    useMultiG = False
+    useMultiG = True
 
     if useMultiG:
         print("=> Use Multivariate Gaussian As the Prior")
