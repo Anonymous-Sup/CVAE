@@ -57,11 +57,11 @@ _C.MODEL = CN()
 _C.MODEL.NAME = 'CVAE'
 _C.MODEL.PRETRAIN = 'CLIPreid'
 _C.MODEL.VAE_TYPE = 'CVAE'
-_C.MODEL.FLOW_TYPE = 'Planar'  # 'Planar', 'Radial', 'RealNVP'
+_C.MODEL.FLOW_TYPE = 'yuke_mlpflow'  # 'Planar', 'Radial', 'RealNVP', 'yuke_mlpflow'
 # _C.MODEL.ENCODER_LAYER_SIZES = [1280, 256]
 _C.MODEL.LATENT_SIZE = 12
 # _C.MODEL.DECODER_LAYER_SIZES = [256, 1280]
-_C.MODEL.FEAT_FUSION = True
+_C.MODEL.FEAT_FUSION = False
 # feature dim
 _C.MODEL.FEATURE_DIM = 1280
 
@@ -79,6 +79,7 @@ _C.MODEL.ONLY_X_INPUT = False
 _C.MODEL.ONLY_CVAE_KL = False
 _C.MODEL.USE_CENTROID = False
 _C.MODEL.CONDITIONAL = False
+_C.MODEL.GAUSSIAN = ''  # 'Normal', 'MultivariateNormal'
 
 # -----------------------------------------------------------------------------
 # Losses for training 
@@ -201,6 +202,8 @@ def update_config(config, args):
     # if args.conditionalvae:
     #     print("Use conditional vae, instead of additional domain embedding")
     #     config.MODEL.CONDITIONAL = True
+    if args.gaussian:
+        config.MODEL.GAUSSIAN = args.gaussian
 
     if args.resume:
         config.MODEL.RESUME = args.resume

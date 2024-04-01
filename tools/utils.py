@@ -7,7 +7,7 @@ import os.path as osp
 import torch
 import random
 import numpy as np
-
+import glob
 
 def set_seed(seed=None):
     if seed is None:
@@ -62,11 +62,24 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def save_checkpoint(state, is_best, fpath='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, final_epoch, fpath='checkpoint.pth.tar'):
     mkdir_if_missing(osp.dirname(fpath))
     torch.save(state, fpath)
     if is_best:
         shutil.copy(fpath, osp.join(osp.dirname(fpath), 'best_model.pth.tar'))
+    
+    try: 
+        if final_epoch:
+            # delate all other middle checkpoints in dirname(fpath) expect best_model.pth.tar
+            checkpoint_dir = osp.dirname(fpath)
+            checkpoint_files = glob.glob(osp.join(checkpoint_dir, 'checkpoint_ep*.pth.tar'))
+            best_model_path = osp.join(checkpoint_dir, 'best_model.pth.tar')
+            for checkpoint_file in checkpoint_files:
+                if checkpoint_file != best_model_path:
+                    os.remove(checkpoint_file)
+    except Exception as e:
+        print(e)
+        print('Delete middle checkpoints failed!')
 
 
 # def get_logger(fpath, local_rank=0, name=''):

@@ -7,6 +7,8 @@ __factory = {
     'CVAE': VAE
 }
 
+muti_u_embidding = False
+
 def build_model(config, num_classes):
     
     print("Initializing Flow model: {}".format(config.MODEL.FLOW_TYPE))
@@ -28,15 +30,15 @@ def build_model(config, num_classes):
                 num_layers=4
             )
         else:
-            '''
-             todo: if latent_size is not 12 is there is a problm about hidden_dim
-            '''
-            if config.MODEL.LATENT_SIZE == 12:
-                flow_input_dim = 64  # = 768/12
-            elif config.MODEL.LATENT_SIZE == 36:
-                flow_input_dim = 24  # = 864/36
-            elif config.MODEL.LATENT_SIZE == 64:
-                flow_input_dim = 12 # = 768/64
+            if muti_u_embidding:
+                if config.MODEL.LATENT_SIZE == 12:
+                    flow_input_dim = 64  # = 768/12
+                elif config.MODEL.LATENT_SIZE == 36:
+                    flow_input_dim = 24  # = 864/36
+                elif config.MODEL.LATENT_SIZE == 64:
+                    flow_input_dim = 12 # = 768/64
+            else:
+                flow_input_dim = 64
             
             flows_model = YuKeMLPFLOW(
                 latent_size=config.MODEL.LATENT_SIZE,
@@ -62,12 +64,17 @@ def build_model(config, num_classes):
     # if latent_size is not 12, there is a problem
     # maybe 36*24 = 864
     # maybe 64*12 = 768
-    if config.MODEL.LATENT_SIZE == 36:
-        nips_hidden_dim = 864
+    if muti_u_embidding:
+        if config.MODEL.LATENT_SIZE == 36:
+            nips_hidden_dim = 864
+        else:
+            nips_hidden_dim = 768
+        nips_out_dim = nips_hidden_dim
     else:
-        nips_hidden_dim = 768
+        nips_hidden_dim = 256
+        nips_out_dim = 64
     
-    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT, use_centroid=config.MODEL.USE_CENTROID)
+    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, out_dim=nips_out_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT, use_centroid=config.MODEL.USE_CENTROID)
     
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     
