@@ -139,7 +139,7 @@ class NIPS(nn.Module):
 
         recon_x = self.VAE.decoder(x_proj_norm)
 
-        return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_feature_norm, flow_input
+        return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_feature, flow_input
     
 
     def normalization(self, x):
