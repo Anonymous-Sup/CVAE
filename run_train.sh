@@ -20,6 +20,8 @@
 #  choices=['crossentropy', 'crossentropylabelsmooth']
 #  choices=['Normal', 'MultivariateNormal']
 # --use_centroid \
+# --only_cvae_kl \
+# --only_x_input \
 
 nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
@@ -28,18 +30,18 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --train_format base \
 --train_stage klstage \
 --gpu 0 \
---saved_name fp32_l4vaeleakRelu-lre4_yukeflowkl_noJ-MG-wU64-Uindex-12z_noReID_clamp \
+--saved_name fp32_l4vaeleakRelu-lre4_yukeflowkl_J-MG-noU-UindexC-12z_noReID_clamp \
 --vae_type cvae \
 --flow_type yuke_mlpflow \
 --recon_loss mse \
 --reid_loss crossentropy \
+--use_centroid \
+--only_x_input \
 --only_cvae_kl \
 --gaussian MultivariateNormal \
-> train_MG_idx_noJ.log 2>&1 & 
+> train_MG_J_noU.log 2>&1 & 
 
 # trace the log
-
-
 
 
 # python main.py --cfg ./configs/clipreid_cvae_kl.yaml \

@@ -70,6 +70,9 @@ class Encoder(nn.Module):
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
         self.MLP.add_module(
             name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim, bias=False))
+        """
+        If here using ReLU will cause multiple 0 in Z, be careful
+        """
         self.MLP.add_module(name="A{:d}".format(n_layers), module=ac_fn)
         
         # 1280 -> 256 -> 36

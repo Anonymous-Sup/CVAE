@@ -137,10 +137,11 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
                 
                 if useMultiG:
+                    # mean(64,12), 
                     base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
                     # Here is a Jcobin! 
                     prior = base_dist.log_prob(theta)
-                    # prior = prior + logjacobin.sum(-1)
+                    prior = prior + logjacobin.sum(-1)
                 else:
                     base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
                     prior = torch.sum(base_dist.log_prob(theta), dim=-1)
@@ -162,8 +163,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 # q0 = Normal(mean, torch.exp(0.5 * log_var))
                 q0 = Normal(mean, torch.clamp(torch.exp(0.5 * log_var), min=1e-8))
                 posterior = torch.sum(q0.log_prob(z), dim=-1)
-                kl_loss = (posterior - prior).mean()
 
+                kl_loss = (posterior - prior).mean()
                 kl_loss = kl_loss.clamp(2.0)            
                 kld_theta = kl_loss
 

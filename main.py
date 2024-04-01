@@ -118,7 +118,13 @@ def main(config):
             #     param.requires_grad = False
             Flow_parameters.append(param)
     
-    parameters = parameters
+    if config.MODEL.TRAIN_STAGE == 'reidstage':
+        # no grad is requird for param and flow_param
+        for param in parameters:
+            param.requires_grad = False
+        for flow_param in Flow_parameters:
+            flow_param.requires_grad = False
+    
     cla_parameters = list(classifier.parameters())
 
     if config.MODEL.FLOW_TYPE == 'invertmlp':
@@ -133,16 +139,16 @@ def main(config):
 
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
-        # if config.MODEL.TRAIN_STAGE == 'reidstage':
-        #     optimizer = optim.Adam(parameters, 
-        #                            lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
-        #                            weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-        # else:
-        optimizer = optim.Adam([
-            {'params': parameters}, 
-            {'params': cla_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr},
-            {'params': Flow_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
-            lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+        if config.MODEL.TRAIN_STAGE == 'reidstage':
+            optimizer = optim.Adam(cla_parameters, 
+                                   lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
+                                   weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+        else:
+            optimizer = optim.Adam([
+                {'params': parameters}, 
+                {'params': cla_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr},
+                {'params': Flow_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
+                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
 
         # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
         #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)

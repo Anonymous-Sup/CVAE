@@ -76,6 +76,8 @@ class NIPS(nn.Module):
             self.domain_len = 2*(2*self.latent_size+1) 
             self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4)
         
+        self.norm = self.normalize_l2
+
         # self.fusion = MLP(latent_size+self.hidden_dim, self.hidden_dim, latent_size, number_layers=3)
 
         # add batch_norm for domain_embeding
@@ -97,7 +99,7 @@ class NIPS(nn.Module):
         
         # domain_feature_norm = self.normalization(domain_feature)
         # domain_feature_norm = self.normalize_l2(domain_feature)
-        domain_feature_norm = self.normalize_l2(domain_feature)
+        domain_feature_norm = self.norm(domain_feature)
         if torch.isnan(domain_feature_norm).any():
             print("domain_feature after normalization has nan")
 
@@ -105,7 +107,7 @@ class NIPS(nn.Module):
         x_proj, means, log_var = self.VAE.encoder(x)
 
         # x_proj_norm = self.normalization(x_proj)
-        x_proj_norm = self.normalize_l2(x_proj)
+        x_proj_norm = self.norm(x_proj)
         # x_proj_norm = x_proj
 
         # 64, 12
@@ -114,19 +116,19 @@ class NIPS(nn.Module):
         '''
         cat u_i with each dim of z
         '''
-        64, 12, 64
-        domian_dim =  int(self.hidden_dim/self.latent_size)
-        U = domain_feature_norm.view(-1, self.latent_size, domian_dim)
-        # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
-        flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
+        # # 64, 12, 64
+        # domian_dim =  int(self.hidden_dim/self.latent_size)
+        # U = domain_feature_norm.view(-1, self.latent_size, domian_dim)
+        # # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
+        # flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
         
         '''
         cat u with each dim of z
         '''
-        # U = domain_feature_norm.unsqueeze(1)
-        # U = U.repeat(1, x_proj_norm.size(1), 1)
-        # # (64,12) --> (64, 12, 1) + (64, 12, 64) --> (64, 12, 65)
-        # flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
+        U = domain_feature_norm.unsqueeze(1)
+        U = U.repeat(1, x_proj_norm.size(1), 1)
+        # (64,12) --> (64, 12, 1) + (64, 12, 64) --> (64, 12, 65)
+        flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
 
 
         if self.only_x_input:
@@ -179,6 +181,11 @@ class NIPS(nn.Module):
         x: pytorch Variable, same shape as input
         """
         x = 1. * x / (torch.norm(x, 2, axis, keepdim=True).expand_as(x) + 1e-12)
+        
+        # using sigmod to normalize to [0, 1]
+        # x = torch.sigmoid(x)
+
+        # using min_max to normalize to [0, 1]
         x = self.min_max_normalization(x)
         return x
     
