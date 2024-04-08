@@ -1,5 +1,5 @@
 from models.CVAE import VAE
-from models.Classifier import Classifier, NormalizedClassifier
+from models.Classifier import Classifier, NormalizedClassifier, MLPClassBlock
 from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ, YuKeMLPFLOW_onlyX_seperateZ_init
 from models.NIPS import NIPS
 
@@ -58,7 +58,7 @@ def build_model(config, num_classes):
             n_layers=4
     )
     else:
-        raise KeyError("Invalid model name, got '{}', but expected to be one of {}".format(config.MODEL.NAME, __factory.keys()))
+        raise KeyError("Invalid model name, got '{}', but expected to be one of {}".format(config.MODEL.VAE_TYPE, __factory.keys()))
 
     # 768 = latent_size * hiden_dim = 12*64
     # if latent_size is not 12, there is a problem
@@ -80,10 +80,12 @@ def build_model(config, num_classes):
     
     # Build classifier
     if config.LOSS.CLA_LOSS in ['crossentropy', 'crossentropylabelsmooth']:
-        classifier = Classifier(feature_dim=config.MODEL.LATENT_SIZE, num_classes=num_classes)
+        # classifier = Classifier(feature_dim=config.MODEL.LATENT_SIZE, num_classes=num_classes)
+        classifier = MLPClassBlock(feature_dim=config.MODEL.LATENT_SIZE, num_classes=num_classes)
     else:
         classifier = NormalizedClassifier(feature_dim=config.MODEL.LATENT_SIZE, num_classes=num_classes)
-    
+    print("Classifier size: {:.5f}M".format(sum(p.numel() for p in classifier.parameters())/1000000.0))
+
     return model, classifier
 
 

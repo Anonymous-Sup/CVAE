@@ -16,13 +16,17 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         centroids = centroids.float()
         print("=> centroids.dtype: {}".format(centroids.dtype))
 
-    model.train()
-    classifier.train()
+    if 'reid' in config.MODEL.TRAIN_STAGE:
+        model.eval()
+        classifier.train()
+    else:
+        model.train()
+        classifier.eval()
+
     centroids.cuda()
 
     if config.MODEL.ONLY_CVAE_KL:
         print("=> Only CVAE KL")
-
 
     if config.MODEL.GAUSSIAN == 'MultivariateNormal':
         print("=> Use Multivariate Gaussian As the Prior")
@@ -120,8 +124,13 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             else:
                 domain_index = clusterids
             
-            recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+            if 'reid' in config.MODEL.TRAIN_STAGE:
+                with torch.no_grad():
+                    recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+            else:
+                recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
             
+            # (64, 702)
             outputs = classifier(x_proj_norm)
             outputs_theta = classifier(theta)
 
@@ -131,7 +140,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             cls_loss = criterion_cla(outputs, pids)
             cls_loss_theta = criterion_cla(outputs_theta, pids)
 
-            pair_loss = criterion_pair(x_proj_norm, pids)
+            pair_loss = criterion_pair(outputs, pids)
 
             if config.MODEL.ONLY_CVAE_KL:  
                 posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
@@ -141,7 +150,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                     base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
                     # Here is a Jcobin! 
                     prior = base_dist.log_prob(theta)
-                    prior = prior + logjacobin.sum(-1)
+                    # prior = prior + logjacobin.sum(-1)
                 else:
                     base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
                     prior = torch.sum(base_dist.log_prob(theta), dim=-1)
@@ -172,11 +181,13 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
             beta = 0.05
             if config.MODEL.TRAIN_STAGE == 'klstage':
-                loss = recon_loss + beta * kl_loss 
+                loss = recon_loss  
+                # loss = loss + beta * kl_loss    # for baseline there is only a reconsturction loss
                 # loss = loss + pair_loss
                 # loss = loss + cls_loss
             elif config.MODEL.TRAIN_STAGE == 'reidstage':
-                loss = cls_loss + recon_loss + pair_loss
+                loss = cls_loss
+                loss = loss + pair_loss
         
         # if early_stopping(kl_loss):
         #     print("Early stopping at epoch: {}".format(epoch))
@@ -184,29 +195,29 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
         # if is the last batch
         if batch_idx == len(trainloader)-1:
-            plot_scatterNN(run, x_proj, "0-N by N for z")
-            plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
-            
-            plot_correlation_matrix(run, x_proj_norm, "1-correlation z")
-            print("image_tensor: {}".format(imgs_tensor[0, :]))
-            print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm[0, :]))
-            plot_pair_seperate(run, x_proj_norm, "1-spedistribute z")
+            if 'reid' not in config.MODEL.TRAIN_STAGE:
+                plot_scatterNN(run, x_proj, "0-N by N for z")
+                plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
+                
+                plot_correlation_matrix(run, x_proj_norm, "1-correlation z")
+                print("image_tensor: {}".format(imgs_tensor[0, :]))
+                print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm[0, :]))
+                plot_pair_seperate(run, x_proj_norm, "1-spedistribute z")
 
-            plot_correlation_matrix(run, theta, "1-correlation theta")
-            plot_pair_seperate(run, theta, "1-spedistribute theta")
+                plot_correlation_matrix(run, theta, "1-correlation theta")
+                plot_pair_seperate(run, theta, "1-spedistribute theta")
 
-            plot_histogram(run, mean, "2-mean")
-            plot_histogram(run, log_var, "2-log_var")
-            plot_histogram(run, z, "2-reparameterized z_0")
-            plot_histogram(run, domian_feature, "3-domian_feature")
-            print("domian_feature+Z: {}".format(flow_input[0, :2, -10:])) # print the last 10 elements
-            plot_histogram(run, z_1, "3-flowinput-z_1")
-            plot_histogram(run, theta, "4-theta")
-            plot_histogram(run, logjacobin, "4-logjacobin")
-            # plot_histogram(run, recon_x, "recon_x")
-            # plot_histogram(run, imgs_tensor, "imgs_tensor")
-            
-            # plot_histogram(run, flow_input, "flow_input")
+                plot_histogram(run, mean, "2-mean")
+                plot_histogram(run, log_var, "2-log_var")
+                plot_histogram(run, z, "2-reparameterized z_0")
+                plot_histogram(run, domian_feature, "3-domian_feature")
+                print("domian_feature+Z: {}".format(flow_input[0, :2, -10:])) # print the last 10 elements
+                plot_histogram(run, z_1, "3-flowinput-z_1")
+                plot_histogram(run, theta, "4-theta")
+                plot_histogram(run, logjacobin, "4-logjacobin")
+                # plot_histogram(run, recon_x, "recon_x")
+                # plot_histogram(run, imgs_tensor, "imgs_tensor")
+                # plot_histogram(run, flow_input, "flow_input")
 
         optimizer.zero_grad()
         if config.TRAIN.AMP:

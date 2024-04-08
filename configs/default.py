@@ -56,7 +56,7 @@ _C.MODEL = CN()
 # Model name
 _C.MODEL.NAME = 'CVAE'
 _C.MODEL.PRETRAIN = 'CLIPreid'
-_C.MODEL.VAE_TYPE = 'CVAE'
+_C.MODEL.VAE_TYPE = 'cvae'
 _C.MODEL.FLOW_TYPE = 'yuke_mlpflow'  # 'Planar', 'Radial', 'RealNVP', 'yuke_mlpflow'
 # _C.MODEL.ENCODER_LAYER_SIZES = [1280, 256]
 _C.MODEL.LATENT_SIZE = 12
@@ -79,7 +79,7 @@ _C.MODEL.ONLY_X_INPUT = False
 _C.MODEL.ONLY_CVAE_KL = False
 _C.MODEL.USE_CENTROID = False
 _C.MODEL.CONDITIONAL = False
-_C.MODEL.GAUSSIAN = ''  # 'Normal', 'MultivariateNormal'
+_C.MODEL.GAUSSIAN = 'MultivariateNormal'  # 'Normal', 'MultivariateNormal'
 
 # -----------------------------------------------------------------------------
 # Losses for training 
@@ -226,7 +226,7 @@ def update_config(config, args):
     datetime_today = str(datetime.date.today())
     # output folder
     if 'reid' in args.train_stage:
-        config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid_'+config.LOSS.CLA_LOSS)
+        config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid_'+config.LOSS.CLA_LOSS, datetime_today)
     else:
         config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, datetime_today, config.SAVED_NAME + "_" + config.MODEL.FLOW_TYPE+"_"+config.LOSS.RECON_LOSS)
 

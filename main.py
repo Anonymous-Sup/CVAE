@@ -118,14 +118,17 @@ def main(config):
             #     param.requires_grad = False
             Flow_parameters.append(param)
     
+    cla_parameters = list(classifier.parameters())
+
     if config.MODEL.TRAIN_STAGE == 'reidstage':
         # no grad is requird for param and flow_param
         for param in parameters:
             param.requires_grad = False
         for flow_param in Flow_parameters:
             flow_param.requires_grad = False
-    
-    cla_parameters = list(classifier.parameters())
+    else:
+        for cls_param in cla_parameters:
+            cls_param.requires_grad = False
 
     if config.MODEL.FLOW_TYPE == 'invertmlp':
         beta_lr = 1
@@ -133,21 +136,20 @@ def main(config):
         beta_lr = 1
 
     if config.MODEL.TRAIN_STAGE == 'reidstage':
-        alpha_lr = 10
+        alpha_lr = 1   # base lr 1e-4  
     else:
         alpha_lr = 1
 
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
         if config.MODEL.TRAIN_STAGE == 'reidstage':
-            optimizer = optim.Adam(cla_parameters, 
+            optimizer = optim.Adam(filter(lambda p: p.requires_grad ,cla_parameters), 
                                    lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
                                    weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         else:
             optimizer = optim.Adam([
-                {'params': parameters}, 
-                {'params': cla_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr},
-                {'params': Flow_parameters, 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
+                {'params': filter(lambda p: p.requires_grad ,parameters)},
+                {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
                 lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
 
         # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
@@ -170,7 +172,6 @@ def main(config):
     
     best_rank1 = -np.inf
 
-    
     if config.MODEL.TRAIN_STAGE == 'reidstage':
         print("=> Start Training REID model")
         print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
@@ -181,8 +182,8 @@ def main(config):
         # flows_model.load_state_dict(checkpoint['flows_model'])
     else:
         if config.MODEL.RESUME:
-            print("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
-            checkpoint = torch.load(config.MODEL.RESUME)
+            print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+            checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
             model.load_state_dict(checkpoint['model'])
             # flows_model.load_state_dict(checkpoint['flows_model'])
             classifier.load_state_dict(checkpoint['classifier'])
@@ -204,7 +205,7 @@ def main(config):
     if config.EVAL_MODE:
         print("=> Start evaluation only ")
         with torch.no_grad():
-            test_cvae(run, config, model, queryloader, galleryloader, dataset)
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier)
         return
 
     start_time = time.time()
@@ -219,7 +220,6 @@ def main(config):
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break
-
         else:
             state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
               optimizer, trainloader, epoch, dataset.train_centroids, early_stopping)
@@ -233,22 +233,29 @@ def main(config):
             (epoch+1) % config.TEST.EVAL_STEP == 0 or (epoch+1) == config.TRAIN.MAX_EPOCH:
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                rank1 = test_cvae(run, config, model, queryloader, galleryloader, dataset)
+                rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier)
                 # run["eval/rank1"].append(rank1)
+                rank1 = rank[0]
+
             is_best = rank1 > best_rank1
             
             if is_best: 
                 best_rank1 = rank1
+                best_cmc = rank
+                best_map = mAP
                 best_epoch = epoch + 1
             
             if (epoch+1) == config.TRAIN.MAX_EPOCH:
                 final_epoch = True
             else:
                 final_epoch = False
+            
             save_checkpoint({
                 'epoch': epoch,
                 'model': model.state_dict(),
                 'classifier': classifier.state_dict(),
+                'cmc': best_cmc,
+                'mAP': best_map,
                 'rank1': rank1,
                 'best_epoch': best_epoch,
                 'optimizer': optimizer.state_dict(),
@@ -257,6 +264,8 @@ def main(config):
         
         if config.TRAIN.LR_SCHEDULER.NAME != 'None':
             scheduler.step()
+            run['train/lr'].append(scheduler.get_last_lr()[0])
+            
     
 
     print("=> Best Rank-1 {:.1%} achieved at epoch {}".format(best_rank1, best_epoch))
@@ -272,6 +281,7 @@ if __name__ == '__main__':
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.empty_cache()
     gc.collect()
+    
     config = parse_option()
     # set gpu from '0,1' to '1'
     os.environ['CUDA_VISIBLE_DEVICES'] = config.GPU

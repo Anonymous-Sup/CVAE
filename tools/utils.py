@@ -65,6 +65,10 @@ class AverageMeter(object):
 def save_checkpoint(state, is_best, final_epoch, fpath='checkpoint.pth.tar'):
     mkdir_if_missing(osp.dirname(fpath))
     torch.save(state, fpath)
+    best_rank = state['cmc']
+    best_mAP = state['mAP']
+    
+
     if is_best:
         shutil.copy(fpath, osp.join(osp.dirname(fpath), 'best_model.pth.tar'))
     
@@ -77,6 +81,14 @@ def save_checkpoint(state, is_best, final_epoch, fpath='checkpoint.pth.tar'):
             for checkpoint_file in checkpoint_files:
                 if checkpoint_file != best_model_path:
                     os.remove(checkpoint_file)
+            
+
+            # create a file with name bestR@1_{:.1%}.log and save best_rank and best_mAP
+            best_rank_str = 'bestR@1_{:.1%}.log'.format(best_rank[0])
+            with open(osp.join(checkpoint_dir, best_rank_str), 'w') as f:
+                # top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
+                f.write('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(best_rank[0], best_rank[4], best_rank[9], best_rank[19], best_mAP))
+    
     except Exception as e:
         print(e)
         print('Delete middle checkpoints failed!')

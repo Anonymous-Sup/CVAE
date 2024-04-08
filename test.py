@@ -8,7 +8,7 @@ from data import build_singe_test_loader
 from torch.cuda.amp import autocast
 
 @torch.no_grad()
-def extract_midium_feature(config, model, dataloader, centroids_all):
+def extract_midium_feature(config, model, dataloader, centroids_all, classifier=None):
     features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), []
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
         if not config.TRAIN.AMP:
@@ -37,6 +37,9 @@ def extract_midium_feature(config, model, dataloader, centroids_all):
         else:
             recon_x, mean, log_var, z_0, batch_features, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
         
+        if 'reid' in config.MODEL.TRAIN_STAGE:
+            batach_features_norm = classifier(batach_features_norm)
+
         features.append(batach_features_norm.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
@@ -45,12 +48,13 @@ def extract_midium_feature(config, model, dataloader, centroids_all):
     return features, pids, camids, centroids
 
 
-def test_cvae(run, config, model, queryloader, galleryloader, dataset):
+def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None):
     since = time.time()
     model.eval()
+    classifer.eval()
     # Extract features 
-    qf, q_pids, q_camids, q_centroids = extract_midium_feature(config, model, queryloader, dataset.query_centroids)
-    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(config, model, galleryloader, dataset.gallery_centroids)
+    qf, q_pids, q_camids, q_centroids = extract_midium_feature(config, model, queryloader, dataset.query_centroids, classifer)
+    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(config, model, galleryloader, dataset.gallery_centroids, classifer)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -76,7 +80,10 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset):
     print('Distance computing in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
     since = time.time()
-    print("Computing CMC and mAP")
+    if 'reid' in config.MODEL.TRAIN_STAGE:
+        print("Computing CMC and mAP through Classifier")
+    else:
+        print("Computing CMC and mAP")
     cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
@@ -89,7 +96,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset):
     run["test/top5"].append(cmc[4])
     run["test/top10"].append(cmc[9])
 
-    return cmc[0]
+    return cmc, mAP
 
 
 @torch.no_grad()
