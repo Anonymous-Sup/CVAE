@@ -187,7 +187,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 # loss = loss + cls_loss
             elif config.MODEL.TRAIN_STAGE == 'reidstage':
                 loss = cls_loss
-                loss = loss + pair_loss
+                # loss = pair_loss
+                loss = 0.5 * loss + pair_loss
         
         # if early_stopping(kl_loss):
         #     print("Early stopping at epoch: {}".format(epoch))

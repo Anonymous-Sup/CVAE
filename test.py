@@ -39,6 +39,7 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
         
         if 'reid' in config.MODEL.TRAIN_STAGE:
             batach_features_norm = classifier(batach_features_norm)
+            batach_features_norm = model.normalize_l2(batach_features_norm)
 
         features.append(batach_features_norm.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
