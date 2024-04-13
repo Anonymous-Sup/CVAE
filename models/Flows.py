@@ -241,6 +241,7 @@ class YuKeMLPFLOW(nn.Module):
         return residuals, log_abs_det_jacobian
 
 
+
 class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
 
     def __init__(

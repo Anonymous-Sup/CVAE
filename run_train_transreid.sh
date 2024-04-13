@@ -24,8 +24,8 @@
 # --only_x_input \
 
 
-# # ===========Stage 1 traning================
-nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
+# ===========Stage 1 traning================
+nohup python -u main.py --cfg ./configs/transreid_cvae_kl.yaml \
 --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
 --dataset duke \
 --format_tag tensor \
@@ -40,14 +40,11 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --use_centroid \
 --only_cvae_kl \
 --gaussian MultivariateNormal \
-> train_ClIPReID_Uc_klnoJ.log 2>&1 & 
+> train_TransReID_Uc_klnoJ.log 2>&1 & 
 
 
-
-
-
-# ===========Baseline Stage 1 training================
-# nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
+# # ===========Baseline Stage 1 training================
+# nohup python -u main.py --cfg ./configs/transreid_cvae_kl.yaml \
 # --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
 # --dataset duke \
 # --format_tag tensor \
@@ -63,17 +60,17 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 # --only_x_input \
 # --only_cvae_kl \
 # --gaussian MultivariateNormal \
-# > train_clipreid_baseline_64_norm.log 2>&1 & 
+# > train_transreid_baseline_64_norm.log 2>&1 & 
 
 
-# # ===========Baseline Stage 2 training================
-# nohup python -u main.py --cfg ./configs/clipreid_cvae_stage2.yaml \
+# ===========Baseline Stage 2 training================
+# nohup python -u main.py --cfg ./configs/transreid_cvae_stage2.yaml \
 # --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
 # --dataset duke \
 # --format_tag tensor \
 # --train_format base \
 # --train_stage reidstage \
-# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_cvae_baseline/2024-04-12/baseline_fp32_l4vaeleakRelu_64z_yuke_mlpflow_mse \
+# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/transreid_cvae_baseline/2024-04-13/baseline_fp32_l4vaeleakRelu_64z_norm_yuke_mlpflow_mse \
 # --gpu 0 \
 # --saved_name baseline_fp32_l4vaeleakRelu_64z \
 # --vae_type cvae \
@@ -84,5 +81,5 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 # --only_x_input \
 # --only_cvae_kl \
 # --gaussian MultivariateNormal \
-# > train_clipreid_baseline_64_stage2.log 2>&1 & 
+# > train_transreid_baseline_64_stage2.log 2>&1 & 
 

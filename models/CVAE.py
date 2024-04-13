@@ -31,7 +31,7 @@ class VAE(nn.Module):
         return True
 
     def reparameterize(self, mu, log_var):
-        std = torch.exp(0.5 * log_var) + 1e-8
+        std = torch.exp(0.5 * log_var)
         eps = torch.randn_like(std)
         return mu + eps * std
 
@@ -127,7 +127,8 @@ class Decoder(nn.Module):
         #     z = torch.cat((z, c), dim=-1)
         # self.MLP = self.MLP.to(dtype=z.dtype)
         x = self.MLP(z)
-        x = x / x.norm(dim=-1, keepdim=True)
+        # if norm:
+        #     x = x / x.norm(dim=-1, keepdim=True)
 
         return x
 

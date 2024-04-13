@@ -65,6 +65,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
         run["train/batch/load_time"].append(time.time() - end)
 
+        imgs_tensor = model.norm(imgs_tensor)
+
         # model = model.to(imgs_tensor.dtype)
         # classifier = classifier.to(imgs_tensor.dtype)
         # return recon_x, means, log_var, z_0, z_1, theta, logjcobin
@@ -130,6 +132,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             else:
                 recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
             
+            recon_x = model.norm(recon_x)
             # (64, 702)
             outputs = classifier(x_proj_norm)
             outputs_theta = classifier(theta)
@@ -170,7 +173,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                     prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
     
                 # q0 = Normal(mean, torch.exp(0.5 * log_var))
-                q0 = Normal(mean, torch.clamp(torch.exp(0.5 * log_var), min=1e-8))
+                q0 = Normal(mean, torch.exp(0.5 * log_var))
                 posterior = torch.sum(q0.log_prob(z), dim=-1)
 
                 kl_loss = (posterior - prior).mean()
@@ -182,7 +185,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             beta = 0.05
             if config.MODEL.TRAIN_STAGE == 'klstage':
                 loss = recon_loss  
-                # loss = loss + beta * kl_loss    # for baseline there is only a reconsturction loss
+                loss = loss + beta * kl_loss    # for baseline there is only a reconsturction loss
                 # loss = loss + pair_loss
                 # loss = loss + cls_loss
             elif config.MODEL.TRAIN_STAGE == 'reidstage':
@@ -201,8 +204,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
                 
                 plot_correlation_matrix(run, x_proj_norm, "1-correlation z")
-                print("image_tensor: {}".format(imgs_tensor[0, :]))
-                print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm[0, :]))
+                # print("image_tensor: {}".format(imgs_tensor[0, :10]))
+                # print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm[0, :]))
                 plot_pair_seperate(run, x_proj_norm, "1-spedistribute z")
 
                 plot_correlation_matrix(run, theta, "1-correlation theta")

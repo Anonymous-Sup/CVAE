@@ -65,7 +65,7 @@ class NormalizedClassifier(nn.Module):
 # |--Linear--|--bn--|--relu--|--Linear--|
 # Low dim feature to hideen to classifer
 class MLPClassBlock(nn.Module):
-    def __init__(self, feature_dim, num_classes, droprate=0.2):
+    def __init__(self, feature_dim, num_classes, droprate=0):
         super(MLPClassBlock, self).__init__()
 
         leaky_relu_slope = 0.2         
@@ -76,7 +76,7 @@ class MLPClassBlock(nn.Module):
         pre_dim = feature_dim
         for dim in hidden_dim_list:
             layers.append(nn.Linear(pre_dim, dim, bias=False))
-            layers.append(nn.BatchNorm1d(dim))
+            # layers.append(nn.BatchNorm1d(dim))
             layers.append(nn.LeakyReLU(leaky_relu_slope))
             if droprate>0:
                 layers.append(nn.Dropout(p=droprate))
