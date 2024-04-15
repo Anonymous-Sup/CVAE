@@ -37,7 +37,7 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
         else:
             recon_x, mean, log_var, z_0, batch_features, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
         
-        if 'reid' in config.MODEL.TRAIN_STAGE:
+        if 'reid' in config.MODEL.TRAIN_STAGE or 'encoder' in config.MODEL.TRAIN_STAGE:
             batach_features_norm = classifier(batach_features_norm)
             batach_features_norm = model.normalize_l2(batach_features_norm)
 
@@ -81,7 +81,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     print('Distance computing in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
     since = time.time()
-    if 'reid' in config.MODEL.TRAIN_STAGE:
+    if 'reid' in config.MODEL.TRAIN_STAGE or 'encoder' in config.MODEL.TRAIN_STAGE:
         print("Computing CMC and mAP through Classifier")
     else:
         print("Computing CMC and mAP")
@@ -108,8 +108,8 @@ def extract_test_feature_only(dataloader):
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
     features = torch.cat(features, 0)
-    # print("Normalizing features")
-    # features = features / features.norm(dim=-1, keepdim=True)
+    print("Normalizing features")
+    features = features / features.norm(dim=-1, keepdim=True)
     return features, pids, camids
 
 
@@ -164,7 +164,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description="Test feature")
     parser.add_argument("--data_root", type=str, default="/home/zhengwei/Desktop/Zhengwei/Projects/datasets/")
     parser.add_argument("--dataset", type=str, default="duke")
-    parser.add_argument("--pretrained", type=str, default="Transreid", choices=["CLIPreid", "Transreid", "CLIPreidNew"])
+    parser.add_argument("--pretrained", type=str, default="AGWRes50", choices=["CLIPreid", "Transreid", "CLIPreidNew", 'AGWRes50'])
 
     args = parser.parse_args()
 

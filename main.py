@@ -44,7 +44,7 @@ def parse_option():
     
     # Training
     parser.add_argument('--train_format', type=str, required= True, choices=['base', 'normal'], help="Select the datatype for training or finetuning")
-    parser.add_argument('--train_stage', type=str, choices=['klstage', 'reidstage'], required=True, help="Select the stage for training")
+    parser.add_argument('--train_stage', type=str, choices=['klstage', 'reidstage', 'encoder_only'], required=True, help="Select the stage for training")
 
     # Parameters 
     parser.add_argument('--vae_type', type=str, choices=['cvae'], help="Type of VAE model")
@@ -126,6 +126,9 @@ def main(config):
             param.requires_grad = False
         for flow_param in Flow_parameters:
             flow_param.requires_grad = False
+    elif config.MODEL.TRAIN_STAGE == 'encoder_only':
+        for flow_param in Flow_parameters:
+            flow_param.requires_grad = False
     else:
         for cls_param in cla_parameters:
             cls_param.requires_grad = False
@@ -146,6 +149,11 @@ def main(config):
             optimizer = optim.Adam(filter(lambda p: p.requires_grad ,cla_parameters), 
                                    lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
                                    weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+        elif config.MODEL.TRAIN_STAGE == 'encoder_only':
+            optimizer = optim.Adam([
+                {'params': filter(lambda p: p.requires_grad ,parameters)},
+                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         else:
             optimizer = optim.Adam([
                 {'params': filter(lambda p: p.requires_grad ,parameters)},

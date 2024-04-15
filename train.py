@@ -19,6 +19,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     if 'reid' in config.MODEL.TRAIN_STAGE:
         model.eval()
         classifier.train()
+    elif 'encoder' in config.MODEL.TRAIN_STAGE:
+        model.train()
+        classifier.train()
     else:
         model.train()
         classifier.eval()
@@ -191,6 +194,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             elif config.MODEL.TRAIN_STAGE == 'reidstage':
                 loss = cls_loss
                 # loss = pair_loss
+                loss = 0.5 * loss + pair_loss
+            elif config.MODEL.TRAIN_STAGE == 'encoder_only':
+                loss = cls_loss
                 loss = 0.5 * loss + pair_loss
         
         # if early_stopping(kl_loss):
