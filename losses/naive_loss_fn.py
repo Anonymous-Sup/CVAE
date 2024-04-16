@@ -37,6 +37,22 @@ class MSE_loss(nn.Module):
         loss = nn.functional.mse_loss(recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim), reduction='mean')
         return loss
 
+class MMD_loss(nn.Module):
+    def __init__(self, sigma=1.0):
+        super(MMD_loss, self).__init__()
+        self.sigma = sigma
+
+    def forward(self, z):
+        batch_size = z.size(0)
+        kernel_matrix = self.gaussian_kernel(z, z, self.sigma)
+        loss = (kernel_matrix.sum() - kernel_matrix.diag().sum()) / (batch_size * (batch_size - 1))
+        return loss
+    
+    def gaussian_kernel(self, x1, x2, sigma=1.0):
+        dist_matrix = torch.cdist(x1, x2, p=2)
+        kernel_matrix = torch.exp(-dist_matrix / (2 * sigma ** 2))
+        return kernel_matrix
+
 
 class MAE_loss(nn.Module):
     def __init__(self, feature_dim):
@@ -72,3 +88,4 @@ class Pearson_loss(nn.Module):
         corr = (vx * vy).sum(dim=1) / (vx.norm(dim=1) * vy.norm(dim=1))
         loss = 1 - corr
         return loss.mean()
+    

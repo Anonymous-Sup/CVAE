@@ -108,8 +108,8 @@ def extract_test_feature_only(dataloader):
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
     features = torch.cat(features, 0)
-    # print("Normalizing features")
-    # features = features / features.norm(dim=-1, keepdim=True)
+    print("Normalizing features")
+    features = features / features.norm(dim=-1, keepdim=True)
     return features, pids, camids
 
 
@@ -164,7 +164,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description="Test feature")
     parser.add_argument("--data_root", type=str, default="/home/zhengwei/Desktop/Zhengwei/Projects/datasets/")
     parser.add_argument("--dataset", type=str, default="duke")
-    parser.add_argument("--pretrained", type=str, default="Transreid", choices=["CLIPreid", "Transreid", "CLIPreidNew"])
+    parser.add_argument("--pretrained", type=str, default="AGWRes50", choices=["CLIPreid", "Transreid", "CLIPreidNew", 'AGWRes50'])
 
     args = parser.parse_args()
 
