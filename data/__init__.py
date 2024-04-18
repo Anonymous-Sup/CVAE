@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 # from data.datasets.cuhk03 import CUHK03
 from data.datasets.duke import DukeMTMCreID
 # from data.datasets.msmt17 import MSMT17
+from data.datasets.market1k import MarketSketch
 
 from data.dataset_loader import ImageDataset
 from data.samplers import RandomIdentitySampler
@@ -14,6 +15,7 @@ __factory = {
     # 'cuhk03': CUHK03,
     'duke': DukeMTMCreID,
     # 'msmt17': MSMT17,
+    'market1k': MarketSketch,
 }
 
 
@@ -32,6 +34,7 @@ def build_dataset(config):
     dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, format_tag=config.DATA.FORMAT_TAG, pretrained=config.MODEL.PRETRAIN, latent_size=config.MODEL.LATENT_SIZE)
     return dataset
 
+# not used when using tensor format
 def build_transforms(config):
     transform_train = T.Compose([
         T.RandomCroping(config.DATA.HEIGHT, config.DATA.WIDTH, p=config.AUG.RC_PROB),
@@ -73,9 +76,9 @@ def build_dataloader(config):
     return trainloader, queryloader, galleryloader, dataset
 
 
-def build_singe_test_loader(root_path, pretrained):
+def build_singe_test_loader(root_path, dataset_name, pretrained):
 
-    dataset = __factory["duke"](root=root_path, format_tag="tensor", pretrained=pretrained, test_metrix_only=True)
+    dataset = __factory["dataset_name"](root=root_path, format_tag="tensor", pretrained=pretrained, test_metrix_only=True)
     
     queryloader = DataLoader(ImageDataset(dataset.query, format_tag="tensor", transform=None),
                              batch_size=512, num_workers=4,

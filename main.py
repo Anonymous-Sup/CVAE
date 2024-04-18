@@ -43,8 +43,8 @@ def parse_option():
     parser.add_argument('--format_tag', type=str, choices=['tensor', 'img'], help="Using image or pretrained features")
     
     # Training
-    parser.add_argument('--train_format', type=str, required= True, choices=['base', 'normal'], help="Select the datatype for training or finetuning")
-    parser.add_argument('--train_stage', type=str, choices=['klstage', 'reidstage'], required=True, help="Select the stage for training")
+    parser.add_argument('--train_format', type=str, required= True, choices=['base', 'novel'], help="Select the datatype for training or finetuning")
+    parser.add_argument('--train_stage', type=str, choices=['klstage', 'reidstage', 'novel'], required=True, help="Select the stage for training")
 
     # Parameters 
     parser.add_argument('--vae_type', type=str, choices=['cvae'], help="Type of VAE model")
@@ -65,7 +65,7 @@ def parse_option():
     parser.add_argument('--amp', action='store_true', help="automatic mixed precision")
     parser.add_argument('--eval', action='store_true', help="evaluation only")
     parser.add_argument('--tag', type=str, help='tag for log file')
-    parser.add_argument('--gpu', default='1', type=str, help='gpu device ids for CUDA_VISIBLE_DEVICES')
+    parser.add_argument('--gpu', default='0', type=str, help='gpu device ids for CUDA_VISIBLE_DEVICES')
 
     args, unparsed = parser.parse_known_args()
     config = get_config(args)
@@ -73,6 +73,7 @@ def parse_option():
     param = {
         'saved_name': args.saved_name,
         'train_stage': args.train_stage,
+        'train_format': args.train_format,
         'gaussian': config.MODEL.GAUSSIAN,
         "amp" : config.TRAIN.AMP,
         'only_x_input': config.MODEL.ONLY_X_INPUT,
@@ -102,7 +103,7 @@ def main(config):
     model, classifier = build_model(config, dataset.num_train_pids)
 
     # Build loss
-    criterion_cla, criterion_pair, criterion_kl, criterion_recon = build_losses(config)
+    criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular = build_losses(config)
 
     early_stopping = EarlyStopping(patience=100, threshold=1.0)
 
@@ -112,7 +113,10 @@ def main(config):
     Flow_parameters = []
     for name, param in model.named_parameters():
         if 'FLOWs' not in name:
-            parameters.append(param)
+            if config.MODEL.TRAIN_FORMAT == 'novel' and 'decoder' in name:
+                param.requires_grad = False
+            else:
+                parameters.append(param)
         else:
             # if config.MODEL.TRAIN_STAGE == 'reidstage':
             #     param.requires_grad = False
@@ -120,15 +124,18 @@ def main(config):
     
     cla_parameters = list(classifier.parameters())
 
-    if config.MODEL.TRAIN_STAGE == 'reidstage':
-        # no grad is requird for param and flow_param
-        for param in parameters:
-            param.requires_grad = False
-        for flow_param in Flow_parameters:
-            flow_param.requires_grad = False
+    if config.MODEL.TRAIN_FORMAT == 'novel':
+        print("=> Jump the TRAIN_STAGE part of setting grad")
     else:
-        for cls_param in cla_parameters:
-            cls_param.requires_grad = False
+        if config.MODEL.TRAIN_STAGE == 'reidstage':
+            # no grad is requird for param and flow_param
+            for param in parameters:
+                param.requires_grad = False
+            for flow_param in Flow_parameters:
+                flow_param.requires_grad = False
+        else:
+            for cls_param in cla_parameters:
+                cls_param.requires_grad = False
 
     if config.MODEL.FLOW_TYPE == 'invertmlp':
         beta_lr = 1
@@ -142,15 +149,22 @@ def main(config):
 
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
-        if config.MODEL.TRAIN_STAGE == 'reidstage':
-            optimizer = optim.Adam(filter(lambda p: p.requires_grad ,cla_parameters), 
-                                   lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
-                                   weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-        else:
+        if config.MODEL.TRAIN_FORMAT == 'novel':
             optimizer = optim.Adam([
                 {'params': filter(lambda p: p.requires_grad ,parameters)},
-                {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
+                {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr},
+                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
                 lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+        else:
+            if config.MODEL.TRAIN_STAGE == 'reidstage':
+                optimizer = optim.Adam(filter(lambda p: p.requires_grad ,cla_parameters), 
+                                    lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
+                                    weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            else:
+                optimizer = optim.Adam([
+                    {'params': filter(lambda p: p.requires_grad ,parameters)},
+                    {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
+                    lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
 
         # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
         #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
@@ -191,10 +205,11 @@ def main(config):
             best_rank1 = checkpoint['rank1']
     
     if config.DATA.TRAIN_FORMAT != "base":
-        print("=> Start Finetuning the model")
-        print("Loading checkpoint from '{}'".format(config.MODEL.RESUME))
-        checkpoint = torch.load(config.MODEL.RESUME)
+        print("=> Start training the model on Novel data")
+        print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+        checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
         model.load_state_dict(checkpoint['model'])
+        print("orginal best rank1 = {}".format(checkpoint['rank1']))
         # flows_model.load_state_dict(checkpoint['flows_model'])
         
     # Set device
@@ -215,13 +230,13 @@ def main(config):
     for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
         if config.TRAIN.AMP:
-            state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
+            state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
               optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler)
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break
         else:
-            state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
+            state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
               optimizer, trainloader, epoch, dataset.train_centroids, early_stopping)
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))

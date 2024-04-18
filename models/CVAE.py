@@ -47,7 +47,6 @@ class VAE(nn.Module):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
-
 class Encoder(nn.Module):
 
     def __init__(self, input_dim, hiden_dim, out_dim, n_layers, ac_fn):

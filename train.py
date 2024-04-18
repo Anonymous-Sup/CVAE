@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D
 from utils import plot_histogram_seperate, print_gradients, plot_scatterNN
 
-def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, 
+def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
               optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None):
     
     if not config.TRAIN.AMP:
@@ -43,6 +43,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     batch_kl_loss = AverageMeter()
     batch_kld_theta = AverageMeter()
     batch_recon_loss = AverageMeter()
+    batch_regular_loss = AverageMeter()
     batch_loss = AverageMeter()
     batch_acc = AverageMeter()
     batch_theta_acc = AverageMeter()
@@ -132,6 +133,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             else:
                 recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
             
+
             recon_x = model.norm(recon_x)
             # (64, 702)
             outputs = classifier(x_proj_norm)
@@ -172,21 +174,25 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                     # (64,12)
                     prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
     
-                #Normal for each z_i
+                # Normal for each z_i
                 q0 = Normal(mean, torch.exp(0.5 * log_var))
                 # if is independent, log(q) = logq_1 + logq_2 + ... + logq_n
                 posterior = torch.sum(q0.log_prob(z), dim=-1)
 
                 kl_loss = (posterior - prior).mean()
-                kl_loss = kl_loss.clamp(2.0)            
+                # kl_loss = kl_loss.clamp(2.0)            
                 kld_theta = kl_loss
 
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
-            beta = 0.05
+            # regular_loss = criterion_regular(x_proj_norm)
+
+
+            beta = 0.01
             if config.MODEL.TRAIN_STAGE == 'klstage':
                 loss = recon_loss  
                 loss = loss + beta * kl_loss    # for baseline there is only a reconsturction loss
+                # loss = loss + regular_loss
                 # loss = loss + pair_loss
                 # loss = loss + cls_loss
             elif config.MODEL.TRAIN_STAGE == 'reidstage':
@@ -197,6 +203,23 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # if early_stopping(kl_loss):
         #     print("Early stopping at epoch: {}".format(epoch))
         #     return False
+
+        # print every tensor for monitoring
+        print("mean: {}".format(mean[0, :10]))
+        print("log_var: {}".format(log_var[0, :10]))
+        print("z: {}".format(z[0, :10]))
+        # print("logjacobin: {}".format(logjacobin[0, :10]))
+        print("domian_feature: {}".format(domian_feature[0, :10]))
+        # print("flow_input: {}".format(flow_input[0, :10]))
+        # print("z_1: {}".format(z_1[0, :10]))
+        print("imgs_tensor: {}".format(imgs_tensor[0, :10]))
+        print("recon_x: {}".format(recon_x[0, :10]))
+        
+        print("prior:{}".format(prior))
+        print("theta: {}".format(theta[0, :10]))
+        print("p_theta:{}".format(base_dist.log_prob(theta)))
+        print("logjacobin:{}".format(logjacobin))
+        print("posterior:{}".format(posterior))
 
         # if is the last batch
         if batch_idx == len(trainloader)-1:
@@ -245,6 +268,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         batch_kl_loss.update(kl_loss.item(), pids.size(0))
         batch_kld_theta.update(kld_theta.item(), pids.size(0))
         batch_recon_loss.update(recon_loss.item(), pids.size(0))
+        # batch_regular_loss.update(regular_loss.item(), pids.size(0))
         batch_loss.update(loss.item(), pids.size(0))
         batch_time.update(time.time() - end)
 
@@ -255,6 +279,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         run["train/batch/0_kl_loss"].append(kl_loss.item())
         run["train/batch/kld_theta"].append(kld_theta.item())
         run["train/batch/0_recon_loss"].append(recon_loss.item())
+        # run["train/batch/0_regular_loss"].append(regular_loss.item())
         run["train/batch/loss"].append(loss.item())
         run["train/batch/acc"].append((torch.sum(preds == pids.data)).float()/pids.size(0))
         # run["train/batch/batch_time"].append(time.time() - end)

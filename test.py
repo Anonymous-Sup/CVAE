@@ -168,6 +168,6 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
-    query_loader, gallery_loader, dataset = build_singe_test_loader(args.data_root, pretrained=args.pretrained)
+    query_loader, gallery_loader, dataset = build_singe_test_loader(args.data_root, args.dataset, pretrained=args.pretrained)
     test_clip_feature(query_loader, gallery_loader)
 

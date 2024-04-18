@@ -14,7 +14,7 @@ _C.DATA.ROOT = '/home/zhengwei/github/datasets'
 _C.DATA.DATASET = 'duke'
 # Dataset format, using CLIP pretrained feautre
 _C.DATA.FORMAT_TAG = 'tensor'
-_C.DATA.TRAIN_FORMAT = 'base'
+_C.DATA.TRAIN_FORMAT = 'base'  # 'base', 'novel'
 
 # Workers for dataloader
 _C.DATA.NUM_WORKERS = 4

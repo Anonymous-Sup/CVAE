@@ -32,15 +32,14 @@ nohup python -u main.py --cfg ./configs/agwRes50_cvae_kl.yaml \
 --train_format base \
 --train_stage klstage \
 --gpu 0 \
---saved_name res50_fp32_l4vaeleakRelu-lr1e4_MG+yukeflow_64z_klnoJ_UindexC \
+--saved_name res50_fp32_l4vaeleakRelu-lr1e4_MG+yukeflow_64z_klJ_UindexC \
 --vae_type cvae \
 --flow_type yuke_mlpflow \
 --recon_loss mse \
 --reid_loss crossentropylabelsmooth \
 --use_centroid \
---only_cvae_kl \
 --gaussian MultivariateNormal \
-> train_agwRes50_Uc_klnoJ.log 2>&1 & 
+> train_agwRes50_Uc_klJ+1e2.log 2>&1 & 
 
 
 # # ===========Baseline Stage 1 training================
