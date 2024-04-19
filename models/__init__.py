@@ -1,4 +1,4 @@
-from models.CVAE import VAE
+from models.CVAE import VAE, NNDiagGaussian
 from models.Classifier import Classifier, NormalizedClassifier, MLPClassBlock
 from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ, YuKeMLPFLOW_onlyX_seperateZ_init
 from models.NIPS import NIPS
@@ -47,7 +47,7 @@ def build_model(config, num_classes):
                 output_dim=1,
                 num_layers=4)
     else:
-        flows_model = Flows(config.MODEL.LATENT_SIZE, flow_type=config.MODEL.FLOW_TYPE, K=10)
+        flows_model = Flows(64, config.MODEL.LATENT_SIZE, flow_type=config.MODEL.FLOW_TYPE, K=64)
 
     print("Initializing vae model: {}".format(config.MODEL.VAE_TYPE))
     if config.MODEL.VAE_TYPE == 'cvae':
@@ -60,6 +60,7 @@ def build_model(config, num_classes):
     else:
         raise KeyError("Invalid model name, got '{}', but expected to be one of {}".format(config.MODEL.VAE_TYPE, __factory.keys()))
 
+    digvae_model = NNDiagGaussian(vae_model)
     # 768 = latent_size * hiden_dim = 12*64
     # if latent_size is not 12, there is a problem
     # maybe 36*24 = 864
@@ -74,7 +75,7 @@ def build_model(config, num_classes):
         nips_hidden_dim = 256
         nips_out_dim = 64
     
-    model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, out_dim=nips_out_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT, use_centroid=config.MODEL.USE_CENTROID)
+    model = NIPS(digvae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, out_dim=nips_out_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT, use_centroid=config.MODEL.USE_CENTROID)
     
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     

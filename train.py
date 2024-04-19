@@ -129,9 +129,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             
             if 'reid' in config.MODEL.TRAIN_STAGE:
                 with torch.no_grad():
-                    recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+                    recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, log_q = model(imgs_tensor, domain_index)
             else:
-                recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+                recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, log_q = model(imgs_tensor, domain_index)
             
 
             recon_x = model.norm(recon_x)
@@ -147,39 +147,18 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
             pair_loss = criterion_pair(outputs, pids)
 
-            if config.MODEL.ONLY_CVAE_KL:  
-                posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
-                
-                if useMultiG:
-                    # mean(64,12), 
-                    base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
-                    # Here is a Jcobin! 
-                    prior = base_dist.log_prob(theta)
-                    # prior = prior + logjacobin.sum(-1)
-                else:
-                    base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
-                    prior = torch.sum(base_dist.log_prob(theta), dim=-1)
-                    # prior = prior + logjacobin.sum(-1)
-            
-                kl_loss = (posterior - prior).mean()
-                kl_loss = kl_loss.clamp(2.0)
-                kld_theta = kl_loss
-            else:
-                if useMultiG:
-                    base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
-                    # (64)
-                    prior = base_dist.log_prob(theta) + logjacobin.sum(-1)
-                else:
-                    base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
-                    # (64,12)
-                    prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
-    
-                # Normal for each z_i
-                q0 = Normal(mean, torch.exp(0.5 * log_var))
-                # if is independent, log(q) = logq_1 + logq_2 + ... + logq_n
-                posterior = torch.sum(q0.log_prob(z), dim=-1)
+            if useMultiG:
+                base_dist = MultivariateNormal(torch.zeros(mean.size(-1)).cuda(), torch.eye(mean.size(-1)).cuda())
+                # (64, 65, latent_size) --> (64, 65) --> (64,)
+                prior = torch.sum(base_dist.log_prob(theta), dim=-1) + logjacobin.sum(-1)
 
-                kl_loss = (posterior - prior).mean()
+                # (64,)
+                posterior = log_q
+
+                mean_prior = torch.mean(prior)
+                mean_posterior = torch.mean(posterior)
+
+                kl_loss = (mean_posterior - mean_prior)
                 # kl_loss = kl_loss.clamp(2.0)            
                 kld_theta = kl_loss
 
@@ -188,7 +167,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # regular_loss = criterion_regular(x_proj_norm)
 
 
-            beta = 0.01
+            beta = 0.05
             if config.MODEL.TRAIN_STAGE == 'klstage':
                 loss = recon_loss  
                 loss = loss + beta * kl_loss    # for baseline there is only a reconsturction loss
@@ -204,22 +183,22 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         #     print("Early stopping at epoch: {}".format(epoch))
         #     return False
 
-        # print every tensor for monitoring
-        print("mean: {}".format(mean[0, :10]))
-        print("log_var: {}".format(log_var[0, :10]))
-        print("z: {}".format(z[0, :10]))
-        # print("logjacobin: {}".format(logjacobin[0, :10]))
-        print("domian_feature: {}".format(domian_feature[0, :10]))
-        # print("flow_input: {}".format(flow_input[0, :10]))
-        # print("z_1: {}".format(z_1[0, :10]))
-        print("imgs_tensor: {}".format(imgs_tensor[0, :10]))
-        print("recon_x: {}".format(recon_x[0, :10]))
+        # # print every tensor for monitoring
+        # print("mean: {}".format(mean[0, :10]))
+        # print("log_var: {}".format(log_var[0, :10]))
+        # print("z: {}".format(z[0, :10]))
+        # # print("logjacobin: {}".format(logjacobin[0, :10]))
+        # print("domian_feature: {}".format(domian_feature[0, :10]))
+        # # print("flow_input: {}".format(flow_input[0, :10]))
+        # # print("z_1: {}".format(z_1[0, :10]))
+        # print("imgs_tensor: {}".format(imgs_tensor[0, :10]))
+        # print("recon_x: {}".format(recon_x[0, :10]))
         
-        print("prior:{}".format(prior))
-        print("theta: {}".format(theta[0, :10]))
-        print("p_theta:{}".format(base_dist.log_prob(theta)))
-        print("logjacobin:{}".format(logjacobin))
-        print("posterior:{}".format(posterior))
+        # print("prior:{}".format(prior))
+        # print("theta: {}".format(theta[0, :10]))
+        # print("p_theta:{}".format(base_dist.log_prob(theta)))
+        # print("logjacobin:{}".format(logjacobin))
+        # print("posterior:{}".format(posterior))
 
         # if is the last batch
         if batch_idx == len(trainloader)-1:
@@ -239,7 +218,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 plot_histogram(run, log_var, "2-log_var")
                 plot_histogram(run, z, "2-reparameterized z_0")
                 plot_histogram(run, domian_feature, "3-domian_feature")
-                print("domian_feature+Z: {}".format(flow_input[0, :2, -10:])) # print the last 10 elements
+                print("domian_feature+Z: {}".format(z_1[0, -1:, -10:])) # print the last 10 elements
                 plot_histogram(run, z_1, "3-flowinput-z_1")
                 plot_histogram(run, theta, "4-theta")
                 plot_histogram(run, logjacobin, "4-logjacobin")

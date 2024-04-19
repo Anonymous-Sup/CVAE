@@ -50,10 +50,10 @@ class MLP(nn.Module):
         return x
 
 class NIPS(nn.Module):
-    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False):
+    def __init__(self, DiagGVAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False):
         super(NIPS, self).__init__()
 
-        self.VAE = VAE
+        self.DiagGVAE = DiagGVAE
         self.FLOWs = FLOWs
 
         self.latent_size = latent_size
@@ -103,47 +103,29 @@ class NIPS(nn.Module):
         if torch.isnan(domain_feature_norm).any():
             print("domain_feature after normalization has nan")
 
-        # (64,12)
-        x_proj, means, log_var = self.VAE.encoder(x)
+        # (64, 64)  or  z_0 (64, number sample, 64)
+        x_proj, means, log_var, z_0, log_q = self.DiagGVAE(x, num_samples=64)
 
-        # x_proj_norm = self.normalization(x_proj)
-        x_proj_norm = self.norm(x_proj)
-        # x_proj_norm = x_proj
-
-        # 64, 12
-        z_0 = self.VAE.reparameterize(means, log_var)
+        # x_proj_norm = self.norm(x_proj)
+        x_proj_norm = x_proj
         
-        '''
-        cat u_i with each dim of z
-        '''
-        # # 64, 12, 64
-        # domian_dim =  int(self.hidden_dim/self.latent_size)
-        # U = domain_feature_norm.view(-1, self.latent_size, domian_dim)
-        # # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
-        # flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
-        
-        '''
-        cat u with each dim of z
-        '''
+        # (64, 64) --> (64, 1, 64)
         U = domain_feature_norm.unsqueeze(1)
+        # (64, 1, 64) --> (64, latent_size, 64)
         U = U.repeat(1, x_proj_norm.size(1), 1)
-        # (64,12) --> (64, 12, 1) + (64, 12, 64) --> (64, 12, 65)
+        # (64,latent_size) --> (64, latent_size, 1) + (64, latent_size, 64) --> (64, latent_size, 65)
         flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
-
 
         if self.only_x_input:
             z_1 = x_proj_norm
         else:
             z_1 = flow_input
 
-        # if self.out_dim == 64:
         theta, logjcobin = self.FLOWs(z_1)
-        # else:
-        #     theta, logjcobin = self.FLOWs(z_1)
 
-        recon_x = self.VAE.decoder(x_proj_norm)
+        recon_x = self.DiagGVAE.vae.decoder(x_proj_norm)
 
-        return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_feature, flow_input
+        return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_feature, log_q
     
 
     def normalization(self, x):

@@ -36,7 +36,7 @@ class SimpleFlowModel(nn.Module):
     def __init__(self, flows):
         super().__init__()
         self.flows = nn.ModuleList(flows)
-
+        self.flows.apply(kaiming_init)
     def forward(self, z):
         ld = 0.0
         for flow in self.flows:
@@ -61,20 +61,41 @@ class ColourNormalize:
     def __call__(self, x):
         return (self.b - self.a) * x / 255 + self.a
 
+class MLP(nn.Module):
+    """A simple MLP with ReLU activations"""
 
-class Flows(nn.Module):
-    def __init__(self, input_dim, flow_type=None, K=10):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, leaky_relu_slope=0.2):
         super().__init__()
+        layers = []
+        for l in range(num_layers):
+            if l == 0:
+                layers.append(nn.Linear(input_dim, hidden_dim, bias=False))
+                layers.append(nn.LeakyReLU(leaky_relu_slope))
+            else:
+                layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
+                layers.append(nn.LeakyReLU(leaky_relu_slope))
+        layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.net(x)
+    
+class Flows(nn.Module):
+    def __init__(self, input_dim, latent_dim, flow_type=None, K=64):
+        super().__init__()
+        # input = 64 + 1
+        self.input_dim = input_dim
         if flow_type== "Planar":
-            flows = SimpleFlowModel([Planar((input_dim,), act="leaky_relu") for k in range(K)])
+            flows = SimpleFlowModel([Planar((input_dim+1,)) for k in range(K)])
         elif flow_type == "Radial":
-            flows = SimpleFlowModel([Radial((input_dim,)) for k in range(K)])
+            flows = SimpleFlowModel([Radial((input_dim+1,)) for k in range(K)])
         elif flow_type == "RealNVP":
-            b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(input_dim)])
+            print("Using Flow <<<RealNVP>>> model with {} layers".format(K))
+            b = torch.Tensor([1 if i % 2 == 0 else 0 for i in range(input_dim+1)])
             flows = []
             for i in range(K):
-                s = nets.MLP([input_dim, 8, input_dim], init_zeros=True)
-                t = nets.MLP([input_dim, 8, input_dim], init_zeros=True)
+                s = MLP(input_dim+1, input_dim // 2, input_dim+1, num_layers=3, leaky_relu_slope=0)
+                t = MLP(input_dim+1, input_dim // 2, input_dim+1, num_layers=3, leaky_relu_slope=0)
                 if i % 2 == 0:
                     flows += [MaskedAffineFlow(b, t, s)]
                 else:
@@ -84,12 +105,37 @@ class Flows(nn.Module):
             )  # Remove last Batch Norm layer to allow arbitrary output
         else:
             raise ValueError("Invalid flow type: {}".format(flow_type))
-        self.flows = flows
-
+        
+        self.flows_gather = nn.ModuleList([flows for _ in range(latent_dim)])
 
     def forward(self, x):
-        theta, logjcobin = self.flows(x)
-        return theta, logjcobin
+        assert len(x.shape) == 3
+        batch_size, latent_dim, feat_dim = x.shape
+
+        sum_log_det_jacobian = 0
+        residuals = []
+        
+        for i in range(latent_dim):
+            
+            # (batch_size, latent_size, hidden_dim + x_dim)
+            # (batch_size, hidden_dim + 1)
+            batch_inputs = x[:, i, :]
+
+            # (batch_size, hidden_dim + 1), (batch_size,)
+            residual, logdet = self.flows_gather[i](batch_inputs)  # (batch_size, 1)
+            
+            sum_log_det_jacobian += logdet
+            # (batch_size, 64+1)
+            residuals.append(residual.unsqueeze(-1))
+
+        # (batch_size, 64+1, latent_size)
+        residuals = torch.cat(residuals, dim=-1)
+        residuals = residuals.reshape(batch_size, feat_dim, -1)
+        assert residual.size(2) == latent_dim
+
+        log_det_jacobian = sum_log_det_jacobian.reshape(batch_size, -1)
+
+        return residuals, log_det_jacobian
 
     def inverse(self, theta):
         z, logjcobin = self.flows.inverse(theta)
@@ -163,26 +209,7 @@ class InvertibleMLPFlow(nn.Module):
         z = z_u[:, :self.latent_dim]
         return z
     
-class MLP(nn.Module):
-    """A simple MLP with ReLU activations"""
 
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, leaky_relu_slope=0.2):
-        super().__init__()
-        layers = []
-        for l in range(num_layers):
-            if l == 0:
-                layers.append(nn.Linear(input_dim, hidden_dim, bias=False))
-                layers.append(nn.LeakyReLU(leaky_relu_slope))
-            else:
-                layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
-                layers.append(nn.LeakyReLU(leaky_relu_slope))
-        layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
-
-        self.net = nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.net(x)
-    
 
 class YuKeMLPFLOW(nn.Module):
 

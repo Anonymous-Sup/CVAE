@@ -32,15 +32,14 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --train_format base \
 --train_stage klstage \
 --gpu 0 \
---saved_name fp32_l4vaeleakRelu-lre4_MG+yukeflow_64z_klnoJ_UindexC \
+--saved_name fp32_l4vaeleakRelu-lre4_MG+RealNVP_64z_UindexC \
 --vae_type cvae \
---flow_type yuke_mlpflow \
+--flow_type RealNVP \
 --recon_loss mse \
 --reid_loss crossentropylabelsmooth \
 --use_centroid \
---only_cvae_kl \
 --gaussian MultivariateNormal \
-> train_ClIPReID_Uc_klnoJ.log 2>&1 & 
+> train_clipreid_Uc_RealNVP.log 2>&1 & 
 
 
 
