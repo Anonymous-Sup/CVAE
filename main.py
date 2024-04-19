@@ -113,7 +113,7 @@ def main(config):
     Flow_parameters = []
     for name, param in model.named_parameters():
         if 'FLOWs' not in name:
-            if config.MODEL.TRAIN_FORMAT == 'novel' and 'decoder' in name:
+            if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
                 param.requires_grad = False
             else:
                 parameters.append(param)
@@ -124,7 +124,7 @@ def main(config):
     
     cla_parameters = list(classifier.parameters())
 
-    if config.MODEL.TRAIN_FORMAT == 'novel':
+    if config.DATA.TRAIN_FORMAT == 'novel':
         print("=> Jump the TRAIN_STAGE part of setting grad")
     else:
         if config.MODEL.TRAIN_STAGE == 'reidstage':
@@ -149,7 +149,7 @@ def main(config):
 
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
-        if config.MODEL.TRAIN_FORMAT == 'novel':
+        if config.DATA.TRAIN_FORMAT == 'novel':
             optimizer = optim.Adam([
                 {'params': filter(lambda p: p.requires_grad ,parameters)},
                 {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr},
