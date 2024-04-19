@@ -26,7 +26,7 @@ import neptune
 from utils import EarlyStopping
 
 
-# torch.autograd.set_detect_anomaly(True)
+torch.autograd.set_detect_anomaly(True)
 
 run = neptune.init_run(
     project="Zhengwei-Lab/NIPSTransferReID",

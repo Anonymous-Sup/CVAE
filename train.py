@@ -133,17 +133,18 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             else:
                 recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, log_q = model(imgs_tensor, domain_index)
             
-
             recon_x = model.norm(recon_x)
             # (64, 702)
             outputs = classifier(x_proj_norm)
+            # (64, 65, 702)
             outputs_theta = classifier(theta)
 
             _, preds = torch.max(outputs.data, 1)
             _, preds_theta = torch.max(outputs_theta.data, 1)
 
             cls_loss = criterion_cla(outputs, pids)
-            cls_loss_theta = criterion_cla(outputs_theta, pids)
+            cls_loss_theta = cls_loss
+            # cls_loss_theta = criterion_cla(outputs_theta, pids)
 
             pair_loss = criterion_pair(outputs, pids)
 
@@ -195,9 +196,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # print("recon_x: {}".format(recon_x[0, :10]))
         
         # print("prior:{}".format(prior))
-        # print("theta: {}".format(theta[0, :10]))
+        print("theta: {}".format(theta[0, :10]))
         # print("p_theta:{}".format(base_dist.log_prob(theta)))
-        # print("logjacobin:{}".format(logjacobin))
+        print("logjacobin:{}".format(logjacobin))
         # print("posterior:{}".format(posterior))
 
         # if is the last batch

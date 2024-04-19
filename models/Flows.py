@@ -116,13 +116,15 @@ class Flows(nn.Module):
         residuals = []
         
         for i in range(latent_dim):
-            
+            print("In the flow model, i:{}".format(i))
             # (batch_size, latent_size, hidden_dim + x_dim)
             # (batch_size, hidden_dim + 1)
             batch_inputs = x[:, i, :]
 
             # (batch_size, hidden_dim + 1), (batch_size,)
             residual, logdet = self.flows_gather[i](batch_inputs)  # (batch_size, 1)
+            print("residual:{}".format(residual))
+            print("logdet:{}".format(logdet))
             
             sum_log_det_jacobian += logdet
             # (batch_size, 64+1)
@@ -131,7 +133,7 @@ class Flows(nn.Module):
         # (batch_size, 64+1, latent_size)
         residuals = torch.cat(residuals, dim=-1)
         residuals = residuals.reshape(batch_size, feat_dim, -1)
-        assert residual.size(2) == latent_dim
+        assert residuals.size()[2] == latent_dim
 
         log_det_jacobian = sum_log_det_jacobian.reshape(batch_size, -1)
 

@@ -106,8 +106,8 @@ class NIPS(nn.Module):
         # (64, 64)  or  z_0 (64, number sample, 64)
         x_proj, means, log_var, z_0, log_q = self.DiagGVAE(x, num_samples=64)
 
-        # x_proj_norm = self.norm(x_proj)
-        x_proj_norm = x_proj
+        x_proj_norm = self.norm(x_proj)
+        # x_proj_norm = x_proj
         
         # (64, 64) --> (64, 1, 64)
         U = domain_feature_norm.unsqueeze(1)

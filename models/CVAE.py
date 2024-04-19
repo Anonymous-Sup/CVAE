@@ -157,6 +157,7 @@ class NNDiagGaussian(nn.Module):
         """
         batch_size = len(x)
         z_hold, mean, std = self.vae.encoder(x)
+        print("encoder outputs: z_hold:{} \n mean:{} \n std:{}".format(z_hold, mean, std))
         mean = mean.unsqueeze(1)
         std = torch.exp(0.5 * std.unsqueeze(1))
         eps = torch.randn(
@@ -166,6 +167,8 @@ class NNDiagGaussian(nn.Module):
         log_q = -0.5 * torch.prod(torch.tensor(z_param.size()[2:])) * np.log(
             2 * np.pi
         ) - torch.sum(torch.log(std) + 0.5 * torch.pow(eps, 2), list(range(2, z_param.dim())))
+        print("encoder repram:{} \n log_q: {}".format(z_param, log_q))
+        
         return z_hold, mean, std, z_param, log_q
 
     def log_prob(self, z, x):
