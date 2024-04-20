@@ -85,7 +85,10 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         print("Computing CMC and mAP through Classifier")
     else:
         print("Computing CMC and mAP")
-    cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
+    if config.DATA.DATASET == 'market1k':
+        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
+    else:
+        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
     print("-----------------------------------------------------------")
@@ -113,7 +116,7 @@ def extract_test_feature_only(dataloader):
     return features, pids, camids
 
 
-def test_clip_feature(queryloader, galleryloader):
+def test_clip_feature(queryloader, galleryloader, dataset):
     since = time.time()
     # Extract features 
     qf, q_pids, q_camids = extract_test_feature_only(queryloader)
@@ -144,7 +147,10 @@ def test_clip_feature(queryloader, galleryloader):
 
     since = time.time()
     print("Computing CMC and mAP")
-    cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
+    if dataset == 'market1k':
+        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
+    else:
+        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
     print("-----------------------------------------------------------")
@@ -169,5 +175,5 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     query_loader, gallery_loader, dataset = build_singe_test_loader(args.data_root, args.dataset, pretrained=args.pretrained)
-    test_clip_feature(query_loader, gallery_loader)
+    test_clip_feature(query_loader, gallery_loader, args.dataset)
 

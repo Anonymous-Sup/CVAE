@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim import lr_scheduler
-
+import shutil
 from configs.default import get_config
 from data import build_dataloader
 from models import build_model
@@ -20,7 +20,7 @@ from losses import build_losses
 from train import train_cvae
 from test import test_cvae
 from tools.eval_metrics import evaluate
-from tools.utils import AverageMeter, save_checkpoint, set_seed
+from tools.utils import AverageMeter, save_checkpoint, set_seed, mkdir_if_missing
 from torch.cuda.amp import GradScaler, autocast
 import neptune
 from utils import EarlyStopping
@@ -186,24 +186,7 @@ def main(config):
     
     best_rank1 = -np.inf
 
-    if config.MODEL.TRAIN_STAGE == 'reidstage':
-        print("=> Start Training REID model")
-        print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
-        checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
-        model.load_state_dict(checkpoint['model'])
-        print("orginal best rank1 = {}".format(checkpoint['rank1']))
 
-        # flows_model.load_state_dict(checkpoint['flows_model'])
-    else:
-        if config.MODEL.RESUME:
-            print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
-            checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
-            model.load_state_dict(checkpoint['model'])
-            # flows_model.load_state_dict(checkpoint['flows_model'])
-            classifier.load_state_dict(checkpoint['classifier'])
-            start_epoch = checkpoint['epoch']
-            best_rank1 = checkpoint['rank1']
-    
     if config.DATA.TRAIN_FORMAT != "base":
         print("=> Start training the model on Novel data")
         print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
@@ -211,6 +194,31 @@ def main(config):
         model.load_state_dict(checkpoint['model'])
         print("orginal best rank1 = {}".format(checkpoint['rank1']))
         # flows_model.load_state_dict(checkpoint['flows_model'])
+
+        # copy the checkpoint to the output folder
+        print("=> Copy the checkpoint to the output folder")
+        base_folder = os.path.basename(config.MODEL.RESUME)
+        output_file = os.path.join(config.OUTPUT, base_folder)
+        mkdir_if_missing(output_file)
+        shutil.copy(config.MODEL.RESUME + '/best_model.pth.tar', output_file)
+    else:
+        if config.MODEL.TRAIN_STAGE == 'reidstage':
+            print("=> Start Training REID model")
+            print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+            checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
+            model.load_state_dict(checkpoint['model'])
+            print("orginal best rank1 = {}".format(checkpoint['rank1']))
+
+            # flows_model.load_state_dict(checkpoint['flows_model'])
+        else:
+            if config.MODEL.RESUME:
+                print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+                checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
+                model.load_state_dict(checkpoint['model'])
+                # flows_model.load_state_dict(checkpoint['flows_model'])
+                classifier.load_state_dict(checkpoint['classifier'])
+                start_epoch = checkpoint['epoch']
+                best_rank1 = checkpoint['rank1']
         
     # Set device
     model = model.cuda()

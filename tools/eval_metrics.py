@@ -29,7 +29,7 @@ def compute_ap_cmc(index, good_index, junk_index):
     return ap, cmc
 
 
-def evaluate(distmat, q_pids, g_pids, q_camids, g_camids):
+def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=False):
     num_q, num_g = distmat.shape
     index = np.argsort(distmat, axis=1) # from small to large
 
@@ -41,13 +41,21 @@ def evaluate(distmat, q_pids, g_pids, q_camids, g_camids):
     for i in range(num_q):
         # groundtruth index
         query_index = np.argwhere(g_pids==q_pids[i])
-        camera_index = np.argwhere(g_camids==q_camids[i])
-        good_index = np.setdiff1d(query_index, camera_index, assume_unique=True)
+        if nocam:
+            good_index = query_index
+        else:
+            camera_index = np.argwhere(g_camids==q_camids[i])
+            good_index = np.setdiff1d(query_index, camera_index, assume_unique=True)
+        
         if good_index.size == 0:
             num_no_gt += 1
             continue
+
+        if nocam:
+            junk_index = []
         # remove gallery samples that have the same pid and camid with query
-        junk_index = np.intersect1d(query_index, camera_index)
+        else:
+            junk_index = np.intersect1d(query_index, camera_index)
 
         ap_tmp, CMC_tmp = compute_ap_cmc(index[i], good_index, junk_index)
         if CMC_tmp[0]==1:

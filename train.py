@@ -16,12 +16,17 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         centroids = centroids.float()
         print("=> centroids.dtype: {}".format(centroids.dtype))
 
-    if 'reid' in config.MODEL.TRAIN_STAGE:
-        model.eval()
+    if config.DATA.TRAIN_FORMAT == 'novel':
+        model.train()
+        model.VAE.decoder.eval()
         classifier.train()
     else:
-        model.train()
-        classifier.eval()
+        if 'reid' in config.MODEL.TRAIN_STAGE:
+            model.eval()
+            classifier.train()
+        else:
+            model.train()
+            classifier.eval()
 
     centroids.cuda()
 
@@ -180,7 +185,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 posterior = torch.sum(q0.log_prob(z), dim=-1)
 
                 kl_loss = (posterior - prior).mean()
-                # kl_loss = kl_loss.clamp(2.0)            
+                kl_loss = kl_loss.clamp(2.0)            
                 kld_theta = kl_loss
 
             recon_loss = criterion_recon(recon_x, imgs_tensor)
@@ -189,7 +194,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
 
             beta = 0.01
-            if config.MODEL.TRAIN_STAGE == 'klstage':
+            gamma = 0.5
+            if config.DATA.TRAIN_FORMAT == 'novel':
+                loss = recon_loss
+                loss = loss + beta * kl_loss
+                loss = loss + gamma * cls_loss
+                loss = loss + pair_loss
+
+            elif config.MODEL.TRAIN_STAGE == 'klstage':
                 loss = recon_loss  
                 loss = loss + beta * kl_loss    # for baseline there is only a reconsturction loss
                 # loss = loss + regular_loss
@@ -204,22 +216,22 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         #     print("Early stopping at epoch: {}".format(epoch))
         #     return False
 
-        # print every tensor for monitoring
-        print("mean: {}".format(mean[0, :10]))
-        print("log_var: {}".format(log_var[0, :10]))
-        print("z: {}".format(z[0, :10]))
-        # print("logjacobin: {}".format(logjacobin[0, :10]))
-        print("domian_feature: {}".format(domian_feature[0, :10]))
-        # print("flow_input: {}".format(flow_input[0, :10]))
-        # print("z_1: {}".format(z_1[0, :10]))
-        print("imgs_tensor: {}".format(imgs_tensor[0, :10]))
-        print("recon_x: {}".format(recon_x[0, :10]))
+        # # print every tensor for monitoring
+        # print("mean: {}".format(mean[0, :10]))
+        # print("log_var: {}".format(log_var[0, :10]))
+        # print("z: {}".format(z[0, :10]))
+        # # print("logjacobin: {}".format(logjacobin[0, :10]))
+        # print("domian_feature: {}".format(domian_feature[0, :10]))
+        # # print("flow_input: {}".format(flow_input[0, :10]))
+        # # print("z_1: {}".format(z_1[0, :10]))
+        # print("imgs_tensor: {}".format(imgs_tensor[0, :10]))
+        # print("recon_x: {}".format(recon_x[0, :10]))
         
-        print("prior:{}".format(prior))
-        print("theta: {}".format(theta[0, :10]))
-        print("p_theta:{}".format(base_dist.log_prob(theta)))
-        print("logjacobin:{}".format(logjacobin))
-        print("posterior:{}".format(posterior))
+        # print("prior:{}".format(prior))
+        # print("theta: {}".format(theta[0, :10]))
+        # print("p_theta:{}".format(base_dist.log_prob(theta)))
+        # print("logjacobin:{}".format(logjacobin))
+        # print("posterior:{}".format(posterior))
 
         # if is the last batch
         if batch_idx == len(trainloader)-1:
