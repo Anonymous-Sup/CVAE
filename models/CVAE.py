@@ -5,11 +5,12 @@ import torch.nn as nn
 
 class VAE(nn.Module):
 
-    def __init__(self, feature_dim, hidden_dim, output_dim, n_layers):
+    def __init__(self, feature_dim, hidden_dim, output_dim, n_layers, bn=False):
 
         super().__init__()
 
         self.ac_fn = 'leaky_relu'
+        self.bn = bn
 
         if self.ac_fn == 'relu':
             self.ac_fn = nn.ReLU()
@@ -23,8 +24,8 @@ class VAE(nn.Module):
         self.decoder = Decoder(
             output_dim, hidden_dim, feature_dim, n_layers, self.ac_fn)
         
-        # self.encoder.apply(self.init_weights)
-        # self.decoder.apply(self.init_weights)
+        self.encoder.apply(self.weights_init_kaiming)
+        self.decoder.apply(self.weights_init_kaiming)
 
     # remember to be fp16
     def forward(self, x, y):
@@ -47,6 +48,23 @@ class VAE(nn.Module):
             if m.bias is not None:
                 nn.init.constant_(m.bias, 0)
 
+    def weights_init_kaiming(m):
+        classname = m.__class__.__name__
+        if classname.find('Linear') != -1:
+            nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out')
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0.0)
+
+        elif classname.find('Conv') != -1:
+            nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0.0)
+        elif classname.find('BatchNorm') != -1:
+            if m.affine:
+                nn.init.constant_(m.weight, 1.0)
+                nn.init.constant_(m.bias, 0.0)
+                m.bias.requires_grad_(False)
+
 class Encoder(nn.Module):
 
     def __init__(self, input_dim, hiden_dim, out_dim, n_layers, ac_fn):
@@ -67,17 +85,26 @@ class Encoder(nn.Module):
                 self.MLP.add_module(
                     name="L{:d}".format(i), module=nn.Linear(hiden_dim, hiden_dim, bias=False))
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
+            if self.bn:
+                self.MLP.add_module(
+                    name="BN{:d}".format(i), module=nn.BatchNorm1d(hiden_dim))
+
         self.MLP.add_module(
             name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim, bias=False))
         """
         If here using ReLU will cause multiple 0 in Z, be careful
         """
         self.MLP.add_module(name="A{:d}".format(n_layers), module=ac_fn)
-        
+             
         # 1280 -> 256 -> 36
         self.linear_means = nn.Linear(out_dim, out_dim, bias=False)
         self.linear_log_var = nn.Linear(out_dim, out_dim, bias=False)
         
+        if self.bn:
+            self.BN_out = nn.BatchNorm1d(out_dim)
+            self.BN_means = nn.BatchNorm1d(out_dim)
+            self.BN_var = nn.BatchNorm1d(out_dim)
+
         # add leak relu
         self.ac_fn = nn.LeakyReLU(0.2)
         # self.ac_fn = None
@@ -86,12 +113,19 @@ class Encoder(nn.Module):
 
         x = self.MLP(x)
         
+        if self.training:
+            if self.bn:
+                x = self.BN_out(x)
+
         means = self.linear_means(x)
         log_vars = self.linear_log_var(x)
 
         if self.ac_fn is not None:
             means = self.ac_fn(means)
             log_vars = self.ac_fn(log_vars)
+            if self.bn:
+                means = self.BN_means(means)
+                log_vars = self.BN_var(log_vars)
 
         return x, means, log_vars
 
@@ -114,11 +148,13 @@ class Decoder(nn.Module):
                 self.MLP.add_module(
                     name="L{:d}".format(i), module=nn.Linear(hiden_dim, hiden_dim, bias=False))
                 self.MLP.add_module(name="A{:d}".format(i), module=ac_fn)
+            if self.bn:
+                self.MLP.add_module(
+                    name="BN{:d}".format(i), module=nn.BatchNorm1d(hiden_dim))
         
         self.MLP.add_module(
             name="L{:d}".format(n_layers), module=nn.Linear(hiden_dim, out_dim, bias=False))
         
-
     def forward(self, z):
 
         # if self.conditional:
