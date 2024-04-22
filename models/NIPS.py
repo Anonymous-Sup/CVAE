@@ -1,36 +1,9 @@
 import torch
 import torch.nn as nn
-
-def idx2onehot(idx, n):
-    # (64, 25)
-    assert torch.max(idx).item() < n
-
-    if idx.dim() == 1:
-        idx = idx.unsqueeze(1)
-    
-    onehot = torch.zeros(idx.size(0), n).to(idx.device)
-    onehot.scatter_(1, idx, 1)
-    
-    return onehot
-
-def weights_init_kaiming(m):
-    classname = m.__class__.__name__
-    if classname.find('Linear') != -1:
-        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out')
-        nn.init.constant_(m.bias, 0.0)
-
-    elif classname.find('Conv') != -1:
-        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-        if m.bias is not None:
-            nn.init.constant_(m.bias, 0.0)
-    elif classname.find('BatchNorm') != -1:
-        if m.affine:
-            nn.init.constant_(m.weight, 1.0)
-            nn.init.constant_(m.bias, 0.0)
-
+from utils import weights_init_kaiming, idx2onehot
 
 class MLP(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, number_layers=3, leak_relu_slope=0.2):
+    def __init__(self, input_dim, hidden_dim, output_dim, number_layers=3, leak_relu_slope=0.2, bn=False):
         super(MLP, self).__init__()
 
         layers = []
@@ -41,9 +14,17 @@ class MLP(nn.Module):
             else:
                 layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
                 layers.append(nn.LeakyReLU(leak_relu_slope))
+            if bn:
+                layers.append(nn.BatchNorm1d(hidden_dim))
+
         layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
-        # layers.append(nn.LeakyReLU(leak_relu_slope)) 
+        layers.append(nn.LeakyReLU(leak_relu_slope))
+        if bn:
+            layers.append(nn.BatchNorm1d(output_dim))
+
         self.MLP = nn.Sequential(*layers)
+
+        self.MLP.apply(weights_init_kaiming)
 
     def forward(self, x):
         x = self.MLP(x)
@@ -69,12 +50,12 @@ class NIPS(nn.Module):
         self.out_dim = out_dim # defalt out_dim 12*64=768  out_dim=hidden_dim
 
         if self.use_centroid:
-            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.out_dim, number_layers=4)
+            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.out_dim, number_layers=4, bn=True)
         else:
             # 50 --> 64 --> 64
             # hidden_dim = 64
             self.domain_len = 2*(2*self.latent_size+1) 
-            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4)
+            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4, bn=True)
         
         self.norm = self.normalize_l2
 
@@ -97,18 +78,16 @@ class NIPS(nn.Module):
         if torch.isnan(domain_feature).any():
             print("domain_feature has nan")
         
-        # domain_feature_norm = self.normalization(domain_feature)
-        # domain_feature_norm = self.normalize_l2(domain_feature)
-        domain_feature_norm = self.norm(domain_feature)
-        if torch.isnan(domain_feature_norm).any():
-            print("domain_feature after normalization has nan")
+        # domain_feature_norm = self.norm(domain_feature)
+        domain_feature_norm = domain_feature
+        # if torch.isnan(domain_feature_norm).any():
+        #     print("domain_feature after normalization has nan")
 
         # (64,12)
-        x_proj, means, log_var = self.VAE.encoder(x)
+        x_pre, x_bn, means, log_var = self.VAE.encoder(x)
 
-        # x_proj_norm = self.normalization(x_proj)
-        x_proj_norm = self.norm(x_proj)
-        # x_proj_norm = x_proj
+        # x_proj_norm = self.norm(x_proj)
+        x_proj_norm = x_bn
 
         # 64, 12
         z_0 = self.VAE.reparameterize(means, log_var)
@@ -143,7 +122,7 @@ class NIPS(nn.Module):
 
         recon_x = self.VAE.decoder(x_proj_norm)
 
-        return recon_x, means, log_var, z_0, x_proj, x_proj_norm, z_1, theta, logjcobin, domain_feature, flow_input
+        return recon_x, means, log_var, z_0, x_pre, x_proj_norm, z_1, theta, logjcobin, domain_feature, flow_input
     
 
     def normalization(self, x):

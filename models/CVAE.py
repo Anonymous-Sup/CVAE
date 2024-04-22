@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from utils import weights_init_kaiming
 
 
 class VAE(nn.Module):
@@ -24,8 +24,8 @@ class VAE(nn.Module):
         self.decoder = Decoder(
             output_dim, hidden_dim, feature_dim, n_layers, self.ac_fn)
         
-        self.encoder.apply(self.weights_init_kaiming)
-        self.decoder.apply(self.weights_init_kaiming)
+        self.encoder.apply(weights_init_kaiming)
+        self.decoder.apply(weights_init_kaiming)
 
     # remember to be fp16
     def forward(self, x, y):
@@ -42,28 +42,6 @@ class VAE(nn.Module):
 
         return recon_x
 
-    def init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            nn.init.xavier_uniform_(m.weight)
-            if m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-
-    def weights_init_kaiming(m):
-        classname = m.__class__.__name__
-        if classname.find('Linear') != -1:
-            nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out')
-            if m.bias is not None:
-                nn.init.constant_(m.bias, 0.0)
-
-        elif classname.find('Conv') != -1:
-            nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-            if m.bias is not None:
-                nn.init.constant_(m.bias, 0.0)
-        elif classname.find('BatchNorm') != -1:
-            if m.affine:
-                nn.init.constant_(m.weight, 1.0)
-                nn.init.constant_(m.bias, 0.0)
-                m.bias.requires_grad_(False)
 
 class Encoder(nn.Module):
 
@@ -111,14 +89,15 @@ class Encoder(nn.Module):
 
     def forward(self, x):
 
-        x = self.MLP(x)
+        x_pre = self.MLP(x)
         
         if self.training:
             if self.bn:
-                x = self.BN_out(x)
+                x_bn = self.BN_out(x_pre)
 
-        means = self.linear_means(x)
-        log_vars = self.linear_log_var(x)
+
+        means = self.linear_means(x_bn)
+        log_vars = self.linear_log_var(x_bn)
 
         if self.ac_fn is not None:
             means = self.ac_fn(means)
@@ -127,7 +106,7 @@ class Encoder(nn.Module):
                 means = self.BN_means(means)
                 log_vars = self.BN_var(log_vars)
 
-        return x, means, log_vars
+        return x_pre, x_bn, means, log_vars
 
 
 class Decoder(nn.Module):

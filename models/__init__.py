@@ -55,7 +55,8 @@ def build_model(config, num_classes):
             feature_dim=config.MODEL.FEATURE_DIM,
             hidden_dim=256,
             output_dim=config.MODEL.LATENT_SIZE, 
-            n_layers=4
+            n_layers=4,
+            bn=True
     )
     else:
         raise KeyError("Invalid model name, got '{}', but expected to be one of {}".format(config.MODEL.VAE_TYPE, __factory.keys()))
