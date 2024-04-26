@@ -225,22 +225,48 @@ class YuKeMLPFLOW(nn.Module):
 
 
 
+
+class MLP_list(nn.Module):
+    """A simple MLP with ReLU activations"""
+
+    def __init__(self, input_dim, hidden_dims, output_dim, leaky_relu_slope=0.2, bn=False):
+        super().__init__()
+        
+        assert len(hidden_dims) > 0
+
+        layers = []
+        for i in range(len(hidden_dims)):
+            if i == 0:
+                layers.append(nn.Linear(input_dim, hidden_dims[i], bias=False))
+                layers.append(nn.LeakyReLU(leaky_relu_slope))
+            else:
+                layers.append(nn.Linear(hidden_dims[i-1], hidden_dims[i], bias=False))
+                layers.append(nn.LeakyReLU(leaky_relu_slope))
+            # if bn:
+            #     layers.append(nn.BatchNorm1d(hidden_dim[i]))
+        layers.append(nn.Linear(hidden_dims[-1], output_dim, bias=False))
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.net(x)
+    
+
 class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
 
     def __init__(
             self,
             latent_size=0, # 12, 36, 64
-            hidden_dim=64,
+            hidden_dim=[8, 16, 32, 16 ,8],
             output_dim=1,
             num_layers=3
             ):
         super().__init__()
 
         self.latent_size = latent_size
-        self.flows = nn.ModuleList([MLP(input_dim=1, 
-                                hidden_dim=hidden_dim,
-                                output_dim=output_dim,  
-                                num_layers=num_layers) for _ in range(latent_size)])
+        self.flows = nn.ModuleList([MLP_list(input_dim=1, 
+                                hidden_dims=hidden_dim,
+                                output_dim=output_dim
+                                ) for _ in range(latent_size)])
         
         self.flows.apply(weights_init_kaiming)
 
@@ -289,6 +315,11 @@ class YuKeMLPFLOW_onlyX_seperateZ(nn.Module):
 
         return residuals, log_abs_det_jacobian
     
+
+
+
+
+
 
 # above fuctions are abndon
 class YuKeMLPFLOW_onlyX_seperateZ_init(nn.Module):

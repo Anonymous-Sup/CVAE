@@ -71,7 +71,10 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
         run["train/batch/load_time"].append(time.time() - end)
 
-        imgs_tensor = model.norm(imgs_tensor)
+        '''
+        0422 norm or no norm for testing BatchNorm
+        '''
+        # imgs_tensor = model.norm(imgs_tensor)
 
         # model = model.to(imgs_tensor.dtype)
         # classifier = classifier.to(imgs_tensor.dtype)
@@ -134,12 +137,15 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             
             if 'reid' in config.MODEL.TRAIN_STAGE:
                 with torch.no_grad():
-                    recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+                    recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
             else:
-                recon_x, mean, log_var, z, x_proj, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+                recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
             
-
-            recon_x = model.norm(recon_x)
+            '''
+            0422 norm or no norm for testing BatchNorm
+            '''
+            # recon_x = model.norm(recon_x)
+            
             # (64, 702)
             outputs = classifier(x_proj_norm)
             outputs_theta = classifier(theta)
@@ -167,13 +173,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                     # prior = prior + logjacobin.sum(-1)
             
                 kl_loss = (posterior - prior).mean()
-                kl_loss = kl_loss.clamp(2.0)
+                # kl_loss = kl_loss.clamp(2.0)
                 kld_theta = kl_loss
             else:
                 if useMultiG:
                     base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
                     # (64)
-                    prior = base_dist.log_prob(theta) + logjacobin.sum(-1)
+                    prior = base_dist.log_prob(theta) 
+                    prior = prior + logjacobin.sum(-1)
                 else:
                     base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
                     # (64,12)
@@ -185,7 +192,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 posterior = torch.sum(q0.log_prob(z), dim=-1)
 
                 kl_loss = (posterior - prior).mean()
-                kl_loss = kl_loss.clamp(2.0)            
+                # kl_loss = kl_loss.clamp(2.0)            
                 kld_theta = kl_loss
 
             recon_loss = criterion_recon(recon_x, imgs_tensor)
@@ -236,7 +243,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # if is the last batch
         if batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
-                plot_scatterNN(run, x_proj, "0-N by N for z")
+                plot_scatterNN(run, x_pre, "0-N by N for z")
                 plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
                 
                 plot_correlation_matrix(run, x_proj_norm, "1-correlation z")
@@ -286,6 +293,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
         run['train/batch/1_prior'].append(prior.mean().item())
         run['train/batch/1_posterior'].append(posterior.mean().item())
+        run['train/batch/1_Jacobin'].append(logjacobin.mean().item())
         run["train/batch/cls_loss"].append(cls_loss.item())
         run["train/batch/pair_loss"].append(pair_loss.item())
         run["train/batch/0_kl_loss"].append(kl_loss.item())

@@ -50,12 +50,12 @@ class NIPS(nn.Module):
         self.out_dim = out_dim # defalt out_dim 12*64=768  out_dim=hidden_dim
 
         if self.use_centroid:
-            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.out_dim, number_layers=4, bn=True)
+            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.out_dim, number_layers=4, leak_relu_slope=0.2, bn=True)
         else:
             # 50 --> 64 --> 64
             # hidden_dim = 64
             self.domain_len = 2*(2*self.latent_size+1) 
-            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4, bn=True)
+            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4, leak_relu_slope=0.2, bn=True)
         
         self.norm = self.normalize_l2
 
@@ -111,7 +111,8 @@ class NIPS(nn.Module):
 
 
         if self.only_x_input:
-            z_1 = x_proj_norm
+            # z_1 = x_proj_norm
+            z_1 = z_0
         else:
             z_1 = flow_input
 
@@ -120,7 +121,8 @@ class NIPS(nn.Module):
         # else:
         #     theta, logjcobin = self.FLOWs(z_1)
 
-        recon_x = self.VAE.decoder(x_proj_norm)
+        # recon_x = self.VAE.decoder(x_proj_norm)
+        recon_x = self.VAE.decoder(z_0)
 
         return recon_x, means, log_var, z_0, x_pre, x_proj_norm, z_1, theta, logjcobin, domain_feature, flow_input
     

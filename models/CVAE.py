@@ -5,7 +5,7 @@ from utils import weights_init_kaiming
 
 class VAE(nn.Module):
 
-    def __init__(self, feature_dim, hidden_dim, output_dim, n_layers, bn=False):
+    def __init__(self, feature_dim, hidden_dim, output_dim, n_layers, leak_relu_slope=0.2, bn=False):
 
         super().__init__()
 
@@ -15,14 +15,14 @@ class VAE(nn.Module):
         if self.ac_fn == 'relu':
             self.ac_fn = nn.ReLU()
         elif self.ac_fn == 'leaky_relu':
-            self.ac_fn = nn.LeakyReLU(0.2)
+            self.ac_fn = nn.LeakyReLU(leak_relu_slope)
         elif self.ac_fn == 'elu':
             self.ac_fn = nn.ELU()
 
         self.encoder = Encoder(
-            feature_dim, hidden_dim, output_dim, n_layers, self.ac_fn)
+            feature_dim, hidden_dim, output_dim, n_layers, self.ac_fn, self.bn)
         self.decoder = Decoder(
-            output_dim, hidden_dim, feature_dim, n_layers, self.ac_fn)
+            output_dim, hidden_dim, feature_dim, n_layers, self.ac_fn, self.bn)
         
         self.encoder.apply(weights_init_kaiming)
         self.decoder.apply(weights_init_kaiming)
@@ -45,10 +45,10 @@ class VAE(nn.Module):
 
 class Encoder(nn.Module):
 
-    def __init__(self, input_dim, hiden_dim, out_dim, n_layers, ac_fn):
-
+    def __init__(self, input_dim, hiden_dim, out_dim, n_layers, ac_fn, bn=False):
         super().__init__()
 
+        self.bn = bn
         # self.conditional = conditional
         # if self.conditional:
         #     layer_sizes[0] += num_labels
@@ -84,7 +84,7 @@ class Encoder(nn.Module):
             self.BN_var = nn.BatchNorm1d(out_dim)
 
         # add leak relu
-        self.ac_fn = nn.LeakyReLU(0.2)
+        self.ac_fn = ac_fn
         # self.ac_fn = None
 
     def forward(self, x):
@@ -94,6 +94,10 @@ class Encoder(nn.Module):
         if self.training:
             if self.bn:
                 x_bn = self.BN_out(x_pre)
+            else:
+                x_bn = x_pre
+        else:
+            x_bn = x_pre
 
 
         means = self.linear_means(x_bn)
@@ -111,10 +115,10 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
 
-    def __init__(self, input_dim, hiden_dim, out_dim, n_layers, ac_fn):
-
+    def __init__(self, input_dim, hiden_dim, out_dim, n_layers, ac_fn, bn=False):
         super().__init__()
 
+        self.bn = bn
         self.MLP = nn.Sequential()
         
         # 12 -> 256 -> 1280
