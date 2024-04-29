@@ -146,6 +146,8 @@ class MarketSketch(object):
             rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.jpg'))
             sketch_img_paths = glob.glob(osp.join(dir_sketch_path, '*.jpg'))
 
+        # rgb_img_paths = [] # used for not using rgb images to train
+
         rgb_pattern = re.compile(r'([-\d]+)_c(\d)')
         # sketch_pattern is like 0001_A.jpg or 0002_B, get the str before and after '_'
         sketch_pattern = re.compile(r'([-\d]+)_([A-Z])')
@@ -172,7 +174,8 @@ class MarketSketch(object):
             pid = int(pid)
             if pid == -1: continue
             style_container.add(style_id)
-            assert pid in pid_container, "sketch {} not in rgb set".format(sketch_path)
+            # assert pid in pid_container, "sketch {} not in rgb set".format(sketch_path)
+            pid_container.add(pid)
 
         pid2label = {pid: label for label, pid in enumerate(pid_container)}
         styleid2label = {style: label for label, style in enumerate(style_container)}

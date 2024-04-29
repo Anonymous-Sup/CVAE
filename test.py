@@ -37,7 +37,7 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
         else:
             recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
         
-        if 'reid' in config.MODEL.TRAIN_STAGE:
+        if 'reid' in config.MODEL.TRAIN_STAGE or 'novel'in config.DATA.TRAIN_FORMAT:
             x_final = classifier(batach_features_norm)
         else:
             x_final = x_pre

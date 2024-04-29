@@ -204,7 +204,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             gamma = 0.5
             if config.DATA.TRAIN_FORMAT == 'novel':
                 loss = recon_loss
-                loss = loss + beta * kl_loss
+                loss = loss + beta * kl_loss  # baseline no kl
                 loss = loss + gamma * cls_loss
                 loss = loss + pair_loss
 

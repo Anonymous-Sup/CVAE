@@ -111,8 +111,8 @@ class NIPS(nn.Module):
 
 
         if self.only_x_input:
-            # z_1 = x_proj_norm
-            z_1 = z_0
+            z_1 = x_proj_norm
+            # z_1 = z_0
         else:
             z_1 = flow_input
 
@@ -121,8 +121,8 @@ class NIPS(nn.Module):
         # else:
         #     theta, logjcobin = self.FLOWs(z_1)
 
-        # recon_x = self.VAE.decoder(x_proj_norm)
-        recon_x = self.VAE.decoder(z_0)
+        recon_x = self.VAE.decoder(x_proj_norm)
+        # recon_x = self.VAE.decoder(z_0)
 
         return recon_x, means, log_var, z_0, x_pre, x_proj_norm, z_1, theta, logjcobin, domain_feature, flow_input
     

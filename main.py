@@ -142,8 +142,8 @@ def main(config):
     else:
         beta_lr = 1
 
-    if config.MODEL.TRAIN_STAGE == 'reidstage':
-        alpha_lr = 1   # base lr 1e-4  
+    if config.DATA.TRAIN_FORMAT == 'novel':
+        alpha_lr = 10   # base lr 1e-4, classifier lr 1e-3
     else:
         alpha_lr = 1
 
@@ -301,6 +301,10 @@ def main(config):
 
 
 if __name__ == '__main__':
+    
+    import matplotlib.pyplot as plt
+    plt.switch_backend("agg")
+
     # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.empty_cache()
     gc.collect()

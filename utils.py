@@ -210,10 +210,6 @@ def plot_scatterNN(run, tensor, title):
 
     # Adjust the layout
     plt.tight_layout()
-
-    # Show the plot
-    plt.show()
-
     # Save the figure to a file
     # fig.savefig("scatter_plot.png", format='png')
     run["train/histograms/{}".format(title)].append(fig)

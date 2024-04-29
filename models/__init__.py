@@ -26,6 +26,7 @@ def build_model(config, num_classes):
             flows_model = YuKeMLPFLOW_onlyX_seperateZ(
                 latent_size=config.MODEL.LATENT_SIZE,
                 hidden_dim=[8, 16, 32, 16 ,8],
+                # hidden_dim=[64, 64, 64, 64],
                 output_dim=1,
                 num_layers=4
             )
