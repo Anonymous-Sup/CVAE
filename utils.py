@@ -187,6 +187,27 @@ def plot_scatter_1D(run, tensor, title):
     # Close the figure to free up memory
     plt.close(fig)
 
+# plot_scatter函数用于绘制散点图, for tensor(batchsize,feature_dim), which is (64,64) 
+def plot_scatter_2D(run, tensor, title):
+    # 创建一个图形和轴
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    # 遍历每个批次
+    for i in range(tensor.shape[0]):
+        # 获取当前批次的特征向量
+        features = tensor[i]
+        
+        # 绘制当前批次的散点图
+        ax.scatter(range(len(features)), features, s=10, alpha=0.8)
+
+    # 设置图形标题和轴标签
+    ax.set_title('Scatter Plot of Features')
+    ax.set_xlabel('Feature Index')
+    ax.set_ylabel('Feature Value')
+    plt.tight_layout()
+    run["train/histograms/{}".format(title)].append(fig)
+    plt.close(fig)
+
 def plot_scatterNN(run, tensor, title):
     # Convert the tensor to a numpy array
     array = tensor.detach().cpu().numpy()
@@ -214,6 +235,38 @@ def plot_scatterNN(run, tensor, title):
     # fig.savefig("scatter_plot.png", format='png')
     run["train/histograms/{}".format(title)].append(fig)
     # Close the figure to free up memory
+    plt.close(fig)
+
+def plot_epoch_Zdim(run, tensor, title):
+
+    data = tensor.detach().cpu().numpy()
+    image_num, feature_dim = data.shape
+    
+    # Create a figure and axes
+    fig, axes = plt.subplots(nrows=8, ncols=8, figsize=(16, 16))
+    # Specify the number of points to sample
+    num_samples = 64 * 5
+    # Iterate over each feature dimension
+    for i in range(8):
+        for j in range(8):
+            # Calculate the feature dimension index
+            feature_idx = i * 8 + j
+            
+            # Reshape the data for the current feature dimension
+            feature_data = data[:, feature_idx].reshape(-1)
+            
+            # Perform average sampling
+            sampled_data = np.mean(feature_data.reshape(-1, num_samples), axis=0)
+            
+            # Plot the sampled feature values as scatter points in each subfigure
+            axes[i, j].scatter(range(len(sampled_data)), sampled_data, s=10)
+            axes[i, j].set_title(f'dim {feature_idx+1}')
+            axes[i, j].set_xticks([])
+            axes[i, j].set_yticks([])
+
+    # Adjust the spacing between subfigures
+    plt.tight_layout()
+    run["train/histograms/{}".format(title)].append(fig)
     plt.close(fig)
 
 class EarlyStopping:

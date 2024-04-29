@@ -6,11 +6,11 @@ from torch.distributions.normal import Normal
 from torch.distributions import MultivariateNormal
 from tools.utils import AverageMeter
 import torch.nn.functional as F
-from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D
-from utils import plot_histogram_seperate, print_gradients, plot_scatterNN
+from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D, plot_scatter_2D
+from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot_epoch_Zdim
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None):
+              optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None, use_repZ=False):
     
     if not config.TRAIN.AMP:
         centroids = centroids.float()
@@ -147,7 +147,11 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             # recon_x = model.norm(recon_x)
             
             # (64, 702)
-            outputs = classifier(x_proj_norm)
+            if use_repZ:
+                outputs = classifier(z)
+            else:
+                outputs = classifier(x_proj_norm)
+
             outputs_theta = classifier(theta)
 
             _, preds = torch.max(outputs.data, 1)
@@ -166,11 +170,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                     base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
                     # Here is a Jcobin! 
                     prior = base_dist.log_prob(theta)
-                    # prior = prior + logjacobin.sum(-1)
                 else:
                     base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
                     prior = torch.sum(base_dist.log_prob(theta), dim=-1)
-                    # prior = prior + logjacobin.sum(-1)
             
                 kl_loss = (posterior - prior).mean()
                 # kl_loss = kl_loss.clamp(2.0)
@@ -179,8 +181,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 if useMultiG:
                     base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
                     # (64)
-                    prior = base_dist.log_prob(theta) 
-                    prior = prior + logjacobin.sum(-1)
+                    prior_p = base_dist.log_prob(theta) 
+                    prior = prior_p + logjacobin.sum(-1)
                 else:
                     base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))
                     # (64,12)
@@ -189,7 +191,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 # Normal for each z_i
                 q0 = Normal(mean, torch.exp(0.5 * log_var))
                 # if is independent, log(q) = logq_1 + logq_2 + ... + logq_n
-                posterior = torch.sum(q0.log_prob(z), dim=-1)
+                posterior_p = q0.log_prob(z)
+                posterior = torch.sum(posterior_p, dim=-1)
 
                 kl_loss = (posterior - prior).mean()
                 # kl_loss = kl_loss.clamp(2.0)            
@@ -241,23 +244,35 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # print("posterior:{}".format(posterior))
 
         # if is the last batch
+        if use_repZ:
+            z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
+        else:
+            z_collect = x_proj if batch_idx == 0 else torch.cat((z_collect, x_proj), dim=0)
         if batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
-                plot_scatterNN(run, x_pre, "0-N by N for z")
-                plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
+                plot_scatterNN(run, x_pre, "0-N by N for x_pre")
+                plot_scatterNN(run, z, "0-N by N for reparemeterized z")
+                plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z")
+                # plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
                 
-                plot_correlation_matrix(run, x_proj_norm, "1-correlation z")
+                plot_scatter_1D(run, prior_p, "1-prior_sample")
+                plot_scatter_2D(run, posterior_p, "1-posterior_sample")
+
+                plot_correlation_matrix(run, z, "1-correlation reparemeterized z")
+                plot_correlation_matrix(run, x_pre, "1-correlation x_pre")
+
                 # print("image_tensor: {}".format(imgs_tensor[0, :10]))
                 # print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm[0, :]))
-                plot_pair_seperate(run, x_proj_norm, "1-spedistribute z")
+                # plot_pair_seperate(run, x_proj_norm, "1-spedistribute z")
 
-                plot_correlation_matrix(run, theta, "1-correlation theta")
-                plot_pair_seperate(run, theta, "1-spedistribute theta")
+                # plot_correlation_matrix(run, theta, "1-correlation theta")
+                # plot_pair_seperate(run, theta, "1-spedistribute theta")
 
                 plot_histogram(run, mean, "2-mean")
                 plot_histogram(run, log_var, "2-log_var")
                 plot_histogram(run, z, "2-reparameterized z_0")
                 plot_histogram(run, domian_feature, "3-domian_feature")
+                plot_scatter_2D(run, domian_feature, "3-domian_feature scatter")
                 print("domian_feature+Z: {}".format(flow_input[0, :2, -10:])) # print the last 10 elements
                 plot_histogram(run, z_1, "3-flowinput-z_1")
                 plot_histogram(run, theta, "4-theta")

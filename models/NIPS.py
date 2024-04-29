@@ -31,7 +31,7 @@ class MLP(nn.Module):
         return x
 
 class NIPS(nn.Module):
-    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False):
+    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False, use_repZ=False):
         super(NIPS, self).__init__()
 
         self.VAE = VAE
@@ -59,6 +59,8 @@ class NIPS(nn.Module):
         
         self.norm = self.normalize_l2
 
+        self.use_repZ = use_repZ
+
         # self.fusion = MLP(latent_size+self.hidden_dim, self.hidden_dim, latent_size, number_layers=3)
 
         # add batch_norm for domain_embeding
@@ -83,15 +85,16 @@ class NIPS(nn.Module):
         # if torch.isnan(domain_feature_norm).any():
         #     print("domain_feature after normalization has nan")
 
-        # (64,12)
-        x_pre, x_bn, means, log_var = self.VAE.encoder(x)
-
-        # x_proj_norm = self.norm(x_proj)
-        x_proj_norm = x_bn
-
-        # 64, 12
-        z_0 = self.VAE.reparameterize(means, log_var)
         
+        x_pre, x_bn, means, log_var = self.VAE.encoder(x) # (64, latentsize)
+        x_proj_norm = x_bn
+        z_0 = self.VAE.reparameterize(means, log_var)   # (64, latentsize)
+
+        if self.use_repZ:
+            recon_x = self.VAE.decoder(z_0)
+        else:
+            recon_x = self.VAE.decoder(x_proj_norm)
+
         '''
         cat u_i with each dim of z
         '''
@@ -107,22 +110,20 @@ class NIPS(nn.Module):
         U = domain_feature_norm.unsqueeze(1)
         U = U.repeat(1, x_proj_norm.size(1), 1)
         # (64,12) --> (64, 12, 1) + (64, 12, 64) --> (64, 12, 65)
-        flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
-
+        if self.use_repZ:
+            flow_input = torch.cat((U, z_0.unsqueeze(-1)), dim=-1)
+        else:
+            flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
 
         if self.only_x_input:
-            z_1 = x_proj_norm
-            # z_1 = z_0
+            if self.use_repZ:
+                z_1 = z_0
+            else:
+                z_1 = x_proj_norm
         else:
             z_1 = flow_input
 
-        # if self.out_dim == 64:
         theta, logjcobin = self.FLOWs(z_1)
-        # else:
-        #     theta, logjcobin = self.FLOWs(z_1)
-
-        recon_x = self.VAE.decoder(x_proj_norm)
-        # recon_x = self.VAE.decoder(z_0)
 
         return recon_x, means, log_var, z_0, x_pre, x_proj_norm, z_1, theta, logjcobin, domain_feature, flow_input
     
