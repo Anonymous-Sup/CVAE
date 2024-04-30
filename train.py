@@ -244,15 +244,15 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # print("posterior:{}".format(posterior))
 
         # if is the last batch
-        if use_repZ:
-            z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
-        else:
-            z_collect = x_proj if batch_idx == 0 else torch.cat((z_collect, x_proj), dim=0)
+        
+        z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
+        x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
         if batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
-                plot_scatterNN(run, x_pre, "0-N by N for x_pre")
-                plot_scatterNN(run, z, "0-N by N for reparemeterized z")
+                # plot_scatterNN(run, x_pre, "0-N by N for x_pre")
+                # plot_scatterNN(run, z, "0-N by N for reparemeterized z")
                 plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z")
+                plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre")
                 # plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
                 
                 plot_scatter_1D(run, prior_p, "1-prior_sample")

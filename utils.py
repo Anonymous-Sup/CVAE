@@ -189,13 +189,14 @@ def plot_scatter_1D(run, tensor, title):
 
 # plot_scatter函数用于绘制散点图, for tensor(batchsize,feature_dim), which is (64,64) 
 def plot_scatter_2D(run, tensor, title):
+    data = tensor.detach().cpu().numpy()
     # 创建一个图形和轴
     fig, ax = plt.subplots(figsize=(8, 8))
 
     # 遍历每个批次
-    for i in range(tensor.shape[0]):
+    for i in range(data.shape[0]):
         # 获取当前批次的特征向量
-        features = tensor[i]
+        features = data[i]
         
         # 绘制当前批次的散点图
         ax.scatter(range(len(features)), features, s=10, alpha=0.8)
@@ -237,7 +238,7 @@ def plot_scatterNN(run, tensor, title):
     # Close the figure to free up memory
     plt.close(fig)
 
-def plot_epoch_Zdim(run, tensor, title):
+def plot_epoch_Zdim_old(run, tensor, title):
 
     data = tensor.detach().cpu().numpy()
     image_num, feature_dim = data.shape
@@ -245,7 +246,7 @@ def plot_epoch_Zdim(run, tensor, title):
     # Create a figure and axes
     fig, axes = plt.subplots(nrows=8, ncols=8, figsize=(16, 16))
     # Specify the number of points to sample
-    num_samples = 64 * 5
+    num_samples = image_num // 64
     # Iterate over each feature dimension
     for i in range(8):
         for j in range(8):
@@ -261,13 +262,51 @@ def plot_epoch_Zdim(run, tensor, title):
             # Plot the sampled feature values as scatter points in each subfigure
             axes[i, j].scatter(range(len(sampled_data)), sampled_data, s=10)
             axes[i, j].set_title(f'dim {feature_idx+1}')
-            axes[i, j].set_xticks([])
-            axes[i, j].set_yticks([])
+            # axes[i, j].set_xticks([])
+            # axes[i, j].set_yticks([])
 
     # Adjust the spacing between subfigures
     plt.tight_layout()
     run["train/histograms/{}".format(title)].append(fig)
     plt.close(fig)
+
+def plot_epoch_Zdim(run, tensor, title):
+    data = tensor.detach().cpu().numpy()
+    num_dims = 12
+    
+    num_samples=64
+    
+    # 对每个维度的数据进行分组和平均
+    grouped_data = data.reshape(-1, num_samples, data.shape[-1])
+    averaged_data = np.mean(grouped_data, axis=1)
+    
+    # 创建一个图形和轴
+    fig, axes = plt.subplots(nrows=num_dims, ncols=num_dims, figsize=(num_dims*2, num_dims*2))
+    
+    # 遍历每个维度
+    for i in range(num_dims):
+        for j in range(num_dims):
+            if i == j:
+                # 在对角线上绘制直方图
+                axes[i, j].hist(averaged_data[:, i], bins=20)
+            else:
+                # 在非对角线上绘制散点图
+                axes[i, j].scatter(averaged_data[:, j], averaged_data[:, i], s=10, alpha=0.8)
+            
+            axes[i, j].grid(True)
+            axes[i, j].set_title(f'dim {i+1} vs dim {j+1}')
+            # 设置轴标签
+            if i == num_dims - 1:
+                axes[i, j].set_xlabel(f'dim {j+1}')
+            if j == 0:
+                axes[i, j].set_ylabel(f'dim {i+1}')
+    
+    # 调整图形布局
+    plt.tight_layout()
+    run["train/histograms/{}".format(title)].append(fig)
+    # 显示图形
+    plt.close(fig)
+
 
 class EarlyStopping:
     def __init__(self, patience=5, threshold=0.01):
