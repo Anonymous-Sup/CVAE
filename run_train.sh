@@ -32,14 +32,15 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --train_format base \
 --train_stage klstage \
 --gpu 0 \
---saved_name fp32_l4vae+LeakRelu+bn_64z_klJ_U_z0 \
+--saved_name fp32_l4vae+LeakRelu+bn_64z_klJ_noU_normZ_partialBN+fuseZ \
 --vae_type cvae \
 --flow_type yuke_mlpflow \
 --recon_loss mse \
 --reid_loss crossentropylabelsmooth \
 --use_centroid \
+--only_x_input \
 --gaussian MultivariateNormal \
-> train_clipreid_klJ_U_z0.log 2>&1 & 
+> train_clipreid_klJ_noU_nromZ_partialBN_fuseZ.log 2>&1 & 
 
 
 # # ===========Novel Stage 1 traning================

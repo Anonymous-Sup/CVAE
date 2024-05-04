@@ -228,8 +228,9 @@ def main(config):
     if config.EVAL_MODE:
         print("=> Start evaluation only ")
         with torch.no_grad():
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, use_repZ=True)
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, use_repZ=False)
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'z_0')
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'x_pre')
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'fuse_z')
         return
 
     start_time = time.time()
@@ -246,7 +247,7 @@ def main(config):
                 break
         else:
             state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, use_repZ=True)
+              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, latent_z='fuse_z')
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break
@@ -257,8 +258,10 @@ def main(config):
             (epoch+1) % config.TEST.EVAL_STEP == 0 or (epoch+1) == config.TRAIN.MAX_EPOCH:
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, use_repZ=True)
-                _, _ = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, use_repZ=False)
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_0')
+                rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='fuse_z')
+                
                 # run["eval/rank1"].append(rank1)
                 rank1 = rank[0]
 

@@ -350,8 +350,9 @@ def weights_init_kaiming(m):
     elif classname.find('BatchNorm') != -1:
         if m.affine:
             nn.init.constant_(m.weight, 1.0)
-            nn.init.constant_(m.bias, 0.0)
-            m.bias.requires_grad_(False)
+            if m.bias is not None:
+                nn.init.constant_(m.bias, 0.0)
+                m.bias.requires_grad_(False)
 
 def kaiming_init(m):
     if isinstance(m, (nn.Linear, nn.Conv2d)):

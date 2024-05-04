@@ -10,7 +10,7 @@ from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, p
 from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot_epoch_Zdim
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None, use_repZ=False):
+              optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None, latent_z='fuse_z'):
     
     if not config.TRAIN.AMP:
         centroids = centroids.float()
@@ -137,21 +137,23 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             
             if 'reid' in config.MODEL.TRAIN_STAGE:
                 with torch.no_grad():
-                    recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+                    recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, z_fusion, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
             else:
-                recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+                recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, z_fusion, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
             
             '''
             0422 norm or no norm for testing BatchNorm
             '''
             # recon_x = model.norm(recon_x)
             
-            # (64, 702)
-            if use_repZ:
-                outputs = classifier(z)
-            else:
-                outputs = classifier(x_proj_norm)
 
+            if latent_z == 'z_0':
+                outputs = classifier(z)
+            elif latent_z == 'x_pre':
+                outputs = classifier(x_proj_norm)
+            elif latent_z == 'fuse_z':
+                outputs = classifier(z_fusion)
+                
             outputs_theta = classifier(theta)
 
             _, preds = torch.max(outputs.data, 1)
@@ -170,6 +172,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                     base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
                     # Here is a Jcobin! 
                     prior = base_dist.log_prob(theta)
+                    prior_p = prior
                 else:
                     base_dist = Normal(torch.zeros_like(mean), torch.ones_like(log_var))    
                     prior = torch.sum(base_dist.log_prob(theta), dim=-1)
@@ -201,7 +204,6 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             recon_loss = criterion_recon(recon_x, imgs_tensor)
 
             # regular_loss = criterion_regular(x_proj_norm)
-
 
             beta = 0.01
             gamma = 0.5
@@ -247,19 +249,23 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         
         z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
+        z_fusion_collect = z_fusion if batch_idx == 0 else torch.cat((z_fusion_collect, z_fusion), dim=0)
         if batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
                 # plot_scatterNN(run, x_pre, "0-N by N for x_pre")
                 # plot_scatterNN(run, z, "0-N by N for reparemeterized z")
                 plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z")
                 plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre")
+                plot_epoch_Zdim(run, z_fusion_collect, "0-Seperate dim of z_fusion")
                 # plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
                 
                 plot_scatter_1D(run, prior_p, "1-prior_sample")
-                plot_scatter_2D(run, posterior_p, "1-posterior_sample")
+                if not config.MODEL.ONLY_CVAE_KL:  
+                    plot_scatter_2D(run, posterior_p, "1-posterior_sample")
 
                 plot_correlation_matrix(run, z, "1-correlation reparemeterized z")
                 plot_correlation_matrix(run, x_pre, "1-correlation x_pre")
+                plot_correlation_matrix(run, z_fusion, "1-correlation z_fusion")
 
                 # print("image_tensor: {}".format(imgs_tensor[0, :10]))
                 # print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm[0, :]))

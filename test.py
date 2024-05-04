@@ -8,7 +8,7 @@ from data import build_singe_test_loader
 from torch.cuda.amp import autocast
 
 @torch.no_grad()
-def extract_midium_feature(config, model, dataloader, centroids_all, classifier=None, use_repZ=False):
+def extract_midium_feature(config, model, dataloader, centroids_all, classifier=None, latent_z='fuse_z'):
     features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), []
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
         if not config.TRAIN.AMP:
@@ -33,14 +33,16 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
         
         if config.TRAIN.AMP:
             with autocast():
-                recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
+                recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, z_fusion, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
         else:
-            recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
+            recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, z_fusion, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
         
-        if use_repZ:
+        if latent_z == 'z_0':
             retrieval_feature = z_0
-        else:
+        elif latent_z == 'x_pre':
             retrieval_feature = x_pre
+        elif latent_z == 'fuse_z':
+            retrieval_feature = z_fusion
 
         if 'reid' in config.MODEL.TRAIN_STAGE or 'novel'in config.DATA.TRAIN_FORMAT:
             x_final = classifier(batach_features_norm)
@@ -57,13 +59,13 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
     return features, pids, camids, centroids
 
 
-def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, use_repZ=False):
+def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, latent_z='fuse_z'):
     since = time.time()
     model.eval()
     classifer.eval()
     # Extract features 
-    qf, q_pids, q_camids, q_centroids = extract_midium_feature(config, model, queryloader, dataset.query_centroids, classifer, use_repZ)
-    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(config, model, galleryloader, dataset.gallery_centroids, classifer, use_repZ)
+    qf, q_pids, q_camids, q_centroids = extract_midium_feature(config, model, queryloader, dataset.query_centroids, classifer, latent_z)
+    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(config, model, galleryloader, dataset.gallery_centroids, classifer, latent_z)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -103,10 +105,11 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     time_elapsed = time.time() - since
     print('Using {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
-    run["test/mAP"].append(mAP)
-    run["test/top1"].append(cmc[0])
-    run["test/top5"].append(cmc[4])
-    run["test/top10"].append(cmc[9])
+    if run != None:
+        run["test/mAP"].append(mAP)
+        run["test/top1"].append(cmc[0])
+        run["test/top5"].append(cmc[4])
+        run["test/top10"].append(cmc[9])
 
     return cmc, mAP
 

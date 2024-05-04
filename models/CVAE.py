@@ -78,12 +78,14 @@ class Encoder(nn.Module):
         self.linear_means = nn.Linear(out_dim, out_dim, bias=False)
         self.linear_log_var = nn.Linear(out_dim, out_dim, bias=False)
         
-        if self.bn:
-            self.BN_out = nn.BatchNorm1d(out_dim)
-            self.BN_means = nn.BatchNorm1d(out_dim)
-            self.BN_var = nn.BatchNorm1d(out_dim)
+        # add batchnorm will harm the distribution of Z!!!
+        
+        # if self.bn:
+        #     self.BN_out = nn.BatchNorm1d(out_dim)
+        #     self.BN_means = nn.BatchNorm1d(out_dim)
+        #     self.BN_var = nn.BatchNorm1d(out_dim)
 
-        # add leak relu
+        # if there need a ac_f for mean and log_var???
         self.ac_fn = ac_fn
         # self.ac_fn = None
 
@@ -91,26 +93,26 @@ class Encoder(nn.Module):
 
         x_pre = self.MLP(x)
         
-        if self.training:
-            if self.bn:
-                x_bn = self.BN_out(x_pre)
-            else:
-                x_bn = x_pre
-        else:
-            x_bn = x_pre
+        # if self.training:
+        #     if self.bn:
+        #         x_bn = self.BN_out(x_pre)
+        #     else:
+        #         x_bn = x_pre
+        # else:
+        #     x_bn = x_pre
+        # x_bn = x_pre
 
-
-        means = self.linear_means(x_bn)
-        log_vars = self.linear_log_var(x_bn)
+        means = self.linear_means(x_pre)
+        log_vars = self.linear_log_var(x_pre)
 
         if self.ac_fn is not None:
             means = self.ac_fn(means)
             log_vars = self.ac_fn(log_vars)
-            if self.bn:
-                means = self.BN_means(means)
-                log_vars = self.BN_var(log_vars)
+            # if self.bn:
+            #     means = self.BN_means(means)
+            #     log_vars = self.BN_var(log_vars)
 
-        return x_pre, x_bn, means, log_vars
+        return x_pre, means, log_vars
 
 
 class Decoder(nn.Module):
