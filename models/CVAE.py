@@ -80,8 +80,8 @@ class Encoder(nn.Module):
         
         # add batchnorm will harm the distribution of Z!!!
         
-        # if self.bn:
-        #     self.BN_out = nn.BatchNorm1d(out_dim)
+        if self.bn:
+            self.BN_out = nn.BatchNorm1d(out_dim)
         #     self.BN_means = nn.BatchNorm1d(out_dim)
         #     self.BN_var = nn.BatchNorm1d(out_dim)
 
@@ -89,18 +89,13 @@ class Encoder(nn.Module):
         self.ac_fn = ac_fn
         # self.ac_fn = None
 
-    def forward(self, x):
+    def forward(self, x, bn_final=False):
 
         x_pre = self.MLP(x)
         
-        # if self.training:
-        #     if self.bn:
-        #         x_bn = self.BN_out(x_pre)
-        #     else:
-        #         x_bn = x_pre
-        # else:
-        #     x_bn = x_pre
-        # x_bn = x_pre
+        if self.training:
+            if bn_final:
+                x_pre = self.BN_out(x_pre)
 
         means = self.linear_means(x_pre)
         log_vars = self.linear_log_var(x_pre)

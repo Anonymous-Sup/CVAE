@@ -110,18 +110,12 @@ def main(config):
     # Build optimizer
     # select parameters beside the FLOWs parameters in the model
     parameters = []
-    Flow_parameters = []
     for name, param in model.named_parameters():
-        if 'FLOWs' not in name:
-            if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
-                param.requires_grad = False
-            else:
-                parameters.append(param)
+        if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
+            param.requires_grad = False
         else:
-            # if config.MODEL.TRAIN_STAGE == 'reidstage':
-            #     param.requires_grad = False
-            Flow_parameters.append(param)
-    
+            parameters.append(param)
+
     cla_parameters = list(classifier.parameters())
 
     if config.DATA.TRAIN_FORMAT == 'novel':
@@ -131,19 +125,12 @@ def main(config):
             # no grad is requird for param and flow_param
             for param in parameters:
                 param.requires_grad = False
-            for flow_param in Flow_parameters:
-                flow_param.requires_grad = False
-        else:
-            for cls_param in cla_parameters:
-                cls_param.requires_grad = False
-
-    if config.MODEL.FLOW_TYPE == 'invertmlp':
-        beta_lr = 1
-    else:
-        beta_lr = 1
+        # else:
+        #     for cls_param in cla_parameters:
+        #         cls_param.requires_grad = False
 
     if config.DATA.TRAIN_FORMAT == 'novel':
-        alpha_lr = 10   # base lr 1e-4, classifier lr 1e-3
+        alpha_lr = 1   # base lr 1e-4, classifier lr 1e-3
     else:
         alpha_lr = 1
 
@@ -152,22 +139,18 @@ def main(config):
         if config.DATA.TRAIN_FORMAT == 'novel':
             optimizer = optim.Adam([
                 {'params': filter(lambda p: p.requires_grad ,parameters)},
-                {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr},
                 {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
                 lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         else:
             if config.MODEL.TRAIN_STAGE == 'reidstage':
                 optimizer = optim.Adam(filter(lambda p: p.requires_grad ,cla_parameters), 
-                                    lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
+                                    lr=config.TRAIN.OPTIMIZER.LR, 
                                     weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
             else:
                 optimizer = optim.Adam([
                     {'params': filter(lambda p: p.requires_grad ,parameters)},
-                    {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
+                    {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
                     lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-
-        # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
-        #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         
     elif config.TRAIN.OPTIMIZER.NAME == 'sgd':
         optimizer = optim.SGD(parameters, lr=config.TRAIN.OPTIMIZER.LR, momentum=0.9, 
@@ -228,7 +211,6 @@ def main(config):
     if config.EVAL_MODE:
         print("=> Start evaluation only ")
         with torch.no_grad():
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'z_0')
             test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'x_pre')
             test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'fuse_z')
         return
@@ -247,7 +229,7 @@ def main(config):
                 break
         else:
             state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, latent_z='fuse_z')
+              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping)
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break
@@ -258,10 +240,9 @@ def main(config):
             (epoch+1) % config.TEST.EVAL_STEP == 0 or (epoch+1) == config.TRAIN.MAX_EPOCH:
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_0')
-                rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
-                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='fuse_z')
-                
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
+                rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='fuse_z')
+
                 # run["eval/rank1"].append(rank1)
                 rank1 = rank[0]
 

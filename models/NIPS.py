@@ -19,15 +19,17 @@ class MLP(nn.Module):
 
         layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
         layers.append(nn.LeakyReLU(leak_relu_slope))
-        # if bn:
-        #     layers.append(nn.BatchNorm1d(output_dim))
-
         self.MLP = nn.Sequential(*layers)
 
-        self.MLP.apply(weights_init_kaiming)
+        self.batch_norm = nn.BatchNorm1d(output_dim)
 
-    def forward(self, x):
+        self.MLP.apply(weights_init_kaiming)
+        self.batch_norm.apply(weights_init_kaiming)
+
+    def forward(self, x, bn_final=False):
         x = self.MLP(x)
+        if bn_final:
+            x = self.batch_norm(x)
         return x
 
 # input dim is two feature of 64,64 , the output is 64,64
@@ -44,11 +46,11 @@ class BilinearPooling(nn.Module):
 
 
 class NIPS(nn.Module):
-    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False, latent_z='fuse_z'):
+    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False, latent_z='x_pre'):
         super(NIPS, self).__init__()
 
         self.VAE = VAE
-        self.FLOWs = FLOWs
+        # self.FLOWs = FLOWs
 
         self.latent_size = latent_size
         self.only_x_input = only_x
@@ -74,14 +76,9 @@ class NIPS(nn.Module):
 
         self.latent_z = latent_z
 
-        self.z_fusion_z0 = BilinearPooling(latent_size, latent_size)
+        self.fusion = BilinearPooling(latent_size, latent_size)
 
-        # add batch_norm for domain_embeding
-        # self.bn = nn.BatchNorm1d(self.out_dim)
-        # self.bn.bias.requires_grad_(False)
-        # self.bn.apply(weights_init_kaiming)
-
-    def forward(self, x, domain_index):
+    def forward(self, x, domain_index, norm=True):
         
         if self.use_centroid:
             assert len(domain_index.size()) == 2
@@ -89,70 +86,53 @@ class NIPS(nn.Module):
             assert len(domain_index.size()) == 1
             domain_index = idx2onehot(domain_index, self.domain_len)
 
-        domain_feature = self.domain_embeding(domain_index)
-        if torch.isnan(domain_feature).any():
-            print("domain_feature has nan")
-        
-        domain_feature_norm = self.norm(domain_feature)
+        domain_feature = self.domain_embeding(domain_index, bn_final=False)
+
+        if norm:
+            domain_feature_norm = self.norm(domain_feature)
+        else:
+            domain_feature_norm = domain_feature        
         if torch.isnan(domain_feature_norm).any():
             print("domain_feature after normalization has nan")
 
-        
-        x_pre, means, log_var = self.VAE.encoder(x) # (64, latentsize)
-        x_proj_norm = self.norm(x_pre)
-
-        z_0 = self.VAE.reparameterize(means, log_var)   # (64, latentsize)
-
-        fusion_2z = self.z_fusion_z0(z_0, x_proj_norm)
-
-        if self.latent_z == 'z_0':
-            recon_x = self.VAE.decoder(z_0)
-        elif self.latent_z == 'x_pre':
-            recon_x = self.VAE.decoder(x_proj_norm)
-        elif self.latent_z == 'fuse_z':
-            recon_x = self.VAE.decoder(fusion_2z)
+        x_pre, _, _ = self.VAE.encoder(x, bn_final=False) # (64, latentsize)
+        if norm:
+            x_proj_norm = self.norm(x_pre)
         else:
-            raise ValueError("latent_z should be one of ['z_0', 'fuse_z', 'x_pre']")
+            x_proj_norm = x_pre
 
+        fusion_UZ = self.fusion(domain_feature_norm, x_proj_norm)
 
-        '''
-        cat u_i with each dim of z
-        '''
-        # # 64, 12, 64
-        # domian_dim =  int(self.hidden_dim/self.latent_size)
-        # U = domain_feature_norm.view(-1, self.latent_size, domian_dim)
-        # # (64, 12, 1) + (64, 12, 64) -> (64, 12, 65)
-        # flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
+        recon_x = self.VAE.decoder(fusion_UZ)
 
+        # '''
+        # cat u with each dim of z
+        # '''
+        # U = domain_feature_norm.unsqueeze(1)
+        # U = U.repeat(1, x_proj_norm.size(1), 1)
+        # # (64,12) --> (64, 12, 1) + (64, 12, 64) --> (64, 12, 65)
+        # if self.latent_z == 'z_0':
+        #     flow_input = torch.cat((U, z_0.unsqueeze(-1)), dim=-1)
+        # elif self.latent_z == 'x_pre':
+        #     flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
+        # elif self.latent_z == 'fuse_z':
+        #     flow_input = torch.cat((U, fusion_2z.unsqueeze(-1)), dim=-1)
+        # else:
+        #     raise ValueError("latent_z should be one of ['z_0', 'fuse_z', 'x_pre']")
 
-        '''
-        cat u with each dim of z
-        '''
-        U = domain_feature_norm.unsqueeze(1)
-        U = U.repeat(1, x_proj_norm.size(1), 1)
-        # (64,12) --> (64, 12, 1) + (64, 12, 64) --> (64, 12, 65)
-        if self.latent_z == 'z_0':
-            flow_input = torch.cat((U, z_0.unsqueeze(-1)), dim=-1)
-        elif self.latent_z == 'x_pre':
-            flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
-        elif self.latent_z == 'fuse_z':
-            flow_input = torch.cat((U, fusion_2z.unsqueeze(-1)), dim=-1)
-        else:
-            raise ValueError("latent_z should be one of ['z_0', 'fuse_z', 'x_pre']")
+        # if self.only_x_input:
+        #     if self.latent_z == 'z_0':
+        #         z_1 = z_0
+        #     elif self.latent_z == 'x_pre':
+        #         z_1 = x_proj_norm
+        #     elif self.latent_z == 'fuse_z':
+        #         z_1 = fusion_2z
+        # else:
+        #     z_1 = flow_input
 
-        if self.only_x_input:
-            if self.latent_z == 'z_0':
-                z_1 = z_0
-            elif self.latent_z == 'x_pre':
-                z_1 = x_proj_norm
-            elif self.latent_z == 'fuse_z':
-                z_1 = fusion_2z
-        else:
-            z_1 = flow_input
+        # theta, logjcobin = self.FLOWs(z_1)
 
-        theta, logjcobin = self.FLOWs(z_1)
-
-        return recon_x, means, log_var, z_0, x_pre, x_proj_norm, z_1, fusion_2z, theta, logjcobin, domain_feature, flow_input
+        return recon_x, x_pre, x_proj_norm, domain_feature, fusion_UZ
 
 
     def normalization(self, x):

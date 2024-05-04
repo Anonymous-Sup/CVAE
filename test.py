@@ -31,18 +31,17 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
         else:
             domain_index = batch_centroids.cuda()
         
+        # recon_x, x_pre, x_proj_norm, domain_feature, fusion_UZ
         if config.TRAIN.AMP:
             with autocast():
-                recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, z_fusion, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
+                recon_x, x_pre, batach_features_norm, domain_feature, fusion_UZ = model(pretrained_feautres, domain_index)
         else:
-            recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, z_fusion, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
+            econ_x, x_pre, batach_features_norm, domain_feature, fusion_UZ = model(pretrained_feautres, domain_index)
         
-        if latent_z == 'z_0':
-            retrieval_feature = z_0
-        elif latent_z == 'x_pre':
+        if latent_z == 'x_pre':
             retrieval_feature = x_pre
         elif latent_z == 'fuse_z':
-            retrieval_feature = z_fusion
+            retrieval_feature = fusion_UZ
 
         if 'reid' in config.MODEL.TRAIN_STAGE or 'novel'in config.DATA.TRAIN_FORMAT:
             x_final = classifier(batach_features_norm)
