@@ -43,7 +43,7 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
         elif latent_z == 'fuse_z':
             retrieval_feature = fusion_UZ
 
-        if 'reid' in config.MODEL.TRAIN_STAGE or 'novel'in config.DATA.TRAIN_FORMAT:
+        if 'reid' in config.MODEL.TRAIN_STAGE:
             x_final = classifier(batach_features_norm)
         else:
             x_final = retrieval_feature

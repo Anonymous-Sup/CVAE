@@ -88,9 +88,13 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
         beta = 0.01
         gamma = 0.5
+
+        # this is a hyperparameter
+        adaptive_weight =  min(2.0 / (float(epoch)+1.0), 0.1)
+
         if config.DATA.TRAIN_FORMAT == 'novel':
-            loss = recon_loss
-            loss = loss + gamma * cls_loss
+            loss = adaptive_weight * recon_loss
+            loss = loss + cls_loss
             loss = loss + pair_loss
 
         elif config.MODEL.TRAIN_STAGE == 'klstage':

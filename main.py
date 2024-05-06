@@ -112,8 +112,10 @@ def main(config):
     parameters = []
     for name, param in model.named_parameters():
         if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
+            print("set param.requires_grad = False for {}".format(name))
             param.requires_grad = False
         else:
+            print("set param.requires_grad = True for {}".format(name))
             parameters.append(param)
 
     cla_parameters = list(classifier.parameters())
@@ -138,8 +140,8 @@ def main(config):
         # use adam that set different learning rate for different parameters
         if config.DATA.TRAIN_FORMAT == 'novel':
             optimizer = optim.Adam([
-                {'params': filter(lambda p: p.requires_grad ,parameters)},
-                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+                {'params': filter(lambda p: p.requires_grad, parameters)},
+                {'params': filter(lambda p: p.requires_grad, cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
                 lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         else:
             if config.MODEL.TRAIN_STAGE == 'reidstage':
@@ -148,8 +150,8 @@ def main(config):
                                     weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
             else:
                 optimizer = optim.Adam([
-                    {'params': filter(lambda p: p.requires_grad ,parameters)},
-                    {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+                    {'params': filter(lambda p: p.requires_grad, parameters)},
+                    {'params': filter(lambda p: p.requires_grad, cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
                     lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         
     elif config.TRAIN.OPTIMIZER.NAME == 'sgd':
