@@ -230,7 +230,6 @@ def main(config):
         with torch.no_grad():
             test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'z_0')
             test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'x_pre')
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'fuse_z')
         return
 
     start_time = time.time()
@@ -247,7 +246,7 @@ def main(config):
                 break
         else:
             state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, latent_z='fuse_z')
+              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, latent_z='z_0')
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break
@@ -260,7 +259,6 @@ def main(config):
             with torch.no_grad():
                 test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_0')
                 rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
-                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='fuse_z')
                 
                 # run["eval/rank1"].append(rank1)
                 rank1 = rank[0]

@@ -74,13 +74,6 @@ class NIPS(nn.Module):
 
         self.latent_z = latent_z
 
-        self.z_fusion_z0 = BilinearPooling(latent_size, latent_size)
-
-        # add batch_norm for domain_embeding
-        # self.bn = nn.BatchNorm1d(self.out_dim)
-        # self.bn.bias.requires_grad_(False)
-        # self.bn.apply(weights_init_kaiming)
-
     def forward(self, x, domain_index):
         
         if self.use_centroid:
@@ -103,14 +96,10 @@ class NIPS(nn.Module):
 
         z_0 = self.VAE.reparameterize(means, log_var)   # (64, latentsize)
 
-        fusion_2z = self.z_fusion_z0(z_0, x_proj_norm)
-
         if self.latent_z == 'z_0':
             recon_x = self.VAE.decoder(z_0)
         elif self.latent_z == 'x_pre':
             recon_x = self.VAE.decoder(x_proj_norm)
-        elif self.latent_z == 'fuse_z':
-            recon_x = self.VAE.decoder(fusion_2z)
         else:
             raise ValueError("latent_z should be one of ['z_0', 'fuse_z', 'x_pre']")
 
@@ -135,8 +124,6 @@ class NIPS(nn.Module):
             flow_input = torch.cat((U, z_0.unsqueeze(-1)), dim=-1)
         elif self.latent_z == 'x_pre':
             flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
-        elif self.latent_z == 'fuse_z':
-            flow_input = torch.cat((U, fusion_2z.unsqueeze(-1)), dim=-1)
         else:
             raise ValueError("latent_z should be one of ['z_0', 'fuse_z', 'x_pre']")
 
@@ -145,14 +132,12 @@ class NIPS(nn.Module):
                 z_1 = z_0
             elif self.latent_z == 'x_pre':
                 z_1 = x_proj_norm
-            elif self.latent_z == 'fuse_z':
-                z_1 = fusion_2z
         else:
             z_1 = flow_input
 
         theta, logjcobin = self.FLOWs(z_1)
 
-        return recon_x, means, log_var, z_0, x_pre, x_proj_norm, z_1, fusion_2z, theta, logjcobin, domain_feature, flow_input
+        return recon_x, means, log_var, z_0, x_pre, x_proj_norm, z_1, theta, logjcobin, domain_feature, flow_input
 
 
     def normalization(self, x):

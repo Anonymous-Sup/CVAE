@@ -151,8 +151,6 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 outputs = classifier(z)
             elif latent_z == 'x_pre':
                 outputs = classifier(x_proj_norm)
-            elif latent_z == 'fuse_z':
-                outputs = classifier(z_fusion)
                 
             outputs_theta = classifier(theta)
 
@@ -162,7 +160,12 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             cls_loss = criterion_cla(outputs, pids)
             cls_loss_theta = criterion_cla(outputs_theta, pids)
 
-            pair_loss = criterion_pair(outputs, pids)
+            if latent_z == 'z_0':
+                pair_loss = criterion_pair(z, pids)
+            elif latent_z == 'x_pre':
+                pair_loss = criterion_pair(x_proj_norm, pids)
+            else:
+                pair_loss = criterion_pair(outputs, pids)
 
             if config.MODEL.ONLY_CVAE_KL:  
                 posterior = -0.5 * torch.sum(1 + log_var - mean.pow(2) - log_var.exp())
