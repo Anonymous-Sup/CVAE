@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from utils import weights_init_kaiming, idx2onehot
+from models.adapters import SparseBattery
 
 class MLP(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, number_layers=3, leak_relu_slope=0.2, bn=False):
@@ -42,9 +43,77 @@ class BilinearPooling(nn.Module):
         return x
 
 
+class SparseLatentAdapter(nn.Module):
+    def __init__(self, num_adapters, c_in, c_out):
+        super(SparseLatentAdapter, self).__init__()
+        
+        self.linear = nn.Linear(c_in, c_out, bias=False)
+        self.bn = nn.BatchNorm1d(c_out)
+        self.parallel_adapter = SparseBattery(num_adapters, c_in, c_out)
+
+    def forward(self, x):
+        # this is f_0(x), which is a shared linear
+        y = self.linear(x)
+    
+        # this is the sum of K adapters with gate and indendepnt 1*1 linear
+        # gate.shape = (batchsize, num_adapters)
+        # out.shape = (batchsize, 64)
+        gate, out = self.parallel_adapter(x)
+
+        # this f_0(x) + sum_k(g_k(x) * f_k(x))
+        y = y + out
+        y = self.bn(y)
+
+        return gate, y
+
+class SparseLatentAdapterBlock(nn.Module):
+    def __init__(self, num_adapters, in_features, out_features):
+        super(SparseLatentAdapterBlock, self).__init__()
+        self.sla1 = SparseLatentAdapter(num_adapters, in_features, out_features)
+        self.sla2 = SparseLatentAdapter(num_adapters, out_features, out_features)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        _, y = self.sla1(x)
+        y = self.relu(y)
+        gate, y = self.sla2(y)
+        y = self.relu(y)
+        return gate, y
+    
+
+
+class MLP_Adapter(nn.Module):
+    def __init__(self, num_adapters, input_dim, hidden_dim, output_dim, number_layers=3, bn=False):
+        super(MLP_Adapter, self).__init__()
+
+        self.bn = bn
+        self.layers = nn.ModuleList()
+        for l in range(number_layers):
+            if l == 0:
+                self.layers.append(SparseLatentAdapterBlock(num_adapters, input_dim, hidden_dim))
+            else:
+                self.layers.append(SparseLatentAdapterBlock(num_adapters, hidden_dim, hidden_dim))
+
+        self.layers.append(SparseLatentAdapterBlock(num_adapters, hidden_dim, output_dim))
+
+        if self.bn:
+            self.batchnrom = nn.BatchNorm1d(output_dim)
+
+        self.apply(weights_init_kaiming)
+
+    def forward(self, x):
+        for layer in self.layers[:-1]:
+            _, x = layer(x)
+
+        gate, x = self.layers[-1](x)
+
+        if self.bn:
+            x = self.batchnrom(x)
+
+        return gate, x
 
 class NIPS(nn.Module):
-    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False, latent_z='fuse_z'):
+    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False, latent_z='z_0'):
         super(NIPS, self).__init__()
 
         self.VAE = VAE
@@ -60,39 +129,36 @@ class NIPS(nn.Module):
         else:
             self.hidden_dim = hidden_dim
         
-        self.out_dim = out_dim # defalt out_dim 12*64=768  out_dim=hidden_dim
+        self.out_dim = out_dim 
 
-        if self.use_centroid:
-            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.out_dim, number_layers=4, leak_relu_slope=0.2, bn=True)
-        else:
-            # 50 --> 64 --> 64
-            # hidden_dim = 64
-            self.domain_len = 2*(2*self.latent_size+1) 
-            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4, leak_relu_slope=0.2, bn=True)
-        
+        # self.domain_adapters = SparseLatentAdapter(num_adapters=128, c_in=feature_dim, c_out=out_dim)
+        self.domain_adapters = MLP_Adapter(num_adapters=128, input_dim=feature_dim, hidden_dim=hidden_dim, output_dim=out_dim, number_layers=4, bn=True)
+
         self.norm = self.normalize_l2
 
         self.latent_z = latent_z
 
-    def forward(self, x, domain_index):
+    def forward(self, x, norm=True):
         
-        if self.use_centroid:
-            assert len(domain_index.size()) == 2
-        else:
-            assert len(domain_index.size()) == 1
-            domain_index = idx2onehot(domain_index, self.domain_len)
-
-        domain_feature = self.domain_embeding(domain_index)
+        gate, domain_feature = self.domain_adapters(x)
+        # count the value of gate at the second dim that not zero, and output the value for each image in the batch(dim=0)
+        # non_zero_counts = (gate != 0).sum(dim=1)
+        # print("non_zero_counts: ", non_zero_counts)
+        
         if torch.isnan(domain_feature).any():
             print("domain_feature has nan")
         
-        domain_feature_norm = self.norm(domain_feature)
-        if torch.isnan(domain_feature_norm).any():
-            print("domain_feature after normalization has nan")
+        if norm:
+            domain_feature_norm = self.norm(domain_feature)
+        else:
+            domain_feature_norm = domain_feature
 
-        
         x_pre, means, log_var = self.VAE.encoder(x) # (64, latentsize)
-        x_proj_norm = self.norm(x_pre)
+
+        if norm:
+            x_proj_norm = self.norm(x_pre)
+        else:
+            x_proj_norm = x_pre
 
         z_0 = self.VAE.reparameterize(means, log_var)   # (64, latentsize)
 
@@ -102,7 +168,6 @@ class NIPS(nn.Module):
             recon_x = self.VAE.decoder(x_proj_norm)
         else:
             raise ValueError("latent_z should be one of ['z_0', 'fuse_z', 'x_pre']")
-
 
         '''
         cat u_i with each dim of z

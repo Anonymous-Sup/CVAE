@@ -25,17 +25,12 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
         pretrained_feautres = imgs
         pretrained_feautres = pretrained_feautres.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
-
-        if config.MODEL.USE_CENTROID:
-            domain_index = centroids_all[batch_centroids].cuda()
-        else:
-            domain_index = batch_centroids.cuda()
         
         if config.TRAIN.AMP:
             with autocast():
-                recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
+                recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, norm=True)
         else:
-            recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, domain_index)
+            recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, norm=True)
         
         if latent_z == 'z_0':
             retrieval_feature = z_0

@@ -28,7 +28,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             model.train()
             classifier.eval()
 
-    centroids.cuda()
+    # centroids.cuda()
 
     if config.MODEL.ONLY_CVAE_KL:
         print("=> Only CVAE KL")
@@ -87,7 +87,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         """
         if config.TRAIN.AMP:
             with autocast():
-                recon_x, mean, log_var, z, x_proj, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, centroids[clusterids])
+                recon_x, mean, log_var, z, x_proj, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, norm=True)
             
                 outputs = classifier(x_proj)
                 outputs_theta = classifier(theta)
@@ -137,9 +137,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             
             if 'reid' in config.MODEL.TRAIN_STAGE:
                 with torch.no_grad():
-                    recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, z_fusion, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+                    recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, norm=False)
             else:
-                recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, z_fusion, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, domain_index)
+                recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model(imgs_tensor, norm=False)
             
             '''
             0422 norm or no norm for testing BatchNorm
@@ -252,23 +252,22 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         
         z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
-        z_fusion_collect = z_fusion if batch_idx == 0 else torch.cat((z_fusion_collect, z_fusion), dim=0)
         if batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
                 # plot_scatterNN(run, x_pre, "0-N by N for x_pre")
                 # plot_scatterNN(run, z, "0-N by N for reparemeterized z")
                 plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z")
                 plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre")
-                plot_epoch_Zdim(run, z_fusion_collect, "0-Seperate dim of z_fusion")
                 # plot_scatterNN(run, x_proj_norm, "0-N by N for norm_z")
+                
                 
                 plot_scatter_1D(run, prior_p, "1-prior_sample")
                 if not config.MODEL.ONLY_CVAE_KL:  
                     plot_scatter_2D(run, posterior_p, "1-posterior_sample")
+                plot_scatter_2D(run, theta, "1-theta")
 
                 plot_correlation_matrix(run, z, "1-correlation reparemeterized z")
                 plot_correlation_matrix(run, x_pre, "1-correlation x_pre")
-                plot_correlation_matrix(run, z_fusion, "1-correlation z_fusion")
 
                 # print("image_tensor: {}".format(imgs_tensor[0, :10]))
                 # print("x_proj_norm.shape:{}, {}".format(x_proj_norm.shape, x_proj_norm[0, :]))

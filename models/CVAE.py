@@ -24,8 +24,12 @@ class VAE(nn.Module):
         self.decoder = Decoder(
             output_dim, hidden_dim, feature_dim, n_layers, self.ac_fn, self.bn)
         
+        
+
         self.encoder.apply(weights_init_kaiming)
         self.decoder.apply(weights_init_kaiming)
+
+
 
     # remember to be fp16
     def forward(self, x, y):
@@ -93,24 +97,12 @@ class Encoder(nn.Module):
 
         x_pre = self.MLP(x)
         
-        # if self.training:
-        #     if self.bn:
-        #         x_bn = self.BN_out(x_pre)
-        #     else:
-        #         x_bn = x_pre
-        # else:
-        #     x_bn = x_pre
-        # x_bn = x_pre
-
         means = self.linear_means(x_pre)
         log_vars = self.linear_log_var(x_pre)
 
         if self.ac_fn is not None:
             means = self.ac_fn(means)
             log_vars = self.ac_fn(log_vars)
-            # if self.bn:
-            #     means = self.BN_means(means)
-            #     log_vars = self.BN_var(log_vars)
 
         return x_pre, means, log_vars
 
