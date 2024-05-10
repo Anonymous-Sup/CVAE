@@ -44,7 +44,6 @@ class BilinearPooling(nn.Module):
         x = self.bilinear(x1, x2)
         return x
 
-
 class SparseLatentAdapter(nn.Module):
     def __init__(self, num_adapters, c_in, c_out):
         super(SparseLatentAdapter, self).__init__()
@@ -137,7 +136,8 @@ class NIPS(nn.Module):
 
         if use_adapter:
             print("Using Adapter for domain feature")
-            self.domain_embeding = MLP_Adapter(num_adapters=128, input_dim=feature_dim, hidden_dim=hidden_dim, output_dim=out_dim, number_layers=4, bn=False)
+            self.domain_embeding = SparseBattery(num_adapters=128, c_in=feature_dim, c_out=out_dim)
+            # self.domain_embeding = MLP_Adapter(num_adapters=128, input_dim=feature_dim, hidden_dim=hidden_dim, output_dim=out_dim, number_layers=4, bn=False)
         else:
             print("Using Clurstering for domain feature")
             if self.use_centroid:

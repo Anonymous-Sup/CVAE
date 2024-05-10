@@ -90,8 +90,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         gamma = 0.5
 
         # this is a hyperparameter
-        # adaptive_weight =  min(2.0 / (float(epoch)+1.0), 0.1)
-        adaptive_weight =  0.0
+        adaptive_weight =  max(2.0 / (float(epoch)+1.0), 0.1)
+        # adaptive_weight =  0.0
 
         if config.DATA.TRAIN_FORMAT == 'novel':
             loss = adaptive_weight * recon_loss
@@ -102,7 +102,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             loss = recon_loss  
             # loss = loss + regular_loss
             loss = loss + pair_loss
-            # loss = loss + cls_loss
+            loss = loss + cls_loss
             
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             loss = cls_loss
@@ -215,5 +215,6 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     # run["train/epoch/kl_loss"].append(batch_kl_loss.avg)
     # run["train/epoch/kld_theta"].append(batch_kld_theta)
     run["train/epoch/recon_loss"].append(batch_recon_loss.avg)
+    run["train/epoch/adaptive_recon_w"].append(adaptive_weight)
     return True
 
