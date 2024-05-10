@@ -77,7 +77,7 @@ def build_model(config, num_classes):
         nips_hidden_dim = 256
         nips_out_dim = 64
     
-    model = NIPS(vae_model, None, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, out_dim=nips_out_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT, use_centroid=config.MODEL.USE_CENTROID, latent_z='fuse_z')
+    model = NIPS(vae_model, None, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, out_dim=nips_out_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT, use_centroid=config.MODEL.USE_CENTROID, use_adapter=True)
     
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     

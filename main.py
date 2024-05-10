@@ -112,10 +112,10 @@ def main(config):
     parameters = []
     for name, param in model.named_parameters():
         if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
-            print("set param.requires_grad = False for {}".format(name))
+            # print("set param.requires_grad = False for {}".format(name))
             param.requires_grad = False
         else:
-            print("set param.requires_grad = True for {}".format(name))
+            # print("set param.requires_grad = True for {}".format(name))
             parameters.append(param)
 
     cla_parameters = list(classifier.parameters())
@@ -174,11 +174,13 @@ def main(config):
 
     if config.DATA.TRAIN_FORMAT != "base":
         print("=> Start training the model on Novel data")
-        print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+        print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
         checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
         model.load_state_dict(checkpoint['model'])
         print("orginal best rank1 = {}".format(checkpoint['rank1']))
         # flows_model.load_state_dict(checkpoint['flows_model'])
+        # delete checkpoint
+        del checkpoint
 
         # copy the checkpoint to the output folder
         print("=> Copy the checkpoint to the output folder")
@@ -214,7 +216,8 @@ def main(config):
         print("=> Start evaluation only ")
         with torch.no_grad():
             test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'x_pre')
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'fuse_z')
+            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'fuse_z')
+            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'recon_x')
         return
 
     start_time = time.time()
@@ -225,13 +228,13 @@ def main(config):
         start_train_time = time.time()
         if config.TRAIN.AMP:
             state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler)
+              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler, use_adapter=True)
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break
         else:
             state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping)
+              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, use_adapter=True)
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break
@@ -243,6 +246,7 @@ def main(config):
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
                 test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='recon_x')
                 rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='fuse_z')
 
                 # run["eval/rank1"].append(rank1)

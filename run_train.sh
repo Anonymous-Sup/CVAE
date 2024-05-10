@@ -32,12 +32,12 @@
 # --train_format base \
 # --train_stage klstage \
 # --gpu 0 \
-# --saved_name fp32_l4vae+LeakRelu+bn_64z_bpfusion_Lrecon+pari+reid_1e3 \
+# --saved_name fp32_l4vae+LeakRelu+bn_64z_AdapterU_normUZ_bpfusion_Lrecon+trip_1e3 \
 # --vae_type cvae \
 # --recon_loss mse \
 # --reid_loss crossentropylabelsmooth \
 # --use_centroid \
-# > train_clipreid_bn_64z_bpfusion_Lrecon+pair+reid_1e3.log 2>&1 & 
+# > train_clipreid_bn_64z_AdapterU_normUZ_bpfusion_Lrecon+trip_1e3.log 2>&1 & 
 
 
 # # ===========Novel Stage 1 traning================
@@ -46,15 +46,15 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --dataset market1k \
 --format_tag tensor \
 --train_format novel \
---resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_cvae_decouple/2024-05-04/fp32_l4vae+LeakRelu+bn_64z_bpfusion_Lrecon_e3 \
+--resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_cvae_decouple/2024-05-09/fp32_l4vae+LeakRelu+bn_64z_AdapterU_normUZ_bpfusion_Lrecon+pair+reid_1e3 \
 --train_stage klstage \
 --gpu 0 \
---saved_name fp32_l4vae+LeakRelu+bn_64z_bpfusion_Lrecon_1e3 \
+--saved_name fp32_l4vae+LeakRelu+bn_64z_AdapterU_normUZ_bpfusion_Lpair+reid_1e3 \
 --vae_type cvae \
 --recon_loss mse \
 --reid_loss crossentropylabelsmooth \
 --use_centroid \
-> finetune_novel_ClIPReID_bn_64z_bpfusion_Lrecon_1e3.log 2>&1 & 
+> finetune_novel_ClIPReID_bn_64z_AdapterU_normUZ_bpfusion_Lpair+reid_1e3.log 2>&1 & 
 
 
 # ===========Baseline Stage 1 training================

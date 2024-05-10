@@ -10,7 +10,7 @@ from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, p
 from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot_epoch_Zdim
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None, latent_z='fuse_z'):
+              optimizer, trainloader, epoch, centroids, early_stopping=None, scaler=None, use_adapter=False):
     
     if not config.TRAIN.AMP:
         centroids = centroids.float()
@@ -90,7 +90,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         gamma = 0.5
 
         # this is a hyperparameter
-        adaptive_weight =  min(2.0 / (float(epoch)+1.0), 0.1)
+        # adaptive_weight =  min(2.0 / (float(epoch)+1.0), 0.1)
+        adaptive_weight =  0.0
 
         if config.DATA.TRAIN_FORMAT == 'novel':
             loss = adaptive_weight * recon_loss
@@ -101,7 +102,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             loss = recon_loss  
             # loss = loss + regular_loss
             loss = loss + pair_loss
-            loss = loss + cls_loss
+            # loss = loss + cls_loss
             
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             loss = cls_loss
@@ -136,9 +137,13 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         
         if batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
-
-                plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre")
-                plot_epoch_Zdim(run, fusion_collect, "0-Seperate dim of z_fusion")
+                
+                if config.DATA.TRAIN_FORMAT == 'novel':
+                    plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre", num_samples=16)
+                    plot_epoch_Zdim(run, fusion_collect, "0-Seperate dim of z_fusion", num_samples=16)
+                else:
+                    plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre")
+                    plot_epoch_Zdim(run, fusion_collect, "0-Seperate dim of z_fusion")
 
                 plot_correlation_matrix(run, x_pre, "1-correlation x_pre")
                 plot_correlation_matrix(run, fusion_collect, "1-correlation z_fusion")

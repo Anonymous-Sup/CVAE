@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from utils import weights_init_kaiming, idx2onehot
+from models.adapters import SparseBattery
 
 class MLP(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, number_layers=3, leak_relu_slope=0.2, bn=False):
@@ -44,9 +45,78 @@ class BilinearPooling(nn.Module):
         return x
 
 
+class SparseLatentAdapter(nn.Module):
+    def __init__(self, num_adapters, c_in, c_out):
+        super(SparseLatentAdapter, self).__init__()
+        
+        self.linear = nn.Linear(c_in, c_out, bias=False)
+        self.bn = nn.BatchNorm1d(c_out)
+        self.parallel_adapter = SparseBattery(num_adapters, c_in, c_out)
+
+    def forward(self, x):
+        # this is f_0(x), which is a shared linear
+        y = self.linear(x)
+    
+        # this is the sum of K adapters with gate and indendepnt 1*1 linear
+        # gate.shape = (batchsize, num_adapters)
+        # out.shape = (batchsize, 64)
+        gate, out = self.parallel_adapter(x)
+
+        # this f_0(x) + sum_k(g_k(x) * f_k(x))
+        y = y + out
+        y = self.bn(y)
+
+        return gate, y
+
+class SparseLatentAdapterBlock(nn.Module):
+    def __init__(self, num_adapters, in_features, out_features):
+        super(SparseLatentAdapterBlock, self).__init__()
+        self.sla1 = SparseLatentAdapter(num_adapters, in_features, out_features)
+        self.sla2 = SparseLatentAdapter(num_adapters, out_features, out_features)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        _, y = self.sla1(x)
+        y = self.relu(y)
+        gate, y = self.sla2(y)
+        y = self.relu(y)
+        return gate, y
+    
+
+
+class MLP_Adapter(nn.Module):
+    def __init__(self, num_adapters, input_dim, hidden_dim, output_dim, number_layers=3, bn=False):
+        super(MLP_Adapter, self).__init__()
+
+        self.bn = bn
+        self.layers = nn.ModuleList()
+        for l in range(number_layers):
+            if l == 0:
+                self.layers.append(SparseLatentAdapterBlock(num_adapters, input_dim, hidden_dim))
+            else:
+                self.layers.append(SparseLatentAdapterBlock(num_adapters, hidden_dim, hidden_dim))
+
+        self.layers.append(SparseLatentAdapterBlock(num_adapters, hidden_dim, output_dim))
+
+        if self.bn:
+            self.batchnrom = nn.BatchNorm1d(output_dim)
+
+        self.apply(weights_init_kaiming)
+
+    def forward(self, x):
+        for layer in self.layers[:-1]:
+            _, x = layer(x)
+
+        gate, x = self.layers[-1](x)
+
+        if self.bn:
+            x = self.batchnrom(x)
+
+        return gate, x
+
 
 class NIPS(nn.Module):
-    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False, latent_z='x_pre'):
+    def __init__(self, VAE, FLOWs, feature_dim, hidden_dim, out_dim, latent_size, only_x=False, use_centroid=False, use_adapter=False):
         super(NIPS, self).__init__()
 
         self.VAE = VAE
@@ -55,6 +125,7 @@ class NIPS(nn.Module):
         self.latent_size = latent_size
         self.only_x_input = only_x
         self.use_centroid = use_centroid
+        self.use_adapter = use_adapter
 
         if hidden_dim is None:
             self.hidden_dim = 768 # default hidden_dim 768
@@ -64,29 +135,36 @@ class NIPS(nn.Module):
         
         self.out_dim = out_dim # defalt out_dim 12*64=768  out_dim=hidden_dim
 
-        if self.use_centroid:
-            self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.out_dim, number_layers=4, leak_relu_slope=0.2, bn=True)
+        if use_adapter:
+            print("Using Adapter for domain feature")
+            self.domain_embeding = MLP_Adapter(num_adapters=128, input_dim=feature_dim, hidden_dim=hidden_dim, output_dim=out_dim, number_layers=4, bn=False)
         else:
-            # 50 --> 64 --> 64
-            # hidden_dim = 64
-            self.domain_len = 2*(2*self.latent_size+1) 
-            self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4, leak_relu_slope=0.2, bn=True)
-        
+            print("Using Clurstering for domain feature")
+            if self.use_centroid:
+                self.domain_embeding = MLP(feature_dim, self.hidden_dim, self.out_dim, number_layers=4, leak_relu_slope=0.2, bn=True)
+            else:
+                # 50 --> 64 --> 64
+                # hidden_dim = 64
+                self.domain_len = 2*(2*self.latent_size+1) 
+                self.domain_embeding = MLP(self.domain_len, self.hidden_dim, self.out_dim, number_layers=4, leak_relu_slope=0.2, bn=True)
+            
         self.norm = self.normalize_l2
-
-        self.latent_z = latent_z
 
         self.fusion = BilinearPooling(latent_size, latent_size)
 
-    def forward(self, x, domain_index, norm=True):
+    def forward(self, x, domain_index, norm=False):
         
-        if self.use_centroid:
-            assert len(domain_index.size()) == 2
+        if self.use_adapter:
+            # with batchnorm
+            gate, domain_feature = self.domain_embeding(x)
         else:
-            assert len(domain_index.size()) == 1
+            if self.use_centroid:
+                assert len(domain_index.size()) == 2
+            else:
+                assert len(domain_index.size()) == 1
             domain_index = idx2onehot(domain_index, self.domain_len)
 
-        domain_feature = self.domain_embeding(domain_index, bn_final=False)
+            domain_feature = self.domain_embeding(domain_index, bn_final=False)
 
         if norm:
             domain_feature_norm = self.norm(domain_feature)
@@ -96,6 +174,7 @@ class NIPS(nn.Module):
             print("domain_feature after normalization has nan")
 
         x_pre, _, _ = self.VAE.encoder(x, bn_final=False) # (64, latentsize)
+        
         if norm:
             x_proj_norm = self.norm(x_pre)
         else:
@@ -104,33 +183,6 @@ class NIPS(nn.Module):
         fusion_UZ = self.fusion(domain_feature_norm, x_proj_norm)
 
         recon_x = self.VAE.decoder(fusion_UZ)
-
-        # '''
-        # cat u with each dim of z
-        # '''
-        # U = domain_feature_norm.unsqueeze(1)
-        # U = U.repeat(1, x_proj_norm.size(1), 1)
-        # # (64,12) --> (64, 12, 1) + (64, 12, 64) --> (64, 12, 65)
-        # if self.latent_z == 'z_0':
-        #     flow_input = torch.cat((U, z_0.unsqueeze(-1)), dim=-1)
-        # elif self.latent_z == 'x_pre':
-        #     flow_input = torch.cat((U, x_proj_norm.unsqueeze(-1)), dim=-1)
-        # elif self.latent_z == 'fuse_z':
-        #     flow_input = torch.cat((U, fusion_2z.unsqueeze(-1)), dim=-1)
-        # else:
-        #     raise ValueError("latent_z should be one of ['z_0', 'fuse_z', 'x_pre']")
-
-        # if self.only_x_input:
-        #     if self.latent_z == 'z_0':
-        #         z_1 = z_0
-        #     elif self.latent_z == 'x_pre':
-        #         z_1 = x_proj_norm
-        #     elif self.latent_z == 'fuse_z':
-        #         z_1 = fusion_2z
-        # else:
-        #     z_1 = flow_input
-
-        # theta, logjcobin = self.FLOWs(z_1)
 
         return recon_x, x_pre, x_proj_norm, domain_feature, fusion_UZ
 

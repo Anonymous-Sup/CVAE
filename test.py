@@ -36,12 +36,14 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
             with autocast():
                 recon_x, x_pre, batach_features_norm, domain_feature, fusion_UZ = model(pretrained_feautres, domain_index)
         else:
-            econ_x, x_pre, batach_features_norm, domain_feature, fusion_UZ = model(pretrained_feautres, domain_index)
+            recon_x, x_pre, batach_features_norm, domain_feature, fusion_UZ = model(pretrained_feautres, domain_index)
         
         if latent_z == 'x_pre':
             retrieval_feature = x_pre
         elif latent_z == 'fuse_z':
             retrieval_feature = fusion_UZ
+        elif latent_z == 'recon_x':
+            retrieval_feature = recon_x
 
         if 'reid' in config.MODEL.TRAIN_STAGE:
             x_final = classifier(batach_features_norm)

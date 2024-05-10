@@ -270,11 +270,9 @@ def plot_epoch_Zdim_old(run, tensor, title):
     run["train/histograms/{}".format(title)].append(fig)
     plt.close(fig)
 
-def plot_epoch_Zdim(run, tensor, title):
+def plot_epoch_Zdim(run, tensor, title, num_samples=64):
     data = tensor.detach().cpu().numpy()
     num_dims = 12
-    
-    num_samples=64
     
     # 对每个维度的数据进行分组和平均
     grouped_data = data.reshape(-1, num_samples, data.shape[-1])
