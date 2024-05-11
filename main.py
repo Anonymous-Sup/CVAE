@@ -194,7 +194,7 @@ def main(config):
         model.load_state_dict(checkpoint['model'])
         print("orginal best rank1 = {}".format(checkpoint['rank1']))
         # flows_model.load_state_dict(checkpoint['flows_model'])
-
+        del checkpoint
         # copy the checkpoint to the output folder
         print("=> Copy the checkpoint to the output folder")
         base_folder = os.path.basename(config.MODEL.RESUME)
@@ -208,7 +208,7 @@ def main(config):
             checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
             model.load_state_dict(checkpoint['model'])
             print("orginal best rank1 = {}".format(checkpoint['rank1']))
-
+            del checkpoint
             # flows_model.load_state_dict(checkpoint['flows_model'])
         else:
             if config.MODEL.RESUME:
@@ -219,7 +219,8 @@ def main(config):
                 classifier.load_state_dict(checkpoint['classifier'])
                 start_epoch = checkpoint['epoch']
                 best_rank1 = checkpoint['rank1']
-        
+                del checkpoint
+
     # Set device
     model = model.cuda()
     # flows_model = flows_model.cuda()
@@ -246,7 +247,7 @@ def main(config):
                 break
         else:
             state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, latent_z='x_pre')
+              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, latent_z='z_0')
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break

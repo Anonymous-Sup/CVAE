@@ -231,7 +231,7 @@ def update_config(config, args):
     # output folder
     if config.DATA.TRAIN_FORMAT == 'novel':
         config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, 'novel', datetime_today, config.SAVED_NAME)
-    if 'reid' in args.train_stage:
+    elif 'reid' in args.train_stage:
         config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid_'+config.LOSS.CLA_LOSS, datetime_today)
     else:
         config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, datetime_today, config.SAVED_NAME + "_" + config.MODEL.FLOW_TYPE+"_"+config.LOSS.RECON_LOSS)

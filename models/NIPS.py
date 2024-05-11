@@ -131,8 +131,9 @@ class NIPS(nn.Module):
         
         self.out_dim = out_dim 
 
+        self.domain_adapters = SparseBattery(num_adapters=128, c_in=feature_dim, c_out=out_dim)
         # self.domain_adapters = SparseLatentAdapter(num_adapters=128, c_in=feature_dim, c_out=out_dim)
-        self.domain_adapters = MLP_Adapter(num_adapters=128, input_dim=feature_dim, hidden_dim=hidden_dim, output_dim=out_dim, number_layers=4, bn=True)
+        # self.domain_adapters = MLP_Adapter(num_adapters=128, input_dim=feature_dim, hidden_dim=hidden_dim, output_dim=out_dim, number_layers=4, bn=True)
 
         self.norm = self.normalize_l2
 
