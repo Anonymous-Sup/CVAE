@@ -84,11 +84,11 @@ class Sparsemax(nn.Module):
 
 
 class SparseBattery(nn.Module):
-    def __init__(self, num_adapters, c_in, c_out):
+    def __init__(self, num_adapters, c_in, c_out, usebias=True):
         # num_adapters = 128, c_in = 1280, c_out = 64
         super(SparseBattery, self).__init__()
-        self.gate = nn.Sequential(nn.Linear(c_in, num_adapters, bias=False), Sparsemax(dim=1))
-        self.adapters = nn.ModuleList([nn.Linear(c_in, c_out, bias=False) for _ in range(num_adapters)])
+        self.gate = nn.Sequential(nn.Linear(c_in, num_adapters, bias=usebias), Sparsemax(dim=1))
+        self.adapters = nn.ModuleList([nn.Linear(c_in, c_out, bias=usebias) for _ in range(num_adapters)])
 
     def forward(self, x):
         # Contract batch over height and width
