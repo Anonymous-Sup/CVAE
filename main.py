@@ -29,9 +29,9 @@ from utils import EarlyStopping
 # torch.autograd.set_detect_anomaly(True)
 
 run = neptune.init_run(
-    project="Zhengwei-Lab/NIPSTransferReID",
+    project="Zhengwei-Lab/MayCVAE",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2ODIwNTQ4Yy0xZDA3LTRhNDctOTRmMy02ZjRlMmMzYmYwZjUifQ==",
-)  # your credentials
+)
 
 def parse_option():
     parser = argparse.ArgumentParser(description='Train CVAE model for transfer learning')
@@ -110,38 +110,24 @@ def main(config):
     # Build optimizer
     # select parameters beside the FLOWs parameters in the model
     parameters = []
-    Flow_parameters = []
     for name, param in model.named_parameters():
-        if 'FLOWs' not in name:
-            if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
-                param.requires_grad = False
-            else:
-                parameters.append(param)
+        if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
+            param.requires_grad = False
         else:
-            # if config.MODEL.TRAIN_STAGE == 'reidstage':
-            #     param.requires_grad = False
-            Flow_parameters.append(param)
-    
+            parameters.append(param)
+
     cla_parameters = list(classifier.parameters())
 
-    if config.DATA.TRAIN_FORMAT == 'novel':
-        print("=> Jump the TRAIN_STAGE part of setting grad")
-    else:
-        if config.MODEL.TRAIN_STAGE == 'reidstage':
-            # no grad is requird for param and flow_param
-            for param in parameters:
-                param.requires_grad = False
-            for flow_param in Flow_parameters:
-                flow_param.requires_grad = False
-        else:
-            for cls_param in cla_parameters:
-                cls_param.requires_grad = False
-
-    if config.MODEL.FLOW_TYPE == 'invertmlp':
-        beta_lr = 1
-    else:
-        beta_lr = 1
-
+    # if config.DATA.TRAIN_FORMAT == 'novel':
+    #     print("=> Jump the TRAIN_STAGE part of setting grad")
+    # else:
+    #     if config.MODEL.TRAIN_STAGE == 'reidstage':
+    #         # no grad is requird for param and flow_param
+    #         for param in parameters:
+    #             param.requires_grad = False
+    #     else:
+    #         for cls_param in cla_parameters:
+    #             cls_param.requires_grad = False
     if config.DATA.TRAIN_FORMAT == 'novel':
         alpha_lr = 10   # base lr 1e-4, classifier lr 1e-3
     else:
@@ -152,29 +138,26 @@ def main(config):
         if config.DATA.TRAIN_FORMAT == 'novel':
             optimizer = optim.Adam([
                 {'params': filter(lambda p: p.requires_grad ,parameters)},
-                {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr},
                 {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
                 lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         else:
-            if config.MODEL.TRAIN_STAGE == 'reidstage':
-                optimizer = optim.Adam(filter(lambda p: p.requires_grad ,cla_parameters), 
-                                    lr=config.TRAIN.OPTIMIZER.LR * alpha_lr, 
-                                    weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-            else:
-                optimizer = optim.Adam([
-                    {'params': filter(lambda p: p.requires_grad ,parameters)},
-                    {'params': filter(lambda p: p.requires_grad ,Flow_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * beta_lr}], 
-                    lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            optimizer = optim.Adam([
+                {'params': filter(lambda p: p.requires_grad ,parameters)},
+                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
 
         # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
         #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         
     elif config.TRAIN.OPTIMIZER.NAME == 'sgd':
-        optimizer = optim.SGD(parameters, lr=config.TRAIN.OPTIMIZER.LR, momentum=0.9, 
-                              weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY, nesterov=True)
+        optimizer = optim.SGD([
+                {'params': filter(lambda p: p.requires_grad ,parameters)},
+                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+                lr=config.TRAIN.OPTIMIZER.SGDLR, momentum=0.9, weight_decay=config.TRAIN.OPTIMIZER.SGD_WEIGHT_DECAY, nesterov=True)
     else:
         raise KeyError("Unknown optimizer: {}".format(config.TRAIN.OPTIMIZER.NAME))
     
+
     # Build lr_scheduler
     if config.TRAIN.LR_SCHEDULER.NAME != 'None':
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
@@ -236,6 +219,7 @@ def main(config):
     start_time = time.time()
     train_time = 0
     best_epoch = 0
+    iteration_num = 0
     print("=> Start training")
     for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
@@ -246,8 +230,8 @@ def main(config):
                 print("=> Early stopping at epoch {}".format(epoch))
                 break
         else:
-            state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
-              optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, latent_z='z_0')
+            iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon,
+              optimizer, trainloader, epoch, iteration_num)
             if state == False:
                 print("=> Early stopping at epoch {}".format(epoch))
                 break

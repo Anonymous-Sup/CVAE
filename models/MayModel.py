@@ -6,7 +6,7 @@ from models.adapters import SparseBattery
 
 
 class SinpleVAE(nn.Module):
-    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, n_layers, leak_relu_slope=0.0, bn=False):
+    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, n_layers=0, leak_relu_slope=0.0, bn=False):
         super().__init__()
 
         self.ac_fn = 'leaky_relu'
@@ -94,7 +94,7 @@ class SinpleVAE(nn.Module):
         U = self.u_embedding(x)
         newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
 
-        return z, z_c, z_s, newz_s, U, mu, log_var
+        return h, z, z_c, z_s, newz_s, U, mu, log_var
 
     def decode(self, z):
         out = self.decoder(z)

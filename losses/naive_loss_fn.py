@@ -34,8 +34,8 @@ class MSE_loss(nn.Module):
         # recon_x /= recon_x.norm(dim=-1, keepdim=True)
         # x /= x.norm(dim=-1, keepdim=True)
         # torch.nn.functional.sigmoid(recon_x)
-        loss = nn.functional.mse_loss(recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim), reduction='mean')
-        return loss
+        loss = nn.functional.mse_loss(recon_x.view(-1, self.feature_dim), x.view(-1, self.feature_dim), reduction='sum')
+        return loss.mean()
 
 class MMD_loss(nn.Module):
     def __init__(self, sigma=1.0):

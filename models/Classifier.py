@@ -69,8 +69,9 @@ class MLPClassBlock(nn.Module):
         super(MLPClassBlock, self).__init__()
 
         leaky_relu_slope = 0.2         
-        hidden_dim_list = [64, 128, 256, 512]
-        print('Using MLPClassBlock with hiidem_dim_list:', hidden_dim_list)
+        # hidden_dim_list = [64, 128, 256, 512]
+        hidden_dim_list = [256, 512, 1024]
+        print('Using MLPClassBlock with dimenssion flow: {}-->{}-->{}'.format(feature_dim, hidden_dim_list, num_classes))
         
         layers = []
         pre_dim = feature_dim
