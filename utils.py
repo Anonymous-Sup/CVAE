@@ -270,11 +270,11 @@ def plot_epoch_Zdim_old(run, tensor, title):
     run["train/histograms/{}".format(title)].append(fig)
     plt.close(fig)
 
-def plot_epoch_Zdim(run, tensor, title):
+def plot_epoch_Zdim(run, tensor, title, last=False):
     data = tensor.detach().cpu().numpy()
     num_dims = 12
     
-    num_samples=64
+    num_samples= 64
     
     # 对每个维度的数据进行分组和平均
     grouped_data = data.reshape(-1, num_samples, data.shape[-1])
@@ -288,13 +288,22 @@ def plot_epoch_Zdim(run, tensor, title):
         for j in range(num_dims):
             if i == j:
                 # 在对角线上绘制直方图
-                axes[i, j].hist(averaged_data[:, i], bins=20)
+                if last:
+                    axes[i, j].hist(averaged_data[:, -i], bins=20)
+                else:
+                    axes[i, j].hist(averaged_data[:, i], bins=20)
             else:
                 # 在非对角线上绘制散点图
-                axes[i, j].scatter(averaged_data[:, j], averaged_data[:, i], s=10, alpha=0.8)
+                if last:
+                    axes[i, j].scatter(averaged_data[:, -j], averaged_data[:, -i], s=10, alpha=0.8)
+                else:
+                    axes[i, j].scatter(averaged_data[:, j], averaged_data[:, i], s=10, alpha=0.8)
             
             axes[i, j].grid(True)
-            axes[i, j].set_title(f'dim {i+1} vs dim {j+1}')
+            if last:
+                axes[i, j].set_title(f'dim {num_dims-i} vs dim {num_dims-j}')
+            else:
+                axes[i, j].set_title(f'dim {i+1} vs dim {j+1}')
             # 设置轴标签
             if i == num_dims - 1:
                 axes[i, j].set_xlabel(f'dim {j+1}')

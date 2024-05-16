@@ -8,12 +8,12 @@ from data import build_singe_test_loader
 from torch.cuda.amp import autocast
 
 @torch.no_grad()
-def extract_midium_feature(config, model, dataloader, centroids_all, classifier=None, latent_z='fuse_z'):
-    features, pids, camids, centroids = [], torch.tensor([]), torch.tensor([]), []
+def extract_midium_feature(config, model, dataloader, classifier=None, latent_z='fuse_z'):
+    
+    features, pids, camids = [], torch.tensor([]), torch.tensor([])
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
         if not config.TRAIN.AMP:
             imgs = imgs.float()
-            centroids_all = centroids_all.float()
 
         # flip_imgs = torch.flip(imgs, [3])
         # imgs, flip_imgs = imgs.cuda(), flip_imgs.cuda()
@@ -26,30 +26,27 @@ def extract_midium_feature(config, model, dataloader, centroids_all, classifier=
         pretrained_feautres = pretrained_feautres.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
         
-        if config.TRAIN.AMP:
-            with autocast():
-                recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, norm=True)
-        else:
-            recon_x, mean, log_var, z_0, x_pre, batach_features_norm, batch_features_flow, theta, logjacobin, _, _ = model(pretrained_feautres, norm=True)
+
+        x_pre, z_0, z_c, new_z, reconx = model(pretrained_feautres)
         
         if latent_z == 'z_0':
             retrieval_feature = z_0
         elif latent_z == 'x_pre':
             retrieval_feature = x_pre
+        elif latent_z == 'z_c':
+            retrieval_feature = z_c
+        elif latent_z == 'new_z':
+            retrieval_feature = new_z
+        elif latent_z == 'reconx':
+            retrieval_feature = reconx
 
-        if 'reid' in config.MODEL.TRAIN_STAGE:
-            x_final = classifier(batach_features_norm)
-        else:
-            x_final = retrieval_feature
-            
-        batach_features_norm = model.normalize_l2(x_final)
+        batach_features_norm = F.normalize(retrieval_feature, p=2, dim=1)
 
         features.append(batach_features_norm.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
-        centroids.append(batch_centroids.cpu())
     features = torch.cat(features, 0)
-    return features, pids, camids, centroids
+    return features, pids, camids
 
 
 def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, latent_z='fuse_z'):
@@ -57,8 +54,9 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     model.eval()
     classifer.eval()
     # Extract features 
-    qf, q_pids, q_camids, q_centroids = extract_midium_feature(config, model, queryloader, dataset.query_centroids, classifer, latent_z)
-    gf, g_pids, g_camids, g_q_centroids = extract_midium_feature(config, model, galleryloader, dataset.gallery_centroids, classifer, latent_z)
+    print("==========Test with latent_z: {} =========".format(latent_z))
+    qf, q_pids, q_camids = extract_midium_feature(config, model, queryloader, classifer, latent_z)
+    gf, g_pids, g_camids = extract_midium_feature(config, model, galleryloader, classifer, latent_z)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))

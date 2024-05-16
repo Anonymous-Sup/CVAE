@@ -91,7 +91,8 @@ class SinpleVAE(nn.Module):
         z_idx += self.zc_dim
         z_s = z[:, z_idx: z_idx + self.zs_dim]
     
-        U = self.u_embedding(x)
+        gate, U = self.u_embedding(x)
+        
         newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
 
         return h, z, z_c, z_s, newz_s, U, mu, log_var
@@ -104,6 +105,7 @@ class SinpleVAE(nn.Module):
 
         self.track_bn_stats(track_bn)
         
-        z, z_c, z_s, newz_s, U, mu, log_var = self.encode(x)
-
-        return z_c
+        h, z, z_c, z_s, newz_s, U, mu, log_var = self.encode(x)
+        new_z = torch.cat([z_c, newz_s], dim=1)
+        recon_x = self.decode(new_z)
+        return h, z, z_c, new_z, recon_x

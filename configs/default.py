@@ -54,10 +54,10 @@ _C.AUG.RE_PROB = 0.5
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
 # Model name
-_C.MODEL.NAME = 'CVAE'
+_C.MODEL.NAME = ''
 _C.MODEL.PRETRAIN = 'CLIPreid'
-_C.MODEL.VAE_TYPE = 'cvae'
-_C.MODEL.FLOW_TYPE = 'yuke_mlpflow'  # 'Planar', 'Radial', 'RealNVP', 'yuke_mlpflow'
+_C.MODEL.VAE_TYPE = ''
+_C.MODEL.FLOW_TYPE = ''  # 'Planar', 'Radial', 'RealNVP', 'yuke_mlpflow'
 # _C.MODEL.ENCODER_LAYER_SIZES = [1280, 256]
 _C.MODEL.LATENT_SIZE = 12
 # _C.MODEL.DECODER_LAYER_SIZES = [256, 1280]
@@ -129,7 +129,7 @@ _C.TRAIN.OPTIMIZER.SGD_WEIGHT_DECAY = 5e-4
 _C.TRAIN.LR_SCHEDULER = CN()
 _C.TRAIN.LR_SCHEDULER.NAME = 'MultiStepLR'   # 'None', 'MultiStepLR'
 # Stepsize to decay learning rate
-_C.TRAIN.LR_SCHEDULER.STEPSIZE = [20, 40]
+_C.TRAIN.LR_SCHEDULER.STEPSIZE = [20]  # ori: [20, 40]
 # LR decay rate, used in StepLRScheduler
 _C.TRAIN.LR_SCHEDULER.DECAY_RATE = 0.1
 
@@ -244,7 +244,7 @@ def update_config(config, args):
     elif 'reid' in args.train_stage:
         config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid_'+config.LOSS.CLA_LOSS, datetime_today)
     else:
-        config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, datetime_today, config.SAVED_NAME + "_" + config.MODEL.FLOW_TYPE+"_"+config.LOSS.RECON_LOSS)
+        config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, datetime_today, config.SAVED_NAME)
 
     config.freeze()
 

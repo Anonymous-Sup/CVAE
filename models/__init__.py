@@ -91,8 +91,9 @@ def build_model(config, num_classes):
     
     # Build classifier
     if config.LOSS.CLA_LOSS in ['crossentropy', 'crossentropylabelsmooth']:
-        # classifier = Classifier(feature_dim=config.MODEL.LATENT_SIZE, num_classes=num_classes)
-        classifier = MLPClassBlock(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
+        classifier = Classifier(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
+        # classifier = MLPClassBlock(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
+        # classifier = NormalizedClassifier(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
     else:
         classifier = NormalizedClassifier(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
     

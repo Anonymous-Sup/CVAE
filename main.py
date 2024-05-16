@@ -18,7 +18,7 @@ from data import build_dataloader
 from models import build_model
 from losses import build_losses
 from train import train_cvae
-from test import test_cvae
+from test import test_cvae, test_clip_feature
 from tools.eval_metrics import evaluate
 from tools.utils import AverageMeter, save_checkpoint, set_seed, mkdir_if_missing
 from torch.cuda.amp import GradScaler, autocast
@@ -47,7 +47,7 @@ def parse_option():
     parser.add_argument('--train_stage', type=str, choices=['klstage', 'reidstage', 'novel'], required=True, help="Select the stage for training")
 
     # Parameters 
-    parser.add_argument('--vae_type', type=str, choices=['cvae'], help="Type of VAE model")
+    parser.add_argument('--vae_type', type=str, choices=['cvae','SinpleVAE'], help="Type of VAE model")
     parser.add_argument('--flow_type', type=str, choices=['Planar', 'Radial', 'RealNVP', 'invertmlp', "yuke_mlpflow"], help="Type of flow model")
     parser.add_argument('--recon_loss', type=str, choices=['bce', 'mse', 'mae', 'smoothl1', 'pearson'], help="Type of reconstruction loss")
     parser.add_argument('--reid_loss', type=str, choices=['crossentropy', 'crossentropylabelsmooth', 'arcface', 'cosface', 'circle'], help="Type of reid loss")
@@ -74,11 +74,6 @@ def parse_option():
         'saved_name': args.saved_name,
         'train_stage': args.train_stage,
         'train_format': args.train_format,
-        'gaussian': config.MODEL.GAUSSIAN,
-        "amp" : config.TRAIN.AMP,
-        'only_x_input': config.MODEL.ONLY_X_INPUT,
-        'only_cvae_kl': config.MODEL.ONLY_CVAE_KL,
-        'use_centroid': config.MODEL.USE_CENTROID,
         'vae_type': config.MODEL.VAE_TYPE,
         "optimizer": config.TRAIN.OPTIMIZER.NAME,
         "lr": config.TRAIN.OPTIMIZER.LR,
@@ -129,9 +124,9 @@ def main(config):
     #         for cls_param in cla_parameters:
     #             cls_param.requires_grad = False
     if config.DATA.TRAIN_FORMAT == 'novel':
-        alpha_lr = 10   # base lr 1e-4, classifier lr 1e-3
+        alpha_lr = 3.0   # base lr 1e-4, classifier lr 1e-3
     else:
-        alpha_lr = 1
+        alpha_lr = 3.0
 
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
@@ -168,6 +163,7 @@ def main(config):
     start_epoch = config.TRAIN.START_EPOCH
     
     best_rank1 = -np.inf
+    best_mAP = -np.inf
 
 
     if config.DATA.TRAIN_FORMAT != "base":
@@ -209,12 +205,19 @@ def main(config):
     # flows_model = flows_model.cuda()
     classifier = classifier.cuda()
 
-    if config.EVAL_MODE:
-        print("=> Start evaluation only ")
+    if config.EVAL_MODE or config.DATA.TRAIN_FORMAT == 'novel':
+        if config.DATA.TRAIN_FORMAT == 'novel':
+            print("=> Start evaluation on Novel data without finetuning")
+        else:
+            print("=> Start evaluation only ")
         with torch.no_grad():
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'z_0')
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'x_pre')
-        return
+            print("=> Test pretarined feature form VLP model")
+            test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
+            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_c')
+            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'x_pre')
+        
+        if config.EVAL_MODE:
+            return
 
     start_time = time.time()
     train_time = 0
@@ -224,36 +227,32 @@ def main(config):
     for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
         if config.TRAIN.AMP:
-            state = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
+            iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
               optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler)
-            if state == False:
-                print("=> Early stopping at epoch {}".format(epoch))
-                break
         else:
             iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon,
               optimizer, trainloader, epoch, iteration_num)
-            if state == False:
-                print("=> Early stopping at epoch {}".format(epoch))
-                break
         train_time += round(time.time() - start_train_time)
         
         
         if (epoch+1) > config.TEST.START_EVAL and config.TEST.EVAL_STEP > 0 and \
             (epoch+1) % config.TEST.EVAL_STEP == 0 or (epoch+1) == config.TRAIN.MAX_EPOCH:
+            
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_0')
-                rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
+                rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_c')
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='reconx')
                 
                 # run["eval/rank1"].append(rank1)
                 rank1 = rank[0]
 
-            is_best = rank1 > best_rank1
+            is_best = (rank1 + mAP) > (best_rank1 + best_mAP)
             
             if is_best: 
                 best_rank1 = rank1
                 best_cmc = rank
-                best_map = mAP
+                best_mAP = mAP
                 best_epoch = epoch + 1
             
             if (epoch+1) == config.TRAIN.MAX_EPOCH:
@@ -266,7 +265,7 @@ def main(config):
                 'model': model.state_dict(),
                 'classifier': classifier.state_dict(),
                 'cmc': best_cmc,
-                'mAP': best_map,
+                'mAP': best_mAP,
                 'rank1': rank1,
                 'best_epoch': best_epoch,
                 'optimizer': optimizer.state_dict(),
@@ -279,8 +278,9 @@ def main(config):
             
     
 
-    print("=> Best Rank-1 {:.1%} achieved at epoch {}".format(best_rank1, best_epoch))
+    print("=> Best Rank-1 {:.1%}, mAP {:.1%} achieved at epoch {}".format(best_rank1, best_mAP, best_epoch))
     run["best_rank1"] = best_rank1
+    run['best_mAP'] = best_mAP
     run["best_epoch"] = best_epoch
     elapsed = round(time.time() - start_time)
     elapsed = str(datetime.timedelta(seconds=elapsed))

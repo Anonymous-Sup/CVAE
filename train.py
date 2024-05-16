@@ -53,6 +53,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
         x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
         total_z = torch.cat((z_c, fusez_s), dim=1)
+        # normlize totel_z 
+        # total_z = F.normalize(total_z, p=2, dim=1)
+
         recon_x = model.decode(total_z)
 
         outputs = classifier(z_c)
@@ -62,16 +65,18 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         pair_loss = criterion_pair(z_c, pids)
 
         base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
-        prior_p = base_dist.log_prob(z) 
+        # prior_p = base_dist.log_prob(z) 
+        prior_p = base_dist.log_prob(total_z)
         prior = prior_p
 
         q_dist = Normal(mean, torch.exp(torch.clamp(log_var, min=-10) / 2))
-        posterior_p = q_dist.log_prob(z)
+        # posterior_p = q_dist.log_prob(z)
+        posterior_p = q_dist.log_prob(total_z)
         posterior = torch.sum(posterior_p, dim=-1)
 
         kl_loss = (posterior - prior).mean()          
-        C = torch.clamp(torch.tensor(20) /
-                            5000 * iteration_num, 0, 20)
+        C = torch.clamp(torch.tensor(20.0) /
+                            5000 * iteration_num, 0.0, 20.0)
         kl_loss = (kl_loss - C).abs()
         recon_loss = criterion_recon(recon_x, imgs_tensor)
 
@@ -83,11 +88,11 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             loss = recon_loss
             loss = loss + beta * kl_loss  # baseline no kl
             loss = loss + gamma * cls_loss
-            loss = loss + pair_loss
+            # loss = loss + pair_loss
 
         elif config.MODEL.TRAIN_STAGE == 'klstage':
             loss = recon_loss  
-            loss = loss + beta * kl_loss    # for baseline there is only a reconsturction loss
+            loss = loss + beta * kl_loss
             loss = loss + gamma * cls_loss
             # loss = loss + pair_loss
 
@@ -121,17 +126,21 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         
         z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
+        zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
         if batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
 
                 plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z")
+                # plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized last z", last=True)
                 plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre")
+                # plot_epoch_Zdim(run, x_collect, "0-Seperate dim of last x_pre", last=True)
+                plot_epoch_Zdim(run, zs_collect, "0-Seperate dim of fusez_s")
                 
                 plot_scatter_1D(run, prior_p, "1-prior_sample")
                 plot_scatter_2D(run, posterior_p, "1-posterior_sample")
 
                 plot_correlation_matrix(run, z, "1-correlation reparemeterized z")
-                plot_correlation_matrix(run, total_z, "1-correlation reparemeterized z")
+                plot_correlation_matrix(run, total_z, "1-correlation new z")
                 plot_correlation_matrix(run, x_pre, "1-correlation x_pre")
 
                 plot_histogram(run, mean, "2-mean")
@@ -150,12 +159,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         optimizer.step()
         
         batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))
-        batch_theta_acc.update((torch.sum(preds_theta == pids.data)).float()/pids.size(0), pids.size(0))
         batch_cls_loss.update(cls_loss.item(), pids.size(0))
-        batch_cls_loss_theta.update(cls_loss_theta.item(), pids.size(0))
         batch_pair_loss.update(pair_loss.item(), pids.size(0))
         batch_kl_loss.update(kl_loss.item(), pids.size(0))
-        batch_kld_theta.update(kld_theta.item(), pids.size(0))
         batch_recon_loss.update(recon_loss.item(), pids.size(0))
         # batch_regular_loss.update(regular_loss.item(), pids.size(0))
         batch_loss.update(loss.item(), pids.size(0))
@@ -163,11 +169,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
         run['train/batch/1_prior'].append(prior.mean().item())
         run['train/batch/1_posterior'].append(posterior.mean().item())
-        run['train/batch/1_Jacobin'].append(logjacobin.mean().item())
         run["train/batch/cls_loss"].append(cls_loss.item())
         run["train/batch/pair_loss"].append(pair_loss.item())
         run["train/batch/0_kl_loss"].append(kl_loss.item())
-        run["train/batch/kld_theta"].append(kld_theta.item())
         run["train/batch/0_recon_loss"].append(recon_loss.item())
         # run["train/batch/0_regular_loss"].append(regular_loss.item())
         run["train/batch/loss"].append(loss.item())
@@ -180,17 +184,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
           'Data:{data_time.sum:.1f} '
           'Loss:{loss.avg:.4f} '
           'Cls Loss:{cls_loss.avg:.4f} '
-          'Cls Loss Theta:{cls_loss_theta.avg:.4f} '
           'Pair Loss:{pair_loss.avg:.4f} '
           'KL Loss:{kl_loss.avg:.4f} '
-          'KLD Theta:{kld_theta.avg:.4f} '
           'Recon Loss:{bce_loss.avg:.4f} '
-          'Acc:{acc.avg:.4f} '
-          'Theta Acc:{theta_acc.avg:.4f} '.format(
+          'Acc:{acc.avg:.4f} '.format(
             epoch+1, batch_time=batch_time, data_time=data_time, 
-            loss=batch_loss, cls_loss=batch_cls_loss, cls_loss_theta=batch_cls_loss_theta,
-            pair_loss=batch_pair_loss, kl_loss=batch_kl_loss, kld_theta=batch_kld_theta,
-            bce_loss=batch_recon_loss, acc=batch_acc, theta_acc=batch_theta_acc)
+            loss=batch_loss, cls_loss=batch_cls_loss,
+            pair_loss=batch_pair_loss, kl_loss=batch_kl_loss,
+            bce_loss=batch_recon_loss, acc=batch_acc)
           )
 
     # run["train/epoch/loss"].append(batch_loss)
