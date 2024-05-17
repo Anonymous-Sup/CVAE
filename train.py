@@ -129,12 +129,15 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
         if batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
-
-                plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z")
+                if config.DATA.TRAIN_FORMAT == 'novel':
+                    number_sample = 16
+                else:
+                    number_sample = 64
+                plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z", number_sample)
                 # plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized last z", last=True)
-                plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre")
+                plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre", number_sample)
                 # plot_epoch_Zdim(run, x_collect, "0-Seperate dim of last x_pre", last=True)
-                plot_epoch_Zdim(run, zs_collect, "0-Seperate dim of fusez_s")
+                plot_epoch_Zdim(run, zs_collect, "0-Seperate dim of fusez_s", number_sample)
                 
                 plot_scatter_1D(run, prior_p, "1-prior_sample")
                 plot_scatter_2D(run, posterior_p, "1-posterior_sample")

@@ -49,12 +49,12 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_stage2.yaml \
 --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae/2024-05-16/fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_softce_KLtotalZ \
 --train_stage klstage \
 --gpu 0 \
---saved_name fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_softce_KLtotalZ \
+--saved_name fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ \
 --vae_type SinpleVAE \
 --recon_loss mse \
---reid_loss crossentropylabelsmooth \
+--reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> finetune_novel_ClIPReID_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_softce_KLtotalZ.log 2>&1 & 
+> finetune_novel_ClIPReID_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ_newsample.log 2>&1 & 
 
 
 # ===========Baseline Stage 1 training================

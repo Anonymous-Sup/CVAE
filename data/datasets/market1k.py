@@ -139,6 +139,9 @@ class MarketSketch(object):
     
     def _process_train_dir(self, dir_rgb_path, dir_sketch_path, tag, latent_size, test_metrix_only, relabel=False):
         
+        tag_sketch = False
+        tag_rgb = False
+
         if tag == 'tensor':
             rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.pt'))
             sketch_img_paths = glob.glob(osp.join(dir_sketch_path, '*.pt'))
@@ -196,7 +199,7 @@ class MarketSketch(object):
             # assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, self.pid_begin + pid, camid, clurster_id))
+            dataset.append((img_path, self.pid_begin + pid, camid, 'rgb'))
 
         for sketch_img_path in sorted(sketch_img_paths):
             pid, style_id = sketch_pattern.search(sketch_img_path).groups()
@@ -214,7 +217,7 @@ class MarketSketch(object):
             style_id = styleid2label[style_id]
             
             # camid viewid are set to 0
-            dataset.append((sketch_img_path, self.pid_begin + pid, 0, clurster_id))
+            dataset.append((sketch_img_path, self.pid_begin + pid, 0, 'sketch'))
 
         num_pids = len(pid_container)
         num_styles = len(style_container)
