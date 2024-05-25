@@ -6,11 +6,12 @@ import torch.nn.functional as F
 from tools.eval_metrics import evaluate
 from data import build_singe_test_loader
 from torch.cuda.amp import autocast
+from tools.drawer import tSNE_plot
 
 @torch.no_grad()
-def extract_midium_feature(config, model, dataloader, classifier=None, latent_z='fuse_z'):
+def extract_midium_feature(drawer, config, model, dataloader, classifier=None, latent_z='fuse_z'):
     
-    features, pids, camids = [], torch.tensor([]), torch.tensor([])
+    features, pids, camids, cls_result = [], torch.tensor([]), torch.tensor([]), []
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
         if not config.TRAIN.AMP:
             imgs = imgs.float()
@@ -27,7 +28,7 @@ def extract_midium_feature(config, model, dataloader, classifier=None, latent_z=
         # recon_x, means, log_var, z, theta, logjcobin
         
 
-        x_pre, z_0, z_c, new_z, reconx = model(pretrained_feautres)
+        x_pre, z_0, z_c, new_z, reconx, U, mu = model(pretrained_feautres)
         
         if latent_z == 'z_0':
             retrieval_feature = z_0
@@ -39,24 +40,43 @@ def extract_midium_feature(config, model, dataloader, classifier=None, latent_z=
             retrieval_feature = new_z
         elif latent_z == 'reconx':
             retrieval_feature = reconx
+        elif latent_z == 'mu':
+            retrieval_feature = mu
+
+        if classifier != None:
+            outputs = classifier(z_c)
+            cls_result.append(outputs.cpu())
+        else:
+            outputs = None
 
         batach_features_norm = F.normalize(retrieval_feature, p=2, dim=1)
-
         features.append(batach_features_norm.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
+        
+        drawer.update((batach_features_norm, batch_pids, batch_centroids))
+        drawer.update_U(U)
+        
+
     features = torch.cat(features, 0)
-    return features, pids, camids
+    if classifier != None:
+        cls_result = torch.cat(cls_result, 0)
+    else:
+        cls_result = None
+    return features, pids, camids, cls_result
 
 
 def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, latent_z='fuse_z'):
     since = time.time()
     model.eval()
-    classifer.eval()
+    drawer = tSNE_plot(len(dataset.query), trainplot=False)
+    drawer.reset()
+    if classifer != None:
+        classifer.eval()
     # Extract features 
     print("==========Test with latent_z: {} =========".format(latent_z))
-    qf, q_pids, q_camids = extract_midium_feature(config, model, queryloader, classifer, latent_z)
-    gf, g_pids, g_camids = extract_midium_feature(config, model, galleryloader, classifer, latent_z)
+    qf, q_pids, q_camids, q_cls_results = extract_midium_feature(drawer, config, model, queryloader, classifer, latent_z)
+    gf, g_pids, g_camids, g_cls_results = extract_midium_feature(drawer, config, model, galleryloader, classifer, latent_z)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -96,12 +116,23 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     time_elapsed = time.time() - since
     print('Using {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
+    if classifer != None:
+        q_pids = torch.tensor(q_pids, dtype=torch.int)
+        g_pids = torch.tensor(g_pids, dtype=torch.int)
+        q_acc = (q_cls_results.argmax(dim=1) == q_pids).float().mean()
+        g_acc = (g_cls_results.argmax(dim=1) == g_pids).float().mean()
+        total_acc = (q_acc + g_acc) / 2
+
+        print("Classifier results ---------------------------------------------------") 
+        print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, total_acc))
+        
     if run != None:
         run["test/mAP"].append(mAP)
         run["test/top1"].append(cmc[0])
         run["test/top5"].append(cmc[4])
         run["test/top10"].append(cmc[9])
-
+        drawer.compute(run)
+        
     return cmc, mAP
 
 

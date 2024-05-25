@@ -8,15 +8,17 @@ from tools.utils import AverageMeter
 import torch.nn.functional as F
 from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D, plot_scatter_2D
 from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot_epoch_Zdim
+from tools.drawer import tSNE_plot
 
 def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon,
               optimizer, trainloader, epoch, iteration_num):
     
-
     if config.DATA.TRAIN_FORMAT == 'novel':
         model.train()
         model.decoder.eval()
         classifier.train()
+        drawer = tSNE_plot(num_query=None, trainplot=True)
+        drawer.reset()
     else:
         model.train()
         classifier.train()
@@ -52,6 +54,10 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # imgs_tensor = model.norm(imgs_tensor)
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
         x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
+        
+        drawer.update((z_c, pids, clusterids))
+        drawer.update_U(domian_feature)
+        
         total_z = torch.cat((z_c, fusez_s), dim=1)
         # normlize totel_z 
         # total_z = F.normalize(total_z, p=2, dim=1)
@@ -127,12 +133,15 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
-        if batch_idx == len(trainloader)-1:
+        if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1: 
             if 'reid' not in config.MODEL.TRAIN_STAGE:
                 if config.DATA.TRAIN_FORMAT == 'novel':
                     number_sample = 16
+                    drawer.compute(run)
                 else:
                     number_sample = 64
+                
+                
                 plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z", number_sample)
                 # plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized last z", last=True)
                 plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre", number_sample)

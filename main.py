@@ -213,7 +213,8 @@ def main(config):
         with torch.no_grad():
             print("=> Test pretarined feature form VLP model")
             test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
-            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_c')
+            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'mu')
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_c')
             test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'x_pre')
         
         if config.EVAL_MODE:
@@ -242,7 +243,7 @@ def main(config):
             with torch.no_grad():
                 rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_c')
                 test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
-                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='reconx')
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='mu')
                 
                 # run["eval/rank1"].append(rank1)
                 rank1 = rank[0]

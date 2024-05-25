@@ -108,4 +108,4 @@ class SinpleVAE(nn.Module):
         h, z, z_c, z_s, newz_s, U, mu, log_var = self.encode(x)
         new_z = torch.cat([z_c, newz_s], dim=1)
         recon_x = self.decode(new_z)
-        return h, z, z_c, new_z, recon_x
+        return h, z, z_c, new_z, recon_x, U, mu

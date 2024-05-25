@@ -22,7 +22,7 @@ class MarketSketch(object):
     """
     root_folder = 'Market-Sketch-1K'
 
-    def __init__(self, root='root', format_tag='tensor',  pretrained='CLIPreidNew', latent_size=12, test_metrix_only=False, pid_begin = 0, **kwargs):
+    def __init__(self, root='root', format_tag='tensor',  pretrained='CLIPreidNew', latent_size=12, test_metrix_only=True, pid_begin = 0, **kwargs):
         super(MarketSketch, self).__init__()
         
         self.tag = format_tag
@@ -34,8 +34,8 @@ class MarketSketch(object):
         else:
             self.dataset_dir = osp.join(root, self.root_folder)
         
-        self.train_sketch_dir = osp.join(self.dataset_dir, 'sketch', 'fewshot', 'all', 'finetune')
-        self.query_sketch_dir = osp.join(self.dataset_dir, 'sketch', 'fewshot', 'all', 'test')
+        self.train_sketch_dir = osp.join(self.dataset_dir, 'sketch', 'fewshot', '2sketch', 'finetune')
+        self.query_sketch_dir = osp.join(self.dataset_dir, 'sketch', 'fewshot', '2sketch', 'test')
         
         self.train_rgb_dir = osp.join(self.dataset_dir, 'photo', 'all')
         # for few-shot setting, train_rgb = gallery_rgb
@@ -222,7 +222,10 @@ class MarketSketch(object):
         num_pids = len(pid_container)
         num_styles = len(style_container)
         num_imgs = len(dataset)
-        centroids_merge = torch.cat((centroids_rgb, centroids_sketch), dim=0)
+        if test_metrix_only:
+            centroids_merge = None
+        else:
+            centroids_merge = torch.cat((centroids_rgb, centroids_sketch), dim=0)
         return dataset, num_pids, num_imgs, num_styles, centroids_merge
 
 
