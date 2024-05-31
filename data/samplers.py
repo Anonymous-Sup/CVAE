@@ -40,48 +40,39 @@ class RandomIdentitySampler(Sampler):
         for pid in self.pids:
             idxs = copy.deepcopy(self.index_dic[pid])
             
-            if isinstance(self.index2cluster[0], str):
-                assert self.num_instances > 3, "num_instances must be greater than 2 for string cluster_id"
-#                Handle case when cluster_id is a string
-                rgb_idxs = [idx for idx in idxs if self.index2cluster[idx] == 'rgb']
-                sketch_idxs = [idx for idx in idxs if self.index2cluster[idx] == 'sketch']
-                
-                # Ensure there is at least one 'rgb' and one 'sketch'
-                if len(rgb_idxs) == 0 or len(sketch_idxs) == 0:
-                    raise ValueError(f"Identity {pid} does not have both 'rgb' and 'sketch' instances.")
+            if len(idxs) < self.num_instances:
+                if isinstance(self.index2cluster[0], str):
+                    assert self.num_instances > 3, "num_instances must be greater than 2 for string cluster_id"
+    #                Handle case when cluster_id is a string
+                    rgb_idxs = [idx for idx in idxs if self.index2cluster[idx] == 'rgb']
+                    sketch_idxs = [idx for idx in idxs if self.index2cluster[idx] == 'sketch']
+                    
+                    # Ensure there is at least one 'rgb' and one 'sketch'
+                    if len(rgb_idxs) == 0 or len(sketch_idxs) == 0:
+                        raise ValueError(f"Identity {pid} does not have both 'rgb' and 'sketch' instances.")
 
-                # Sample 1 from rgb and 2 from sketch
-                sampled_idxs = random.sample(rgb_idxs, 1) + random.sample(sketch_idxs, 2)
+                    # Sample 1 from rgb and 2 from sketch
+                    idxs = random.sample(rgb_idxs, 1) + random.sample(sketch_idxs, 2)
 
-                remaining_num = self.num_instances - 3
-                # remaining_idxs = [idx for idx in idxs if idx not in sampled_idxs]
-
-                # if len(remaining_idxs) < remaining_num:
-                #     remaining_idxs = np.random.choice(remaining_idxs, size=remaining_num, replace=True)
-                # else:
-                #     remaining_idxs = random.sample(remaining_idxs, remaining_num)
-                remaining_idxs = np.random.choice(idxs, size=remaining_num, replace=True)
-
-                sampled_idxs.extend(remaining_idxs)
-                random.shuffle(sampled_idxs)
-                list_container.append(sampled_idxs)
-
-            else:
-                if len(idxs) < self.num_instances:
+                    remaining_num = self.num_instances - 3
+                    remaining_idxs = np.random.choice(idxs, size=remaining_num, replace=True)
+                    idxs.extend(remaining_idxs)
+                else:
                     idxs = np.random.choice(idxs, size=self.num_instances, replace=True)
-                random.shuffle(idxs)
 
-                # sampled_idxs = idxs[:self.num_instances]
-                # list_container.append(sampled_idxs)
-
-                batch_idxs = []
-                for idx in idxs:
-                    batch_idxs.append(idx)
-                    if len(batch_idxs) == self.num_instances:
-                        print(batch_idxs)
-                        list_container.append(batch_idxs)
-                        batch_idxs = []
-                
+            random.shuffle(idxs)
+            batch_idxs = []
+            for idx in idxs:
+                batch_idxs.append(idx)
+                if len(batch_idxs) == self.num_instances:
+                    # print(batch_idxs)
+                    list_container.append(batch_idxs)
+                    batch_idxs = []
+            
+            if len(batch_idxs) > 0 and len(batch_idxs) < self.num_instances:
+                while len(batch_idxs) < self.num_instances:
+                    batch_idxs.append(random.choice(idxs))
+                list_container.append(batch_idxs)
 
         random.shuffle(list_container)
 

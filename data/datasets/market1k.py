@@ -22,6 +22,8 @@ class MarketSketch(object):
     """
     root_folder = 'Market-Sketch-1K'
 
+    train_all_data = True
+
     def __init__(self, root='root', format_tag='tensor',  pretrained='CLIPreidNew', latent_size=12, test_metrix_only=True, pid_begin = 0, **kwargs):
         super(MarketSketch, self).__init__()
         
@@ -46,7 +48,10 @@ class MarketSketch(object):
 
         self.pid_begin = pid_begin
         
-        train, num_train_pids, num_train_imgs, train_styles, train_centroids = self._process_train_dir(self.train_rgb_dir, self.train_sketch_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=True)
+        if self.train_all_data:
+            train, num_train_pids, num_train_imgs, train_styles, train_centroids = self._process_train_all_dir(self.train_rgb_dir, self.train_sketch_dir, self.query_sketch_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=True)
+        else:
+            train, num_train_pids, num_train_imgs, train_styles, train_centroids = self._process_train_dir(self.train_rgb_dir, self.train_sketch_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=True)
         query, num_query_pids, num_query_imgs, num_query_styles, query_centroids = self._process_query_dir(self.query_sketch_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=False)
         gallery, num_gallery_pids, num_gallery_imgs, gallery_centroids = self._process_dir(self.gallery_rgb_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=False)
 
@@ -137,14 +142,18 @@ class MarketSketch(object):
 
         return dataset, num_pids, num_imgs, centroids
     
-    def _process_train_dir(self, dir_rgb_path, dir_sketch_path, tag, latent_size, test_metrix_only, relabel=False):
-        
+
+    def _process_train_all_dir(self, dir_rgb_path, dir_sketch_path, dir_sketch_path2, tag, latent_size, test_metrix_only, relabel=False):
+    # def _process_train_dir(self, dir_rgb_path, dir_sketch_path, tag, latent_size, test_metrix_only, relabel=False):
+
         tag_sketch = False
         tag_rgb = False
 
         if tag == 'tensor':
             rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.pt'))
             sketch_img_paths = glob.glob(osp.join(dir_sketch_path, '*.pt'))
+            sketch_img_paths2 = glob.glob(osp.join(dir_sketch_path2, '*.pt'))
+            sketch_img_paths = sketch_img_paths + sketch_img_paths2
         else:
             rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.jpg'))
             sketch_img_paths = glob.glob(osp.join(dir_sketch_path, '*.jpg'))

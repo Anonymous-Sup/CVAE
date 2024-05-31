@@ -28,17 +28,15 @@
 # --train_format base \
 # --train_stage klstage \
 # --gpu 0 \
-# --saved_name fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce2_KLtotalZ_test \
+# --saved_name fp32_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ \
 # --vae_type SinpleVAE \
 # --recon_loss mse \
 # --reid_loss crossentropy \
 # --gaussian MultivariateNormal \
-# > train_clipreid_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce2_KLtotalZ_test.log 2>&1 & 
+# > train_clipreid_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce2_KLtotalZ.log 2>&1 & 
 
 
 # /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae/2024-05-16/fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ
-
-
 
 # ===========Novel Stage 1 traning================
 nohup python -u main.py --cfg ./configs/clipreid_cvae_stage2.yaml \
@@ -46,15 +44,15 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_stage2.yaml \
 --dataset market1k \
 --format_tag tensor \
 --train_format novel \
---resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae/2024-05-16/fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ \
+--resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae/2024-05-25/fp32_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ \
 --train_stage klstage \
 --gpu 0 \
---saved_name 2sketch_fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ \
+--saved_name 2sketch_fp32_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ_alltrain \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> finetune_novel2sketch_ClIPReID_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ.log 2>&1 & 
+> finetune_novel2sketch_ClIPReID_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ_alltrain.log 2>&1 & 
 
 
 # ===========Baseline Stage 1 training================

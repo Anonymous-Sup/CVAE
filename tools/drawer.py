@@ -47,9 +47,10 @@ class tSNE_plot():
             print("The number of query sketch samples:", self.num_query)
             print("The number of gallery rgb samples:", len(self.pids) - self.num_query)
         else:
-            # make mask according to the style, 'sketch' set 0 and 'rgb' set 1
-            mask = np.asarray([0 if style == 'sketch' else 1 for style in self.styles])
-
+            # make mask according to the style, 'sketch' set 0 and 'rgb' set 1, else raise error
+            mask = np.zeros(len(self.styles))
+            mask = np.where(np.array(self.styles) == 'rgb', 1, mask)
+            # mask = np.asarray([0 if style == 'sketch' else 1 for style in self.styles])
             # print the number of sketch and rgb
             print('The number of sketch samples:', np.sum(mask == 0))
             print('The number of rgb samples:', np.sum(mask == 1))
@@ -103,18 +104,21 @@ class tSNE_plot():
         plt.close(fig)
 
 
-        if self.trainplot:
-            # drawing U 
-            U = torch.cat(self.U, dim=0)
-            U = U.detach().numpy()
-            fig, ax = plt.subplots(figsize=(6, 6))
-            for i in np.unique(mask):
-                ax.scatter(U[mask == i, 0], U[mask == i, 1], label='sketch' if i == 0 else 'rgb', alpha=0.6, s=50)
-            ax.legend()
-            ax.grid(True)
-            ax.set_title('t-SNE of U')
 
-            # Save the plot
+        # drawing U 
+        U = torch.cat(self.U, dim=0)
+        U = U.detach().numpy()
+        fig, ax = plt.subplots(figsize=(6, 6))
+        for i in np.unique(mask):
+            ax.scatter(U[mask == i, 0], U[mask == i, 1], label='sketch' if i == 0 else 'rgb', alpha=0.6, s=50)
+        ax.legend()
+        ax.grid(True)
+        ax.set_title('t-SNE of U')
+
+        # Save the plot
+        if self.trainplot:
             run['train/tsne/{}'.format("0-U_train")].append(fig)
-            # del
-            plt.close(fig)
+        else:
+            run['test/tsne/{}'.format("0-U_test")].append(fig)
+        # del
+        plt.close(fig)

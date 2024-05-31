@@ -9,7 +9,7 @@ from torch.cuda.amp import autocast
 from tools.drawer import tSNE_plot
 
 @torch.no_grad()
-def extract_midium_feature(drawer, config, model, dataloader, classifier=None, latent_z='fuse_z'):
+def extract_midium_feature(drawer, config, model, dataloader, classifier=None, latent_z='z_c'):
     
     features, pids, camids, cls_result = [], torch.tensor([]), torch.tensor([]), []
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
@@ -27,12 +27,10 @@ def extract_midium_feature(drawer, config, model, dataloader, classifier=None, l
         pretrained_feautres = pretrained_feautres.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
         
-
-        x_pre, z_0, z_c, new_z, reconx, U, mu = model(pretrained_feautres)
-        
-        if latent_z == 'z_0':
-            retrieval_feature = z_0
-        elif latent_z == 'x_pre':
+        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_feautres)
+        # x_pre, z_0, z_c, new_z, reconx, U, mu = model(pretrained_feautres)
+    
+        if latent_z == 'x_pre':
             retrieval_feature = x_pre
         elif latent_z == 'z_c':
             retrieval_feature = z_c

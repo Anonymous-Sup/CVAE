@@ -107,3 +107,27 @@ class SparseBattery(nn.Module):
         out = sum(h)
         # each element in h has the same shape with out = (batchsize, c_out)
         return g, out
+
+
+class SparseLatentAdapter(nn.Module):
+    def __init__(self, num_adapters, c_in, c_out, use_bais=True):
+        super(SparseLatentAdapter, self).__init__()
+        
+        self.linear = nn.Linear(c_in, c_out, bias=use_bais)
+        self.bn = nn.BatchNorm1d(c_out)
+        self.parallel_adapter = SparseBattery(num_adapters, c_in, c_out, use_bais)
+
+    def forward(self, x):
+        # this is f_0(x), which is a shared linear
+        y = self.linear(x)
+    
+        # this is the sum of K adapters with gate and indendepnt 1*1 linear
+        # gate.shape = (batchsize, num_adapters)
+        # out.shape = (batchsize, 64)
+        gate, out = self.parallel_adapter(x)
+
+        # this f_0(x) + sum_k(g_k(x) * f_k(x))
+        y = y + out
+        y = self.bn(y)
+
+        return gate, y

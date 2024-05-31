@@ -53,17 +53,13 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         '''
         # imgs_tensor = model.norm(imgs_tensor)
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
-        x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
+        # x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
+        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor)
         
-        drawer.update((z_c, pids, clusterids))
-        drawer.update_U(domian_feature)
+        if config.DATA.TRAIN_FORMAT == 'novel':
+            drawer.update((z_c, pids, clusterids))
+            drawer.update_U(domian_feature)
         
-        total_z = torch.cat((z_c, fusez_s), dim=1)
-        # normlize totel_z 
-        # total_z = F.normalize(total_z, p=2, dim=1)
-
-        recon_x = model.decode(total_z)
-
         outputs = classifier(z_c)
         _, preds = torch.max(outputs.data, 1)
         cls_loss = criterion_cla(outputs, pids)
@@ -71,13 +67,11 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         pair_loss = criterion_pair(z_c, pids)
 
         base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
-        # prior_p = base_dist.log_prob(z) 
-        prior_p = base_dist.log_prob(total_z)
+        prior_p = base_dist.log_prob(z)
         prior = prior_p
 
         q_dist = Normal(mean, torch.exp(torch.clamp(log_var, min=-10) / 2))
-        # posterior_p = q_dist.log_prob(z)
-        posterior_p = q_dist.log_prob(total_z)
+        posterior_p = q_dist.log_prob(z)
         posterior = torch.sum(posterior_p, dim=-1)
 
         kl_loss = (posterior - prior).mean()          
@@ -141,8 +135,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 else:
                     number_sample = 64
                 
-                
-                plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized z", number_sample)
+                plot_epoch_Zdim(run, z_collect, "0-Seperate dim of final cat z", number_sample)
                 # plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized last z", last=True)
                 plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre", number_sample)
                 # plot_epoch_Zdim(run, x_collect, "0-Seperate dim of last x_pre", last=True)
@@ -151,16 +144,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 plot_scatter_1D(run, prior_p, "1-prior_sample")
                 plot_scatter_2D(run, posterior_p, "1-posterior_sample")
 
-                plot_correlation_matrix(run, z, "1-correlation reparemeterized z")
-                plot_correlation_matrix(run, total_z, "1-correlation new z")
+                plot_correlation_matrix(run, z, "1-correlation final cat z")
                 plot_correlation_matrix(run, x_pre, "1-correlation x_pre")
 
                 plot_histogram(run, mean, "2-mean")
                 plot_histogram(run, log_var, "2-log_var")
-                plot_histogram(run, z, "2-reparameterized z")
+                plot_histogram(run, z, "2-final cat z")
                 plot_histogram(run, domian_feature, "3-domian_feature")
                 plot_scatter_2D(run, domian_feature, "3-domian_feature scatter")
-                plot_histogram(run, total_z, "4-total Z")
                 plot_histogram(run, z_s, "4-Z_S")
                 plot_histogram(run, z_c, "4-Z_C")
                 plot_histogram(run, fusez_s, "4-fusez_s")
