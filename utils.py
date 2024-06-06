@@ -2,10 +2,12 @@ import torch
 import matplotlib.pyplot as plt
 import math
 import numpy as np
-
+import pandas as pd
+from sklearn.decomposition import PCA
+import os
 import torch.nn as nn
 import torch.nn.init as init
-
+from scipy.io import savemat
 
 def plot_histogram(run, tensor, title):
     
@@ -312,6 +314,105 @@ def plot_epoch_Zdim(run, tensor, title, num_samples=64, last=False):
     run["train/histograms/{}".format(title)].append(fig)
     # 显示图形
     plt.close(fig)
+
+def pair_plot_pca(run, X_input, Z_mid, title):
+
+    X = X_input.detach().cpu().numpy()
+    Z = Z_mid.detach().cpu().numpy()
+
+    # Apply PCA to reduce dimensions
+    pca_X = PCA(n_components=1)
+    pca_Z = PCA(n_components=1)
+
+    X_reduced = pca_X.fit_transform(X)
+    Z_reduced = pca_Z.fit_transform(Z)
+
+    # Combine the reduced features into a single DataFrame
+    data_combined = np.hstack((X_reduced, Z_reduced))
+    df = pd.DataFrame(data_combined, columns=['X_PC1', 'Z_PC1'])
+
+    # Sample the data to reduce the number of points
+    df_sampled = df.sample(n=500, random_state=1)
+
+    # Draw the scatter plot
+    fig, axes = plt.subplots(figsize=(8, 8))
+    axes.scatter(df_sampled['X_PC1'], df_sampled['Z_PC1'], alpha=0.6)
+    axes.set_title('Pair Plot of PCA-reduced X-Z Features')
+    axes.set_xlabel('X_PC1')
+    axes.set_ylabel('Z_PC1')
+    axes.grid(True)
+
+    # Save the figure to a file
+    # fig.savefig("pair_plot.png", format='png')
+    run["test/0-pairplot/{}".format(title)].append(fig)
+    # Close the figure to free up memory
+    plt.close(fig)
+
+
+def pair_plots(run, feature_x, feature_z, title):
+    feature_x = feature_x.detach().cpu().numpy()
+    feature_z = feature_z.detach().cpu().numpy()
+    # Flatten the features for easy manipulation
+    num_samples = feature_x.shape[0]
+    x_values = feature_x.reshape(num_samples, -1)
+    z_values = feature_z.reshape(num_samples, -1)
+
+    # Ensure num_points does not exceed the smallest dimension
+    num_points = min(x_values.shape[1], z_values.shape[1])
+
+    # Randomly select num_points columns from both x_values and z_values
+    selected_indices = np.random.choice(x_values.shape[1], num_points, replace=False)
+    x_sampled_values = x_values[:, selected_indices]
+    z_sampled_values = z_values
+
+    # Combine x_sampled_values and z_sampled_values into pairs
+    pairs = np.stack((x_sampled_values, z_sampled_values), axis=-1).reshape(-1, 2)
+
+    # Sample 1000 points from the matched dataset if available
+    sample_size = min(1000, len(pairs))
+    sample_indices = np.random.choice(len(pairs), sample_size, replace=False)
+    sampled_pairs = pairs[sample_indices]
+
+    x_sampled = sampled_pairs[:, 0]
+    z_sampled = sampled_pairs[:, 1]
+
+    # Create a figure and axis
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    # Scatter plot of sampled points
+    ax.scatter(
+        x_sampled,
+        z_sampled,
+        alpha=0.6,
+        edgecolors='w',
+        s=50
+    )
+
+    # Set the title and labels
+    ax.set_title(title)
+    ax.set_xlabel('Feature X')
+    ax.set_ylabel('Feature Z')
+    plt.tight_layout()
+
+    # Log the figure into the run object (assuming run is a logging object)
+    run["train/0-pairplots/{}".format(title)].append(fig)
+    plt.close(fig)
+
+
+def save_for_pairplot(num_query, feature_x, feature_reconx, feature_z, save_path):
+    feature_x = feature_x.detach().cpu().numpy()
+    feature_reconx = feature_reconx.detach().cpu().numpy()
+    feature_z = feature_z.detach().cpu().numpy()
+
+    # Save to .mat file
+    saved_file = os.path.join(save_path, 'pairplot_resources.mat')
+    savemat(saved_file, {
+        'num_query': num_query,
+        'q_g_feature_x': feature_x,
+        'q_g_feature_reconx': feature_reconx,
+        'q_g_feature_z': feature_z
+    })
+
 
 
 class EarlyStopping:

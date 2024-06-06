@@ -38,21 +38,25 @@
 
 # /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae/2024-05-16/fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ
 
+# [novel, novel_train_from_scratch]
+
+# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae/2024-05-25/fp32_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ \
+
+# scratch with no resume
 # ===========Novel Stage 1 traning================
 nohup python -u main.py --cfg ./configs/clipreid_cvae_stage2.yaml \
 --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
 --dataset market1k \
 --format_tag tensor \
---train_format novel \
---resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae/2024-05-25/fp32_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ \
+--train_format novel_train_from_scratch \
 --train_stage klstage \
 --gpu 0 \
---saved_name 2sketch_fp32_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ_alltrain \
+--saved_name 2sketch_fp32_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ_scratch_onlysketch \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> finetune_novel2sketch_ClIPReID_SimpleVAE+2E_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ_alltrain.log 2>&1 & 
+> train_plot_onlysketch.log 2>&1 & 
 
 
 # ===========Baseline Stage 1 training================

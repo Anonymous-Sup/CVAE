@@ -19,6 +19,11 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         classifier.train()
         drawer = tSNE_plot(num_query=None, trainplot=True)
         drawer.reset()
+    elif config.DATA.TRAIN_FORMAT == 'novel_train_from_scratch':
+        model.train()
+        classifier.train()
+        drawer = tSNE_plot(num_query=None, trainplot=True)
+        drawer.reset()
     else:
         model.train()
         classifier.train()
@@ -56,7 +61,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
         x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor)
         
-        if config.DATA.TRAIN_FORMAT == 'novel':
+        if 'novel' in config.DATA.TRAIN_FORMAT:
             drawer.update((z_c, pids, clusterids))
             drawer.update_U(domian_feature)
         
@@ -84,7 +89,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
         beta = 1.0
         gamma = 1.0
-        if config.DATA.TRAIN_FORMAT == 'novel':
+        if 'novel' in config.DATA.TRAIN_FORMAT:
             loss = recon_loss
             loss = loss + beta * kl_loss  # baseline no kl
             loss = loss + gamma * cls_loss
@@ -129,7 +134,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
         if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1: 
             if 'reid' not in config.MODEL.TRAIN_STAGE:
-                if config.DATA.TRAIN_FORMAT == 'novel':
+                if 'novel' in config.DATA.TRAIN_FORMAT:
                     number_sample = 16
                     drawer.compute(run)
                 else:

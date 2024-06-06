@@ -26,13 +26,26 @@ class RandomIdentitySampler(Sampler):
         self.num_identities = len(self.pids)
 
         # compute number of examples in an epoch
+        # self.length = 0
+        # for pid in self.pids:
+        #     idxs = self.index_dic[pid]
+        #     num = len(idxs)
+        #     if num < self.num_instances:
+        #         num = self.num_instances
+        #     self.length += num - num % self.num_instances
+        
         self.length = 0
         for pid in self.pids:
             idxs = self.index_dic[pid]
             num = len(idxs)
             if num < self.num_instances:
                 num = self.num_instances
-            self.length += num - num % self.num_instances
+            # Ensure the calculation of length considers full batches
+            full_batches = num // self.num_instances
+            self.length += full_batches * self.num_instances
+            # Add one more batch if there are remaining samples
+            if num % self.num_instances != 0:
+                self.length += self.num_instances
 
     def __iter__(self):
         list_container = []
@@ -41,24 +54,26 @@ class RandomIdentitySampler(Sampler):
             idxs = copy.deepcopy(self.index_dic[pid])
             
             if len(idxs) < self.num_instances:
-                if isinstance(self.index2cluster[0], str):
-                    assert self.num_instances > 3, "num_instances must be greater than 2 for string cluster_id"
-    #                Handle case when cluster_id is a string
-                    rgb_idxs = [idx for idx in idxs if self.index2cluster[idx] == 'rgb']
-                    sketch_idxs = [idx for idx in idxs if self.index2cluster[idx] == 'sketch']
+    #             assert 1==0, "This should not happen"
+    #             if isinstance(self.index2cluster[0], str):
+    #                 assert self.num_instances > 3, "num_instances must be greater than 2 for string cluster_id"
+    # #                Handle case when cluster_id is a string
+    #                 rgb_idxs = [idx for idx in idxs if self.index2cluster[idx] == 'rgb']
+    #                 sketch_idxs = [idx for idx in idxs if self.index2cluster[idx] == 'sketch']
                     
-                    # Ensure there is at least one 'rgb' and one 'sketch'
-                    if len(rgb_idxs) == 0 or len(sketch_idxs) == 0:
-                        raise ValueError(f"Identity {pid} does not have both 'rgb' and 'sketch' instances.")
+    #                 # Ensure there is at least one 'rgb' and one 'sketch'
+    #                 if len(rgb_idxs) == 0 or len(sketch_idxs) == 0:
+    #                     raise ValueError(f"Identity {pid} does not have both 'rgb' and 'sketch' instances.")
 
-                    # Sample 1 from rgb and 2 from sketch
-                    idxs = random.sample(rgb_idxs, 1) + random.sample(sketch_idxs, 2)
+    #                 # Sample 1 from rgb and 2 from sketch
+    #                 idxs = random.sample(rgb_idxs, 1) + random.sample(sketch_idxs, 2)
 
-                    remaining_num = self.num_instances - 3
-                    remaining_idxs = np.random.choice(idxs, size=remaining_num, replace=True)
-                    idxs.extend(remaining_idxs)
-                else:
-                    idxs = np.random.choice(idxs, size=self.num_instances, replace=True)
+    #                 remaining_num = self.num_instances - 3
+    #                 remaining_idxs = np.random.choice(idxs, size=remaining_num, replace=True)
+    #                 idxs.extend(remaining_idxs)
+    #             else:
+    #                 idxs = np.random.choice(idxs, size=self.num_instances, replace=True)
+                idxs = np.random.choice(idxs, size=self.num_instances, replace=True)
 
             random.shuffle(idxs)
             batch_idxs = []

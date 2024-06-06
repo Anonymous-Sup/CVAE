@@ -7,11 +7,12 @@ from tools.eval_metrics import evaluate
 from data import build_singe_test_loader
 from torch.cuda.amp import autocast
 from tools.drawer import tSNE_plot
+from utils import pair_plots, save_for_pairplot
 
 @torch.no_grad()
 def extract_midium_feature(drawer, config, model, dataloader, classifier=None, latent_z='z_c'):
     
-    features, pids, camids, cls_result = [], torch.tensor([]), torch.tensor([]), []
+    features, pids, camids, cls_result, all_imgs, all_recons = [], torch.tensor([]), torch.tensor([]), [], [], []
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
         if not config.TRAIN.AMP:
             imgs = imgs.float()
@@ -51,17 +52,22 @@ def extract_midium_feature(drawer, config, model, dataloader, classifier=None, l
         features.append(batach_features_norm.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
-        
+        all_imgs.append(imgs.cpu())
+        all_recons.append(reconx.cpu())
+
         drawer.update((batach_features_norm, batch_pids, batch_centroids))
         drawer.update_U(U)
         
 
     features = torch.cat(features, 0)
+    all_imgs = torch.cat(all_imgs, 0)
+    all_recons = torch.cat(all_recons, 0)
+
     if classifier != None:
         cls_result = torch.cat(cls_result, 0)
     else:
         cls_result = None
-    return features, pids, camids, cls_result
+    return features, pids, camids, cls_result, all_imgs, all_recons
 
 
 def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, latent_z='fuse_z'):
@@ -73,8 +79,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         classifer.eval()
     # Extract features 
     print("==========Test with latent_z: {} =========".format(latent_z))
-    qf, q_pids, q_camids, q_cls_results = extract_midium_feature(drawer, config, model, queryloader, classifer, latent_z)
-    gf, g_pids, g_camids, g_cls_results = extract_midium_feature(drawer, config, model, galleryloader, classifer, latent_z)
+    qf, q_pids, q_camids, q_cls_results, q_all_imgs, q_all_recons = extract_midium_feature(drawer, config, model, queryloader, classifer, latent_z)
+    gf, g_pids, g_camids, g_cls_results, g_all_imgs, g_all_recons = extract_midium_feature(drawer, config, model, galleryloader, classifer, latent_z)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -125,12 +131,22 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, total_acc))
         
     if run != None:
-        run["test/mAP"].append(mAP)
-        run["test/top1"].append(cmc[0])
-        run["test/top5"].append(cmc[4])
-        run["test/top10"].append(cmc[9])
-        drawer.compute(run)
-        
+        if latent_z == 'new_z':
+            q_g_imgs = torch.cat((q_all_imgs, g_all_imgs), 0)
+            q_g_recons = torch.cat((q_all_recons, g_all_recons), 0)
+            q_g_features = torch.cat((qf, gf), 0)
+            pair_plots(run, q_g_imgs, q_g_features, "Q+G X-Z plots")
+            pair_plots(run, q_g_recons, q_g_features, "Q+G Recons Rx-Z plots")
+
+            # save the q_g_imgs, q_g_recons, q_g_features in to a mat
+            # save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, config.MODEL.RESUME)
+
+        else:
+            run["test/mAP"].append(mAP)
+            run["test/top1"].append(cmc[0])
+            run["test/top5"].append(cmc[4])
+            run["test/top10"].append(cmc[9])
+            drawer.compute(run)
     return cmc, mAP
 
 

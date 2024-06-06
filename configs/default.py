@@ -239,7 +239,7 @@ def update_config(config, args):
 
     datetime_today = str(datetime.date.today())
     # output folder
-    if config.DATA.TRAIN_FORMAT == 'novel':
+    if 'novel' in config.DATA.TRAIN_FORMAT:
         config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, 'novel', datetime_today, config.SAVED_NAME)
     elif 'reid' in args.train_stage:
         config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid_'+config.LOSS.CLA_LOSS, datetime_today)

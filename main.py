@@ -43,7 +43,7 @@ def parse_option():
     parser.add_argument('--format_tag', type=str, choices=['tensor', 'img'], help="Using image or pretrained features")
     
     # Training
-    parser.add_argument('--train_format', type=str, required= True, choices=['base', 'novel'], help="Select the datatype for training or finetuning")
+    parser.add_argument('--train_format', type=str, required= True, choices=['base', 'novel', 'novel_train_from_scratch'], help="Select the datatype for training or finetuning")
     parser.add_argument('--train_stage', type=str, choices=['klstage', 'reidstage', 'novel'], required=True, help="Select the stage for training")
 
     # Parameters 
@@ -166,7 +166,7 @@ def main(config):
     best_mAP = -np.inf
 
 
-    if config.DATA.TRAIN_FORMAT != "base":
+    if config.DATA.TRAIN_FORMAT == "novel":
         print("=> Start training the model on Novel data")
         print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
         checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
@@ -180,6 +180,8 @@ def main(config):
         output_file = os.path.join(config.OUTPUT, base_folder)
         mkdir_if_missing(output_file)
         shutil.copy(config.MODEL.RESUME + '/best_model.pth.tar', output_file)
+    elif config.DATA.TRAIN_FORMAT == "novel_train_from_scratch":
+        print("=> Start training the model on Novel data from scratch")
     else:
         if config.MODEL.TRAIN_STAGE == 'reidstage':
             print("=> Start Training REID model")
@@ -213,6 +215,7 @@ def main(config):
         with torch.no_grad():
             print("=> Test pretarined feature form VLP model")
             test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='new_z')
             test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'mu')
             test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_c')
             test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z = 'x_pre')
@@ -242,6 +245,7 @@ def main(config):
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
                 rank, mAP = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='z_c')
+                test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, latent_z='new_z')
                 test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
                 test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='mu')
                 
