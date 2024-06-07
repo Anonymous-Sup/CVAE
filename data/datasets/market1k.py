@@ -22,7 +22,7 @@ class MarketSketch(object):
     """
     root_folder = 'Market-Sketch-1K'
 
-    train_all_data = True
+    train_all_data = False
 
     def __init__(self, root='root', format_tag='tensor',  pretrained='CLIPreidNew', latent_size=12, test_metrix_only=True, pid_begin = 0, **kwargs):
         super(MarketSketch, self).__init__()
@@ -142,9 +142,97 @@ class MarketSketch(object):
 
         return dataset, num_pids, num_imgs, centroids
     
+    def _process_train_dir(self, dir_rgb_path, dir_sketch_path, tag, latent_size, test_metrix_only, relabel=False):
+        tag_sketch = False
+        tag_rgb = False
+
+        if tag == 'tensor':
+            rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.pt'))
+            sketch_img_paths = glob.glob(osp.join(dir_sketch_path, '*.pt'))
+        else:
+            rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.jpg'))
+            sketch_img_paths = glob.glob(osp.join(dir_sketch_path, '*.jpg'))
+
+        # rgb_img_paths = [] # used for not using rgb images to train
+
+        rgb_pattern = re.compile(r'([-\d]+)_c(\d)')
+        # sketch_pattern is like 0001_A.jpg or 0002_B, get the str before and after '_'
+        sketch_pattern = re.compile(r'([-\d]+)_([A-Z])')
+        
+        if not test_metrix_only:
+            cluster_dim = 2*latent_size+1
+            self.cluster_id_begin = cluster_dim - 1
+            _, path2label_rgb, centroids_rgb = self._process_cluster(dir_rgb_path, cluster_dim)
+            _, path2label_sketch, centroids_sketch = self._process_cluster(dir_sketch_path, cluster_dim)
+        else:
+            centroids_rgb = None
+            centroids_sketch = None
+            self.cluster_id_begin = 0
+        
+        pid_container = set()
+        style_container = set()
+        for img_path in sorted(rgb_img_paths):
+            pid, _ = map(int, rgb_pattern.search(img_path).groups())
+            if pid == -1: continue  # junk images are just ignored
+            pid_container.add(pid)
+
+        for sketch_path in sorted(sketch_img_paths):
+            pid, style_id = sketch_pattern.search(sketch_path).groups()
+            pid = int(pid)
+            if pid == -1: continue
+            style_container.add(style_id)
+            # assert pid in pid_container, "sketch {} not in rgb set".format(sketch_path)
+            pid_container.add(pid)
+
+        pid2label = {pid: label for label, pid in enumerate(pid_container)}
+        styleid2label = {style: label for label, style in enumerate(style_container)}
+
+        dataset = []
+        for img_path in sorted(rgb_img_paths):
+            pid, camid = map(int, rgb_pattern.search(img_path).groups())
+
+            file_name = osp.basename(img_path)
+            file_name = re.sub(r'\.pt$', '', file_name)
+            if not test_metrix_only:
+                clurster_id = path2label_rgb[file_name]
+            else:
+                clurster_id = 0
+
+            if pid == -1: continue  # junk images are just ignored
+            # assert 0 <= pid <= 1501  # pid == 0 means background
+            # assert 1 <= camid <= 6
+            camid -= 1  # index starts from 0
+            if relabel: pid = pid2label[pid]
+            dataset.append((img_path, self.pid_begin + pid, camid, 'rgb'))
+
+        for sketch_img_path in sorted(sketch_img_paths):
+            pid, style_id = sketch_pattern.search(sketch_img_path).groups()
+            pid = int(pid)
+            
+            file_name = osp.basename(sketch_img_path)
+            file_name = re.sub(r'\.pt$', '', file_name)
+            if not test_metrix_only:
+                clurster_id = path2label_sketch[file_name] + self.cluster_id_begin
+            else:
+                clurster_id = 0
+            
+            if pid == -1: continue
+            if relabel: pid = pid2label[pid]
+            style_id = styleid2label[style_id]
+            
+            # camid viewid are set to 0
+            dataset.append((sketch_img_path, self.pid_begin + pid, 0, 'sketch'))
+
+        num_pids = len(pid_container)
+        num_styles = len(style_container)
+        num_imgs = len(dataset)
+        if test_metrix_only:
+            centroids_merge = None
+        else:
+            centroids_merge = torch.cat((centroids_rgb, centroids_sketch), dim=0)
+        return dataset, num_pids, num_imgs, num_styles, centroids_merge
 
     def _process_train_all_dir(self, dir_rgb_path, dir_sketch_path, dir_sketch_path2, tag, latent_size, test_metrix_only, relabel=False):
-    # def _process_train_dir(self, dir_rgb_path, dir_sketch_path, tag, latent_size, test_metrix_only, relabel=False):
 
         tag_sketch = False
         tag_rgb = False

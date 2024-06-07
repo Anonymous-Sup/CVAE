@@ -57,25 +57,25 @@ class SinpleVAE(nn.Module):
             if isinstance(m, nn.BatchNorm2d):
                 m.track_running_stats = track
     
-    def extract_feature(self, x, track_bn=False):
-        self.track_bn_stats(track_bn)
+    # def extract_feature(self, x, track_bn=False):
+    #     self.track_bn_stats(track_bn)
 
-        h = self.encoder(x)
+    #     h = self.encoder(x)
 
-        mu, log_var = self.fc_mu(h), self.fc_logvar(h)
+    #     mu, log_var = self.fc_mu(h), self.fc_logvar(h)
         
-        if self.training:
-            z = self.reparameterize(mu, log_var)
-        else:
-            z = mu
+    #     if self.training:
+    #         z = self.reparameterize(mu, log_var)
+    #     else:
+    #         z = mu
 
-        z_idx = 0
-        z_s = z[:, z_idx: z_idx + self.zs_dim]
+    #     z_idx = 0
+    #     z_s = z[:, z_idx: z_idx + self.zs_dim]
 
-        z_idx += self.zs_dim
-        z_c = z[:, z_idx: z_idx + self.zc_dim]
+    #     z_idx += self.zs_dim
+    #     z_c = z[:, z_idx: z_idx + self.zc_dim]
 
-        return z, z_s, z_c, mu, log_var
+    #     return z, z_s, z_c, mu, log_var
     
     def encode(self, x):
         h = self.encoder(x)
@@ -103,12 +103,16 @@ class SinpleVAE(nn.Module):
 
     def forward(self, x, track_bn=False):
 
-        self.track_bn_stats(track_bn)
+        if self.training:
+            self.track_bn_stats(track_bn)
         
         h, z, z_c, z_s, newz_s, U, mu, log_var = self.encode(x)
+
         new_z = torch.cat([z_c, newz_s], dim=1)
+
         recon_x = self.decode(new_z)
-        return h, z, z_c, new_z, recon_x, U, mu
+        
+        return h, mu, log_var, z_c, z_s, U, newz_s, new_z, recon_x
     
 
 class SinpleVAE_2Encoder(nn.Module):

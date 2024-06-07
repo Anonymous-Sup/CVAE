@@ -12,6 +12,7 @@ __factory = {
 muti_u_embidding = False
 use_flow = False
 
+use_two_encoder = True
 
 def build_model(config, num_classes):
     
@@ -84,11 +85,12 @@ def build_model(config, num_classes):
         
         model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, out_dim=nips_out_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT, use_centroid=config.MODEL.USE_CENTROID, latent_z='z_0')
     else:
-        # print("Initializing SinpleVAE model")
-        # model = SinpleVAE(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
-
-        print("Initializing SinpleVAE model with 2 encoders")
-        model = SinpleVAE_2Encoder(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
+        if use_two_encoder:
+            print("Initializing SinpleVAE model with 2 encoders")
+            model = SinpleVAE_2Encoder(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
+        else:
+            print("Initializing SinpleVAE model")
+            model = SinpleVAE(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
 
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     

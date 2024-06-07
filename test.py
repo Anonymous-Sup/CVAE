@@ -13,7 +13,7 @@ from utils import pair_plots, save_for_pairplot
 def extract_midium_feature(drawer, config, model, dataloader, classifier=None, latent_z='z_c'):
     
     features, pids, camids, cls_result, all_imgs, all_recons = [], torch.tensor([]), torch.tensor([]), [], [], []
-    for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids) in enumerate(dataloader):
+    for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids, _) in enumerate(dataloader):
         if not config.TRAIN.AMP:
             imgs = imgs.float()
 

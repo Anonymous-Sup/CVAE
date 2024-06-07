@@ -253,3 +253,10 @@ def get_config(args):
     config = _C.clone()
     update_config(config, args)
     return config
+
+def get_config_from_file(cfg_path):
+    config = _C.clone()
+    config.defrost()
+    config.merge_from_file(cfg_path)
+    config.freeze()
+    return config

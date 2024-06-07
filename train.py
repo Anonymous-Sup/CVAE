@@ -43,7 +43,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     end = time.time()
     # run["train/epoch"].append(epoch)
 
-    for batch_idx, (imgs_tensor, pids, camids, clusterids) in enumerate(trainloader):
+    for batch_idx, (imgs_tensor, pids, camids, clusterids, _) in enumerate(trainloader):
         iteration_num += 1
         # convert fp16 tensor to fp32            
         if not config.TRAIN.AMP:
