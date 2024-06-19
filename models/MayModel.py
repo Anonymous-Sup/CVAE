@@ -41,7 +41,9 @@ class SinpleVAE(nn.Module):
 
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
-
+        
+        # self.i2t_projector = nn.Linear(zc_dim, zc_dim)
+        self.i2t_projector = nn.Linear(zc_dim, 512)
         # self.encoder.apply(weights_init_kaiming)
         # self.decoder.apply(weights_init_kaiming)
 
@@ -114,6 +116,17 @@ class SinpleVAE(nn.Module):
         
         return h, mu, log_var, z_c, z_s, U, newz_s, new_z, recon_x
     
+    def i2t_projection(self, z_c):
+        return self.i2t_projector(z_c)
+    
+    def load_param(self, param_dict, ignore_i2t=False):
+        for i in self.state_dict():
+            if i in param_dict.keys():
+                if ignore_i2t:
+                    if 'i2t_projector' in i:
+                        print("Ignores parameter: ", i)
+                        continue
+                self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
 
 class SinpleVAE_2Encoder(nn.Module):
     def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, n_layers=0, leak_relu_slope=0.0, bn=False):
@@ -160,6 +173,7 @@ class SinpleVAE_2Encoder(nn.Module):
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
+        self.i2t_projector = nn.Linear(zc_dim, 512)
         # self.encoder.apply(weights_init_kaiming)
         # self.decoder.apply(weights_init_kaiming)
 
@@ -234,3 +248,16 @@ class SinpleVAE_2Encoder(nn.Module):
         recon_x = self.decode(new_z)
 
         return x_pre, mean, log_var, z_c, z_s, U, newz_s, new_z, recon_x
+    
+    def i2t_projection(self, z_c):
+        return self.i2t_projector(z_c)
+    
+
+    def load_param(self, param_dict, ignore_i2t=True):
+        for i in self.state_dict():
+            if i in param_dict.keys():
+                if ignore_i2t:
+                    if 'i2t_projector' in i:
+                        print("Ignores parameter: ", i)
+                        continue
+                self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])

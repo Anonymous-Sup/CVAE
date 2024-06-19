@@ -3,6 +3,7 @@ from models.MayModel import SinpleVAE, SinpleVAE_2Encoder
 from models.Classifier import Classifier, NormalizedClassifier, MLPClassBlock
 from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ, YuKeMLPFLOW_onlyX_seperateZ_init
 from models.NIPS import NIPS
+import torch
 
 __factory = {
     'CVAE': VAE,
@@ -12,7 +13,6 @@ __factory = {
 muti_u_embidding = False
 use_flow = False
 
-use_two_encoder = True
 
 def build_model(config, num_classes):
     
@@ -85,7 +85,7 @@ def build_model(config, num_classes):
         
         model = NIPS(vae_model, flows_model, feature_dim=config.MODEL.FEATURE_DIM, hidden_dim=nips_hidden_dim, out_dim=nips_out_dim, latent_size=config.MODEL.LATENT_SIZE, only_x=config.MODEL.ONLY_X_INPUT, use_centroid=config.MODEL.USE_CENTROID, latent_z='z_0')
     else:
-        if use_two_encoder:
+        if config.MODEL.USE_TWO_ENCODER:
             print("Initializing SinpleVAE model with 2 encoders")
             model = SinpleVAE_2Encoder(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
         else:

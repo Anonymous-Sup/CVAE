@@ -24,7 +24,7 @@ class MarketSketch(object):
 
     train_all_data = False
 
-    def __init__(self, root='root', format_tag='tensor',  pretrained='CLIPreidNew', latent_size=12, test_metrix_only=True, pid_begin = 0, **kwargs):
+    def __init__(self, root='root', format_tag='tensor',  pretrained='CLIPreidFinetune', latent_size=12, test_metrix_only=True, pid_begin = 0, **kwargs):
         super(MarketSketch, self).__init__()
         
         self.tag = format_tag
@@ -52,8 +52,10 @@ class MarketSketch(object):
             train, num_train_pids, num_train_imgs, train_styles, train_centroids = self._process_train_all_dir(self.train_rgb_dir, self.train_sketch_dir, self.query_sketch_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=True)
         else:
             train, num_train_pids, num_train_imgs, train_styles, train_centroids = self._process_train_dir(self.train_rgb_dir, self.train_sketch_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=True)
-        query, num_query_pids, num_query_imgs, num_query_styles, query_centroids = self._process_query_dir(self.query_sketch_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=False)
-        gallery, num_gallery_pids, num_gallery_imgs, gallery_centroids = self._process_dir(self.gallery_rgb_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=False)
+        query, num_query_pids, num_query_imgs, num_query_styles, query_centroids, query_pid2label = self._process_query_dir(self.query_sketch_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=True)
+        gallery, num_gallery_pids, num_gallery_imgs, gallery_centroids, gallery_pid2label = self._process_dir(self.gallery_rgb_dir, self.tag, self.latent_size, self.test_metrix_only, relabel=True)
+
+        self._check_query_gallery_match(query_pid2label, gallery_pid2label)
 
         num_total_pids = num_train_pids + num_query_pids
         num_total_imgs = num_train_imgs + num_query_imgs + num_gallery_imgs
@@ -98,7 +100,15 @@ class MarketSketch(object):
             raise RuntimeError("'{}' is not available".format(self.train_rgb_dir))
         if not osp.exists(self.gallery_rgb_dir):
             raise RuntimeError("'{}' is not available".format(self.gallery_rgb_dir))
-
+    
+    def _check_query_gallery_match(self, query_pid2label, gallery_pid2label):   
+        # evaluate if the query and gallery have the same label for the same pid
+        for query_pid, query_label in query_pid2label.items():
+            assert query_pid in gallery_pid2label.keys(), "query pid {} not in gallery".format(query_pid)
+            gallery_label = gallery_pid2label[query_pid]
+            assert query_label == gallery_label, "query pid {} label {} not equal to gallery label {}".format(query_pid, query_label, gallery_label)
+        return True
+    
     def _process_dir(self, dir_path, tag, latent_size, test_metrix_only, relabel=False):
         
         if tag == 'tensor':
@@ -140,7 +150,7 @@ class MarketSketch(object):
         num_pids = len(pid_container)
         num_imgs = len(dataset)
 
-        return dataset, num_pids, num_imgs, centroids
+        return dataset, num_pids, num_imgs, centroids, pid2label
     
     def _process_train_dir(self, dir_rgb_path, dir_sketch_path, tag, latent_size, test_metrix_only, relabel=False):
         tag_sketch = False
@@ -374,7 +384,7 @@ class MarketSketch(object):
         num_pids = len(pid_container)
         num_styles = len(style_container)
         num_imgs = len(dataset)
-        return dataset, num_pids, num_imgs, num_styles, centroids
+        return dataset, num_pids, num_imgs, num_styles, centroids, pid2label
     
     def _process_cluster(self, dir_path, n_clusters=25, sim_mode='euclidean'):
 
@@ -412,5 +422,5 @@ if __name__== '__main__':
 #     sys.path.append('../')
 #     market_sketch = MarketSketch(root="/home/zhengwei/Desktop/Zhengwei/Projects/datasets")
     root = "/home/zhengwei/Desktop/Zhengwei/Projects/datasets"
-    dataset = MarketSketch(root=root, format_tag='tensor', pretrained='CLIPreidNew', latent_size=64, test_metrix_only=False)
-    print(dataset.train_centroids.size())
+    dataset = MarketSketch(root=root, format_tag='tensor', pretrained='CLIPreidNew', latent_size=64, test_metrix_only=True)
+    print("ok")

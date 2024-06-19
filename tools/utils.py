@@ -61,13 +61,19 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+    def merge(self, other):
+        self.sum += other.sum
+        self.count += other.count
+        self.avg = self.sum / self.count
+
 
 def save_checkpoint(state, is_best, final_epoch, fpath='checkpoint.pth.tar'):
     mkdir_if_missing(osp.dirname(fpath))
     torch.save(state, fpath)
     best_rank = state['cmc']
     best_mAP = state['mAP']
-    
+    epoch = state['epoch']
+    best_accs = state['acc']
 
     if is_best:
         shutil.copy(fpath, osp.join(osp.dirname(fpath), 'best_model.pth.tar'))
@@ -78,17 +84,23 @@ def save_checkpoint(state, is_best, final_epoch, fpath='checkpoint.pth.tar'):
             checkpoint_dir = osp.dirname(fpath)
             checkpoint_files = glob.glob(osp.join(checkpoint_dir, 'checkpoint_ep*.pth.tar'))
             best_model_path = osp.join(checkpoint_dir, 'best_model.pth.tar')
+            # 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
+            last_path = osp.join(checkpoint_dir, 'checkpoint_ep{}.pth.tar'.format(str(epoch+1)))
             for checkpoint_file in checkpoint_files:
-                if checkpoint_file != best_model_path:
+                if checkpoint_file != last_path:
+                    # print('Delete checkpoint file: {}'.format(checkpoint_file))
                     os.remove(checkpoint_file)
+                else:
+                    print('Keep checkpoint file: {}'.format(osp.basename(checkpoint_file)))
             
-
             # create a file with name bestR@1_{:.1%}.log and save best_rank and best_mAP
-            best_rank_str = 'bestR@1_{:.1%}.log'.format(best_rank[0])
+            best_rank_str = 'bestR@1_{:.1%}+ACC_{:.1%}.log'.format(best_rank[0], best_accs[2])
             with open(osp.join(checkpoint_dir, best_rank_str), 'w') as f:
                 # top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
                 f.write('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(best_rank[0], best_rank[4], best_rank[9], best_rank[19], best_mAP))
-    
+                f.write('\n')
+                # print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, total_acc))
+                f.write('Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}'.format(best_accs[0], best_accs[1], best_accs[2]))
     except Exception as e:
         print(e)
         print('Delete middle checkpoints failed!')

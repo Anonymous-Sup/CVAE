@@ -85,6 +85,7 @@ _C.MODEL.ONLY_CVAE_KL = False
 _C.MODEL.USE_CENTROID = False
 _C.MODEL.CONDITIONAL = False
 _C.MODEL.GAUSSIAN = 'MultivariateNormal'  # 'Normal', 'MultivariateNormal'
+_C.MODEL.USE_TWO_ENCODER = False
 
 # -----------------------------------------------------------------------------
 # Losses for training 
@@ -105,7 +106,7 @@ _C.LOSS.PAIR_S = 16.
 _C.LOSS.PAIR_M = 0.3
 
 _C.LOSS.RECON_LOSS = 'mse' # 'bce', 'mse', 'mae', 'smoothl1', 'pearson'
-
+_C.LOSS.USE_NCE = False
 # -----------------------------------------------------------------------------
 # Training settings
 # -----------------------------------------------------------------------------
@@ -201,6 +202,10 @@ def update_config(config, args):
 
     if args.reid_loss:
         config.LOSS.CLA_LOSS = args.reid_loss
+    if args.use_NCE:
+        config.LOSS.USE_NCE = args.use_NCE
+    if args.use_two_encoder:
+        config.MODEL.USE_TWO_ENCODER = args.use_two_encoder
 
     if args.only_x_input:
         print("Use only x as input for flow model")

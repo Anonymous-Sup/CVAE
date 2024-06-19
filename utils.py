@@ -399,18 +399,20 @@ def pair_plots(run, feature_x, feature_z, title):
     plt.close(fig)
 
 
-def save_for_pairplot(num_query, feature_x, feature_reconx, feature_z, save_path):
+def save_for_pairplot(num_query, feature_x, feature_reconx, feature_z, feature_U_y, save_path):
     feature_x = feature_x.detach().cpu().numpy()
     feature_reconx = feature_reconx.detach().cpu().numpy()
     feature_z = feature_z.detach().cpu().numpy()
+    feature_U_y = feature_U_y.detach().cpu().numpy()
 
     # Save to .mat file
-    saved_file = os.path.join(save_path, 'pairplot_resources.mat')
+    saved_file = os.path.join(save_path, 'pairplot_resources_NoNorm.mat')
     savemat(saved_file, {
         'num_query': num_query,
         'q_g_feature_x': feature_x,
         'q_g_feature_reconx': feature_reconx,
-        'q_g_feature_z': feature_z
+        'q_g_feature_z': feature_z,
+        'q_g_feature_U_y': feature_U_y
     })
 
 

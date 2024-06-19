@@ -2,7 +2,7 @@ from torch import nn
 
 from losses.cross_entropy_label_smooth import CrossEntropyLabelSmooth
 from losses.triplet_loss import TripletLoss
-from losses.contrastive_loss import ContrastiveLoss
+from losses.contrastive_loss import ContrastiveLoss, SupConLoss
 from losses.arcface_loss import ArcFaceLoss
 from losses.cosface_loss import CosFaceLoss, PairwiseCosFaceLoss
 from losses.circle_loss import CircleLoss, PairwiseCircleLoss
@@ -47,6 +47,7 @@ def build_losses(config):
     elif config.LOSS.RECON_LOSS == 'pearson':
         criterion_recon = Pearson_loss(config.MODEL.FEATURE_DIM)
 
-    criterion_regular = MMD_loss(sigma=1.0)
+    NCE_loss = SupConLoss("cuda")
+    
 
-    return criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular
+    return criterion_cla, criterion_pair, criterion_kl, criterion_recon, NCE_loss
