@@ -128,7 +128,6 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             if 'reid' not in config.MODEL.TRAIN_STAGE:
                 if 'novel' in config.DATA.TRAIN_FORMAT:
                     number_sample = 16
-                    drawer.compute(run)
                 else:
                     number_sample = 64
                 
@@ -193,7 +192,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             pair_loss=batch_pair_loss, kl_loss=batch_kl_loss,
             bce_loss=batch_recon_loss, acc=batch_acc)
           )
-
+    if 'reid' not in config.MODEL.TRAIN_STAGE:
+        if 'novel' in config.DATA.TRAIN_FORMAT:
+            drawer.compute(run)
     # run["train/epoch/loss"].append(batch_loss)
     # run["train/epoch/acc"].append(batch_acc)
     # run["train/epoch/theta_acc"].append(batch_theta_acc)
@@ -289,8 +290,8 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         # cls_loss = criterion_cla(outputs, pids)
 
         '''for record'''
-        # cls_loss = nce_loss
-        cls_loss = criterion_cla(logits, pids)
+        cls_loss = nce_loss
+        # cls_loss = criterion_cla(logits, pids)
 
         pair_loss = criterion_pair(z_c, pids)
 
@@ -312,25 +313,19 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
 
         beta = 1.0
         gamma = 1.0
-        if 'novel' in config.DATA.TRAIN_FORMAT:
-            if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
-                loss = recon_loss
-                loss = loss + beta * kl_loss
-                # with NCE
-                if config.LOSS.USE_NCE:
-                    loss = loss + gamma * cls_loss
-            elif config.MODEL.TRAIN_STAGE == 'reidstage':
-                loss = cls_loss
-                # loss = nce_loss
-            else:
-                loss = recon_loss
-                loss = loss + beta * kl_loss  # baseline no kl
-                # loss = loss + gamma * cls_loss
-                loss = loss + gamma * cls_loss
-                # loss = loss + pair_loss
-        elif config.MODEL.TRAIN_STAGE == 'klstage':
-            loss = recon_loss  
+        if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+            loss = recon_loss
             loss = loss + beta * kl_loss
+            # with NCE
+            if config.LOSS.USE_NCE:
+                loss = loss + gamma * cls_loss
+        elif config.MODEL.TRAIN_STAGE == 'reidstage':
+            loss = cls_loss
+            # loss = nce_loss
+        else:
+            loss = recon_loss
+            loss = loss + beta * kl_loss  # baseline no kl
+            # loss = loss + gamma * cls_loss
             loss = loss + gamma * cls_loss
             # loss = loss + pair_loss
 
@@ -369,7 +364,6 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
             if 'reid' not in config.MODEL.TRAIN_STAGE:
                 if 'novel' in config.DATA.TRAIN_FORMAT:
                     number_sample = 16
-                    drawer.compute(run)
                 else:
                     number_sample = 64
                 
@@ -437,7 +431,9 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
             pair_loss=batch_pair_loss, kl_loss=batch_kl_loss,
             bce_loss=batch_recon_loss, acc=acc_meter, acc_meter=acc_meter)
           )
-
+    if 'reid' not in config.MODEL.TRAIN_STAGE:
+        if 'novel' in config.DATA.TRAIN_FORMAT:
+            drawer.compute(run)
     # run["train/epoch/loss"].append(batch_loss)
     # run["train/epoch/acc"].append(batch_acc)
     # run["train/epoch/theta_acc"].append(batch_theta_acc)

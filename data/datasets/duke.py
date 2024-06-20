@@ -26,7 +26,7 @@ class DukeMTMCreID(object):
     """
     root_folder = 'DukeMTMC-reID'
 
-    def __init__(self, root='data', format_tag='tensor', pretrained='CLIP', latent_size=12, test_metrix_only=False, **kwargs):
+    def __init__(self, root='data', format_tag='tensor', pretrained='CLIP', latent_size=12, test_metrix_only=True, **kwargs):
         self.tag = format_tag
         self.test_metrix_only = test_metrix_only
         self.latent_size = latent_size

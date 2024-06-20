@@ -39,7 +39,7 @@ def parse_option():
     
     # Datasets
     parser.add_argument('--root', type=str, help="your root path to data directory")
-    parser.add_argument('--dataset', type=str, default='duke', help="duke, market1501, cuhk03, msmt17")
+    parser.add_argument('--dataset', type=str, default='duke', help="duke, market1k")
     parser.add_argument('--format_tag', type=str, choices=['tensor', 'img'], help="Using image or pretrained features")
     
     # Training
@@ -250,8 +250,16 @@ def main(config):
         text_path_128 = '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/Market-Sketch-1K/tensor/CLIPreidNew/textemb/2sketch_tune_linear/text_features.mat'
         text_path_512 = '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/Market-Sketch-1K/tensor/CLIPreidFinetune/textemb/2sketch_tune/text_features.mat'
         
-        results = loadmat(text_path_512)
+        test_base_duke = '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/DukeMTMC-reID/tensor/CLIPreidNew/textemb/base_duke/text_features.mat'
+        if config.DATA.DATASET == 'market1k':
+            results = loadmat(text_path_512)
+        elif config.DATA.DATASET == 'duke':
+            results = loadmat(test_base_duke)
+        else:
+            raise KeyError("Unknown Text embedding for: {}".format(config.DATA.DATASET))
+
         text_embeddings = torch.tensor(results['text_features']).float().cuda()
+        del results
     else:
         text_embeddings = None
     

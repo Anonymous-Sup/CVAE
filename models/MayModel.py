@@ -174,6 +174,9 @@ class SinpleVAE_2Encoder(nn.Module):
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
         self.i2t_projector = nn.Linear(zc_dim, 512)
+
+        # if use_orthogonality:
+        #     self.orthog_linear_zc = nn.Linear(zc_dim, zc_dim)
         # self.encoder.apply(weights_init_kaiming)
         # self.decoder.apply(weights_init_kaiming)
 
