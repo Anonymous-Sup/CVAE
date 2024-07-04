@@ -124,39 +124,33 @@ def main(config):
     i2t_parameters = []
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
-        if config.DATA.TRAIN_FORMAT == 'novel':
-            if config.MODEL.TRAIN_STAGE == 'reidstage':
-                if config.LOSS.USE_NCE:
-                    for name, param in model.named_parameters():
-                        if 'i2t_projector' in name:
-                            param.requires_grad = True
-                            print("{} is tuneable".format(name))
-                            i2t_parameters.append(param)
-                        else:
-                            param.requires_grad = False
-                    optimizer = optim.Adam(i2t_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
-                                    weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-                else:
-                    for parm in model.parameters():
-                        parm.requires_grad = False
-                    optimizer = optim.Adam(cla_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+        if config.MODEL.TRAIN_STAGE == 'reidstage':
+            if config.LOSS.USE_NCE:
+                for name, param in model.named_parameters():
+                    if 'i2t_projector' in name:
+                        param.requires_grad = True
+                        print("{} is tuneable".format(name))
+                        i2t_parameters.append(param)
+                    else:
+                        param.requires_grad = False
+                optimizer = optim.Adam(i2t_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
                                 weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-
-            elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
-                for cls_param in cla_parameters:
-                    cls_param.requires_grad = False
-                optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
-                                   weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
             else:
-                optimizer = optim.Adam([
-                {'params': filter(lambda p: p.requires_grad ,parameters)},
-                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
-                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+                for parm in model.parameters():
+                    parm.requires_grad = False
+                optimizer = optim.Adam(cla_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+                            weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+
+        elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+            for cls_param in cla_parameters:
+                cls_param.requires_grad = False
+            optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+                                weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         else:
             optimizer = optim.Adam([
-                {'params': filter(lambda p: p.requires_grad ,parameters)},
-                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
-                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            {'params': filter(lambda p: p.requires_grad ,parameters)},
+            {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+            lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
 
         # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
         #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
