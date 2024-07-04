@@ -244,6 +244,7 @@ class MarketSketch(object):
 
     def _process_train_all_dir(self, dir_rgb_path, dir_sketch_path, dir_sketch_path2, tag, latent_size, test_metrix_only, relabel=False):
 
+        print("===============Remind!!!!============= Using all data for training")
         tag_sketch = False
         tag_rgb = False
 

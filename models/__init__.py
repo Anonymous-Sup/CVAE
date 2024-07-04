@@ -93,6 +93,14 @@ def build_model(config, num_classes):
             model = SinpleVAE(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
 
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
+    # print FLOPs
+    from thop import profile
+    input = torch.randn(64, config.MODEL.FEATURE_DIM)
+    input = input.to('cuda')
+    model = model.to('cuda')
+    flops, params = profile(model, inputs=(input,))
+    print("FLOPs: {:.5f}G".format(flops/1000000000.0))
+    print("Params: {:.5f}M".format(params/1000000.0))
     
     # Build classifier
     if config.LOSS.CLA_LOSS in ['crossentropy', 'crossentropylabelsmooth']:

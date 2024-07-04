@@ -227,7 +227,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
             run["test/top5"].append(cmc[4])
             run["test/top10"].append(cmc[9])
             if config.DATA.DATASET == 'market1k':
-                drawer.compute(run)
+                print("Jump TSNE in test")
+                # drawer.compute(run)
     return cmc, mAP, [q_acc, g_acc, q_g_acc]
 
 

@@ -119,7 +119,7 @@ class SinpleVAE(nn.Module):
     def i2t_projection(self, z_c):
         return self.i2t_projector(z_c)
     
-    def load_param(self, param_dict, ignore_i2t=False):
+    def load_param(self, param_dict, ignore_i2t=True):
         for i in self.state_dict():
             if i in param_dict.keys():
                 if ignore_i2t:
