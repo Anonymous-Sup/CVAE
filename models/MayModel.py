@@ -44,6 +44,9 @@ class SinpleVAE(nn.Module):
         
         # self.i2t_projector = nn.Linear(zc_dim, zc_dim)
         self.i2t_projector = nn.Linear(zc_dim, 512)
+
+        # self.reid_projector = nn.Linear(zc_dim, zc_dim, bias=False)
+
         # self.encoder.apply(weights_init_kaiming)
         # self.decoder.apply(weights_init_kaiming)
 
@@ -119,6 +122,9 @@ class SinpleVAE(nn.Module):
     def i2t_projection(self, z_c):
         return self.i2t_projector(z_c)
     
+    # def reid_projection(self, z_c):
+    #     return self.reid_projector(z_c)
+    
     def load_param(self, param_dict, ignore_i2t=True):
         for i in self.state_dict():
             if i in param_dict.keys():
@@ -174,6 +180,8 @@ class SinpleVAE_2Encoder(nn.Module):
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
         self.i2t_projector = nn.Linear(zc_dim, 512)
+
+        # self.reid_projector = nn.Linear(zc_dim, zc_dim, bias=False)
 
         # if use_orthogonality:
         #     self.orthog_linear_zc = nn.Linear(zc_dim, zc_dim)
@@ -255,6 +263,8 @@ class SinpleVAE_2Encoder(nn.Module):
     def i2t_projection(self, z_c):
         return self.i2t_projector(z_c)
     
+    # def reid_projection(self, z_c):
+    #     return self.reid_projector(z_c)
 
     def load_param(self, param_dict, ignore_i2t=True):
         for i in self.state_dict():
