@@ -5,19 +5,19 @@
 # --dataset duke \
 # --format_tag tensor \
 # --train_format base \
-# --train_stage klNocls_stage \
+# --train_stage klstage \
 # --gpu 0 \
-# --saved_name fp32_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
+# --saved_name SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_CLS+Trip+Center \
 # --vae_type SinpleVAE \
 # --recon_loss mse \
 # --use_two_encoder \
 # --reid_loss crossentropy \
 # --gaussian MultivariateNormal \
-# > train_base_clipreid_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_noCLS.log 2>&1 & 
+# > train_base_clipreid_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_CLS+Trip+Center.log 2>&1 & 
 
 
 
-#For the base model training with CE and Classifier
+# For the base model training with CE and Classifier
 # for single Encoder
 # --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae/2024-06-07/fp32_SimpleVAE_128+64z_1e3+3_60+120_SingleCls_ce_KLtotalZ
 # for two Encdoers
@@ -43,26 +43,25 @@
 # [klstage, klNocls_stage, reidstage]
 
 
-
 # --use_two_encoder  # for model
 # --use_NCE # for loss
 
 # scratch with no resume
 # ===========Novel Stage 1 traning================
-nohup python -u main.py --cfg ./configs/ablation_studies/clipreid_cvae_kl.yaml \
---root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
---dataset market1k \
---format_tag tensor \
---train_format novel_train_from_scratch \
---train_stage klstage \
---gpu 0 \
---saved_name ablation_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_cls_OnlySketch \
---vae_type SinpleVAE \
---recon_loss mse \
---use_two_encoder \
---reid_loss crossentropy \
---gaussian MultivariateNormal \
-> train_ablation_CorrectTune_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_cls_OnlySketch.log 2>&1 & 
+# nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
+# --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
+# --dataset market1k \
+# --format_tag tensor \
+# --train_format novel \
+# --train_stage klstage \
+# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae_base/2024-07-04/SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_CLS+Trip+Center \
+# --gpu 0 \
+# --saved_name Tune_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_CLS+Trip+Center \
+# --vae_type SinpleVAE \
+# --recon_loss mse \
+# --reid_loss crossentropy \
+# --gaussian MultivariateNormal \
+# > Tune_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_CLS+Trip+Center.log 2>&1 & 
 
 
 # for cls 
@@ -102,6 +101,9 @@ nohup python -u main.py --cfg ./configs/ablation_studies/clipreid_cvae_kl.yaml \
 # --reid_loss crossentropy \
 # --gaussian MultivariateNormal \
 # > tune_BaseNCE_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2+NCE.log 2>&1 & 
+
+
+
 
 
 

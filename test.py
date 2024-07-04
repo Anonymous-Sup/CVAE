@@ -35,7 +35,10 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
         if latent_z == 'x_pre':
             retrieval_feature = x_pre
         elif latent_z == 'z_c':
+            # only if using zc, do reid projection
             retrieval_feature = z_c
+            if config.MODEL.TRAIN_STAGE != 'klNocls_stage':
+                retrieval_feature = model.reid_projection(retrieval_feature)
         elif latent_z == 'new_z':
             retrieval_feature = new_z
         elif latent_z == 'reconx':
@@ -112,6 +115,8 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
             retrieval_feature = x_pre
         elif latent_z == 'z_c':
             retrieval_feature = z_c
+            if config.MODEL.TRAIN_STAGE != 'klNocls_stage':
+                retrieval_feature = model.reid_projection(retrieval_feature)
         elif latent_z == 'new_z':
             retrieval_feature = new_z
         elif latent_z == 'reconx':

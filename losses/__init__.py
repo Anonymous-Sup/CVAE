@@ -7,8 +7,9 @@ from losses.arcface_loss import ArcFaceLoss
 from losses.cosface_loss import CosFaceLoss, PairwiseCosFaceLoss
 from losses.circle_loss import CircleLoss, PairwiseCircleLoss
 from losses.naive_loss_fn import KLD_loss, BCE_loss, MSE_loss, MAE_loss, SmoothL1_loss, Pearson_loss, MMD_loss
+from losses.center_loss import CenterLoss
 
-def build_losses(config):
+def build_losses(config, num_classes):
     if config.LOSS.CLA_LOSS == "crossentropy":
         criterion_cla = nn.CrossEntropyLoss()
     elif config.LOSS.CLA_LOSS == "crossentropylabelsmooth":
@@ -49,5 +50,7 @@ def build_losses(config):
 
     NCE_loss = SupConLoss("cuda")
     
+    criterion_center = CenterLoss(num_classes=num_classes, feat_dim=config.MODEL.ZC_DIM)
+    
 
-    return criterion_cla, criterion_pair, criterion_kl, criterion_recon, NCE_loss
+    return criterion_cla, criterion_pair, criterion_kl, criterion_recon, NCE_loss, criterion_center

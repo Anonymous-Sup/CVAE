@@ -163,8 +163,6 @@ class MarketSketch(object):
             rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.jpg'))
             sketch_img_paths = glob.glob(osp.join(dir_sketch_path, '*.jpg'))
 
-        # rgb_img_paths = [] # used for not using rgb images to train
-
         rgb_pattern = re.compile(r'([-\d]+)_c(\d)')
         # sketch_pattern is like 0001_A.jpg or 0002_B, get the str before and after '_'
         sketch_pattern = re.compile(r'([-\d]+)_([A-Z])')

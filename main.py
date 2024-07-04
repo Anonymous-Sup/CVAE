@@ -99,7 +99,7 @@ def main(config):
     model, classifier = build_model(config, dataset.num_train_pids)
 
     # Build loss
-    criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_nce = build_losses(config)
+    criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_nce, criterion_circle = build_losses(config, dataset.num_train_pids)
 
     early_stopping = EarlyStopping(patience=100, threshold=1.0)
 
@@ -122,41 +122,51 @@ def main(config):
         alpha_lr = 3.0
     
     i2t_parameters = []
+    reid_parameters = []
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
-        if config.DATA.TRAIN_FORMAT == 'novel':
-            if config.MODEL.TRAIN_STAGE == 'reidstage':
-                if config.LOSS.USE_NCE:
-                    for name, param in model.named_parameters():
-                        if 'i2t_projector' in name:
-                            param.requires_grad = True
-                            print("{} is tuneable".format(name))
-                            i2t_parameters.append(param)
-                        else:
-                            param.requires_grad = False
-                    optimizer = optim.Adam(i2t_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
-                                    weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-                else:
-                    for parm in model.parameters():
-                        parm.requires_grad = False
-                    optimizer = optim.Adam(cla_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+        if config.MODEL.TRAIN_STAGE == 'reidstage':
+            if config.LOSS.USE_NCE:
+                for name, param in model.named_parameters():
+                    if 'i2t_projector' in name:
+                        param.requires_grad = True
+                        print("{} is tuneable".format(name))
+                        i2t_parameters.append(param)
+                    elif 'reid_projector' in name:
+                        param.requires_grad = True
+                        print("{} is tuneable".format(name))
+                        reid_parameters.append(param)
+                    else:
+                        param.requires_grad = False
+                all_tuned_parameters = i2t_parameters + reid_parameters
+                optimizer = optim.Adam(all_tuned_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
                                 weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-
-            elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
-                for cls_param in cla_parameters:
-                    cls_param.requires_grad = False
-                optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
-                                   weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+                optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
             else:
-                optimizer = optim.Adam([
-                {'params': filter(lambda p: p.requires_grad ,parameters)},
-                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
-                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+                for name, param in model.named_parameters():
+                    if 'reid_projector' in name:
+                        param.requires_grad = True
+                        print("{} is tuneable".format(name))
+                        reid_parameters.append(param)
+                    else:
+                        param.requires_grad = False
+                all_tuned_parameters = cla_parameters + reid_parameters
+                optimizer = optim.Adam(all_tuned_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+                            weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+                optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
+
+        elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+            for cls_param in cla_parameters:
+                cls_param.requires_grad = False
+            optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+                                weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
         else:
             optimizer = optim.Adam([
-                {'params': filter(lambda p: p.requires_grad ,parameters)},
-                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
-                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            {'params': filter(lambda p: p.requires_grad ,parameters)},
+            {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+            lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+
+            optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
 
         # optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
         #                        weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
@@ -174,6 +184,9 @@ def main(config):
     if config.TRAIN.LR_SCHEDULER.NAME != 'None':
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
                                             gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
+        scheduler_center = lr_scheduler.MultiStepLR(optimizer_center, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
+                                            gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
+        
     if config.TRAIN.AMP:
         scaler = GradScaler()
 
@@ -290,11 +303,11 @@ def main(config):
               optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler)
         else:
             if config.LOSS.USE_NCE:
-                iteration_num = train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_nce,
-                optimizer, trainloader, epoch, iteration_num, text_embeddings)
+                iteration_num = train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
+                optimizer, optimizer_center, trainloader, epoch, iteration_num, text_embeddings)
             else:
-                iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon,
-                optimizer, trainloader, epoch, iteration_num)
+                iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
+                optimizer, optimizer_center, trainloader, epoch, iteration_num)
             # for name, param in classifier.named_parameters():
             #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
         train_time += round(time.time() - start_train_time)
@@ -341,6 +354,7 @@ def main(config):
         
         if config.TRAIN.LR_SCHEDULER.NAME != 'None':
             scheduler.step()
+            scheduler_center.step()
             run['train/lr'].append(scheduler.get_last_lr()[0])
             
     

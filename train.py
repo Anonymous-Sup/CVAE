@@ -11,8 +11,8 @@ from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot
 from tools.drawer import tSNE_plot
 
 
-def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon,
-              optimizer, trainloader, epoch, iteration_num):
+def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
+              optimizer, optimizer_center, trainloader, epoch, iteration_num):
     
     if config.DATA.TRAIN_FORMAT == 'novel':
         if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
@@ -22,6 +22,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             drawer.reset()
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             model.eval()
+            model.reid_projection.train()
             classifier.train()
         else:
             model.train()
@@ -39,7 +40,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         classifier.train()
     
     batch_cls_loss = AverageMeter()
-    batch_cls_loss_theta = AverageMeter()
+    batch_circle_loss = AverageMeter()
     batch_pair_loss = AverageMeter()
     batch_kl_loss = AverageMeter()
     batch_kld_theta = AverageMeter()
@@ -79,7 +80,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         _, preds = torch.max(outputs.data, 1)
         cls_loss = criterion_cla(outputs, pids)
 
-        pair_loss = criterion_pair(z_c, pids)
+        z_c_reid = model.reid_projection(z_c)
+        pair_loss = criterion_pair(z_c_reid, pids)
+        circle_loss = criterion_circle(z_c_reid, pids)
 
         base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
         prior_p = base_dist.log_prob(z)
@@ -105,11 +108,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             loss = loss + beta * kl_loss
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             loss = cls_loss
+            loss = loss + pair_loss
+            loss = loss + circle_loss
         else:
             loss = recon_loss
             loss = loss + beta * kl_loss  # baseline no kl
             loss = loss + gamma * cls_loss
-            # loss = loss + pair_loss
+            loss = loss + pair_loss
+            loss = loss + circle_loss
 
 
         # elif config.MODEL.TRAIN_STAGE == 'reidstage':
@@ -149,13 +155,18 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 plot_histogram(run, fusez_s, "4-fusez_s")
 
         optimizer.zero_grad()
+        optimizer_center.zero_grad()
+        
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
         optimizer.step()
+        optimizer_center.step()
+
  
         batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))
         batch_cls_loss.update(cls_loss.item(), pids.size(0))
         batch_pair_loss.update(pair_loss.item(), pids.size(0))
+        batch_circle_loss.update(circle_loss.item(), pids.size(0))
         batch_kl_loss.update(kl_loss.item(), pids.size(0))
         batch_recon_loss.update(recon_loss.item(), pids.size(0))
         # batch_regular_loss.update(regular_loss.item(), pids.size(0))
@@ -166,6 +177,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         run['train/batch/1_posterior'].append(posterior.mean().item())
         run["train/batch/cls_loss"].append(cls_loss.item())
         run["train/batch/pair_loss"].append(pair_loss.item())
+        run["train/batch/circle_loss"].append(circle_loss.item())
         run["train/batch/0_kl_loss"].append(kl_loss.item())
         run["train/batch/0_recon_loss"].append(recon_loss.item())
         # run["train/batch/0_regular_loss"].append(regular_loss.item())
@@ -180,13 +192,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
           'Loss:{loss.avg:.4f} '
           'Cls Loss:{cls_loss.avg:.4f} '
           'Pair Loss:{pair_loss.avg:.4f} '
+          'Circle Loss:{circle_loss.avg:.4f} '
           'KL Loss:{kl_loss.avg:.4f} '
           'Recon Loss:{bce_loss.avg:.4f} '
           'Acc:{acc.avg:.4f} '.format(
             epoch+1, batch_time=batch_time, data_time=data_time, 
             loss=batch_loss, cls_loss=batch_cls_loss,
-            pair_loss=batch_pair_loss, kl_loss=batch_kl_loss,
-            bce_loss=batch_recon_loss, acc=batch_acc)
+            pair_loss=batch_pair_loss, circle_loss=batch_circle_loss, 
+            kl_loss=batch_kl_loss, bce_loss=batch_recon_loss, acc=batch_acc)
           )
     if 'reid' not in config.MODEL.TRAIN_STAGE:
         if 'novel' in config.DATA.TRAIN_FORMAT:
@@ -206,8 +219,8 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
 
 
 
-def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_nce,
-              optimizer, trainloader, epoch, iteration_num, text_feature_list=None):
+def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
+              optimizer, optimizer_center, trainloader, epoch, iteration_num, text_feature_list=None):
     
     if config.DATA.TRAIN_FORMAT == 'novel':
         if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
@@ -217,6 +230,7 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
             drawer.reset()
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             model.eval()
+            model.reid_projection.train()
             classifier.train()
         else:
             model.train()
@@ -234,7 +248,7 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         classifier.train()
     
     batch_cls_loss = AverageMeter()
-    batch_cls_loss_theta = AverageMeter()
+    batch_circle_loss = AverageMeter()
     batch_pair_loss = AverageMeter()
     batch_kl_loss = AverageMeter()
     batch_kld_theta = AverageMeter()
@@ -288,10 +302,12 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         # cls_loss = criterion_cla(outputs, pids)
 
         '''for record'''
-        cls_loss = nce_loss
-        # cls_loss = criterion_cla(logits, pids)
+        # cls_loss = nce_loss
+        cls_loss = criterion_cla(logits, pids)
 
-        pair_loss = criterion_pair(z_c, pids)
+        z_c_reid = model.reid_projection(z_c)
+        pair_loss = criterion_pair(z_c_reid, pids)
+        circle_loss = criterion_circle(z_c_reid, pids)
 
         base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
         prior_p = base_dist.log_prob(z)
@@ -314,18 +330,24 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
             loss = recon_loss
             loss = loss + beta * kl_loss
-            # with NCE
-            if config.LOSS.USE_NCE:
-                loss = loss + gamma * cls_loss
+            
+            # under NCE, no cls mean no classifier
+            # loss = loss + gamma * cls_loss
+            # loss = loss + pair_loss
+            # loss = loss + circle_loss
+
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             loss = cls_loss
             # loss = nce_loss
+            loss = loss + pair_loss
+            loss = loss + circle_loss
         else:
             loss = recon_loss
             loss = loss + beta * kl_loss  # baseline no kl
             # loss = loss + gamma * cls_loss
             loss = loss + gamma * cls_loss
-            # loss = loss + pair_loss
+            loss = loss + pair_loss
+            loss = loss + circle_loss
 
         # elif config.MODEL.TRAIN_STAGE == 'reidstage':
         #     loss = cls_loss
@@ -395,9 +417,9 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         batch_acc = acc_meter
         batch_cls_loss.update(cls_loss.item(), pids.size(0))
         batch_pair_loss.update(pair_loss.item(), pids.size(0))
+        batch_circle_loss.update(circle_loss.item(), pids.size(0))
         batch_kl_loss.update(kl_loss.item(), pids.size(0))
         batch_recon_loss.update(recon_loss.item(), pids.size(0))
-        # batch_regular_loss.update(regular_loss.item(), pids.size(0))
         batch_loss.update(loss.item(), pids.size(0))
         batch_time.update(time.time() - end)
 
@@ -405,6 +427,7 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         run['train/batch/1_posterior'].append(posterior.mean().item())
         run["train/batch/cls_loss"].append(cls_loss.item())
         run["train/batch/pair_loss"].append(pair_loss.item())
+        run['train/batch/circle_loss'].append(circle_loss.item())
         run["train/batch/0_kl_loss"].append(kl_loss.item())
         run["train/batch/0_recon_loss"].append(recon_loss.item())
         # run["train/batch/0_regular_loss"].append(regular_loss.item())
@@ -420,13 +443,15 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
           'Loss:{loss.avg:.4f} '
           'Cls Loss:{cls_loss.avg:.4f} '
           'Pair Loss:{pair_loss.avg:.4f} '
+          'Circle Loss:{circle_loss.avg:.4f}'
           'KL Loss:{kl_loss.avg:.4f} '
           'Recon Loss:{bce_loss.avg:.4f} '
           'Acc:{acc.avg:.4f} '
           'Acc NCE:{acc_meter.avg:.4f}'.format(
             epoch+1, batch_time=batch_time, data_time=data_time, 
             loss=batch_loss, cls_loss=batch_cls_loss,
-            pair_loss=batch_pair_loss, kl_loss=batch_kl_loss,
+            pair_loss=batch_pair_loss, circle_loss=batch_circle_loss,
+            kl_loss=batch_kl_loss,
             bce_loss=batch_recon_loss, acc=acc_meter, acc_meter=acc_meter)
           )
     if 'reid' not in config.MODEL.TRAIN_STAGE:
