@@ -8,7 +8,7 @@ import glob
 import re
 import os.path as osp
 from collections import defaultdict
-from .bases import BaseImageDataset
+from bases import BaseImageDataset
 import pickle
 
 class SYSU_MM01(BaseImageDataset):
@@ -21,15 +21,17 @@ class SYSU_MM01(BaseImageDataset):
       Testing images others
     """
     dataset_dir = 'sysu_mm_01'
-    def __init__(self, root='root', format_tag='tensor',  pretrained='CLIPreidFinetune', pid_begin = 0, **kwargs):
+    def __init__(self, root='root', format_tag='tensor', pretrained='CLIPreidFinetune', pid_begin = 0, **kwargs):
         super(SYSU_MM01, self).__init__()
 
         self.tag = format_tag
 
         if self.tag == 'tensor':
             self.dataset_dir = osp.join(root, self.dataset_dir, 'fewshot_label', 'tensor', pretrained)
+            suffix = '*.pt'
         else:
             self.dataset_dir = osp.join(root, self.dataset_dir, 'fewshot_label')
+            suffix = '*.jpg'
 
         self.train_infrared_dir = osp.join(self.dataset_dir, '2infrared', 'finetune')
         
@@ -44,10 +46,10 @@ class SYSU_MM01(BaseImageDataset):
         self._check_before_run()
         self.pid_begin = pid_begin
         
-        train = self._process_train_dir(self.train_rgb_dir, self.train_infrared_dir, relabel=True)
+        train = self._process_train_dir(self.train_rgb_dir, self.train_infrared_dir, relabel=True, suffix=suffix)
         # train = self._process_train_all_dir(self.train_rgb_dir, self.train_infrared_dir, self.query_infrared_dir, self.gallery_rgb_dir, relabel=True)
-        query = self._process_dir(self.query_infrared_dir, relabel=True, data_tag='infrared')
-        gallery = self._process_dir(self.gallery_rgb_dir, relabel=True, data_tag='rgb')
+        query = self._process_dir(self.query_infrared_dir, relabel=True, data_tag='infrared', suffix=suffix)
+        gallery = self._process_dir(self.gallery_rgb_dir, relabel=True, data_tag='rgb', suffix=suffix)
 
         if self.tag == 'tensor':
             print("=> SYSU_MM01 tensor loaded")
@@ -78,8 +80,8 @@ class SYSU_MM01(BaseImageDataset):
         if not osp.exists(self.gallery_rgb_dir):
             raise RuntimeError("'{}' is not available".format(self.gallery_rgb_dir))
 
-    def _process_dir(self, dir_path, relabel=False, data_tag='rgb'):
-        img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
+    def _process_dir(self, dir_path, relabel=False, data_tag='rgb', suffix='*.pt'):
+        img_paths = glob.glob(osp.join(dir_path, suffix))
         # name = 0001_0001_c2.jpg, get the str before and after '_'
         pattern = re.compile(r'(\d+)_(\d+)_c(\d+)')
 
@@ -102,15 +104,15 @@ class SYSU_MM01(BaseImageDataset):
         return dataset
     
 
-    def _process_train_all_dir(self, dir_rgb_path, dir_infrared_path, dir_query_path, dir_gallery_path, relabel=False):
+    def _process_train_all_dir(self, dir_rgb_path, dir_infrared_path, dir_query_path, dir_gallery_path, relabel=False, suffix='*.pt'):
         
         print("===============Remind!!!!============= Using all data for training")
-        rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.jpg'))
-        rgb_img_paths2 = glob.glob(osp.join(dir_gallery_path, '*.jpg'))
+        rgb_img_paths = glob.glob(osp.join(dir_rgb_path, suffix))
+        rgb_img_paths2 = glob.glob(osp.join(dir_gallery_path, suffix))
         rgb_img_paths += rgb_img_paths2
         
-        infrared_img_paths = glob.glob(osp.join(dir_infrared_path, '*.jpg'))
-        infrared_img_paths2 = glob.glob(osp.join(dir_query_path, '*.jpg'))
+        infrared_img_paths = glob.glob(osp.join(dir_infrared_path, suffix))
+        infrared_img_paths2 = glob.glob(osp.join(dir_query_path, suffix))
         infrared_img_paths += infrared_img_paths2
 
         pattern = re.compile(r'(\d+)_(\d+)_c(\d+)')
@@ -151,11 +153,11 @@ class SYSU_MM01(BaseImageDataset):
         return dataset
     
 
-    def _process_train_dir(self, dir_rgb_path, dir_infrared_path, relabel=False):
-        rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.jpg'))
+    def _process_train_dir(self, dir_rgb_path, dir_infrared_path, relabel=False, suffix='*.pt'):
+        rgb_img_paths = glob.glob(osp.join(dir_rgb_path, suffix))
         pattern = re.compile(r'(\d+)_(\d+)_c(\d+)')
         
-        intrared_img_paths = glob.glob(osp.join(dir_infrared_path, '*.jpg'))
+        intrared_img_paths = glob.glob(osp.join(dir_infrared_path, suffix))
 
         pid_container = set()
   
@@ -193,7 +195,9 @@ class SYSU_MM01(BaseImageDataset):
         return dataset
     
 
-# if __name__== '__main__':
+if __name__== '__main__':
 #     import sys
 #     sys.path.append('../')
-#     market_sketch = MarketSketch(root="/home/zhengwei/Desktop/Zhengwei/Projects/datasets")
+    root = "/home/zhengwei/Desktop/Zhengwei/Projects/datasets"
+    dataset = SYSU_MM01(root=root, format_tag='tensor', pretrained='CLIPreidFinetune')
+    print("ok")

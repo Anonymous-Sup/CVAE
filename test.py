@@ -207,7 +207,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     print('Distance computing in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
     since = time.time()
-    if config.DATA.DATASET == 'market1k':
+    if config.DATA.DATASET != 'duke':
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
     else:
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
@@ -312,7 +312,7 @@ def test_clip_feature(queryloader, galleryloader, dataset):
 
     since = time.time()
     print("Computing CMC and mAP")
-    if dataset == 'market1k':
+    if dataset != 'duke':
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
     else:
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)

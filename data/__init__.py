@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from data.datasets.duke import DukeMTMCreID
 # from data.datasets.msmt17 import MSMT17
 from data.datasets.market1k import MarketSketch
+from data.datasets.sysu_mm01 import SYSU_MM01
 
 from data.dataset_loader import ImageDataset
 from data.samplers import RandomIdentitySampler
@@ -16,6 +17,7 @@ __factory = {
     'duke': DukeMTMCreID,
     # 'msmt17': MSMT17,
     'market1k': MarketSketch,
+    'sysu_mm01': SYSU_MM01,
 }
 
 
