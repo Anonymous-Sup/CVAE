@@ -39,9 +39,12 @@ class MarketSketch(object):
         self.train_sketch_dir = osp.join(self.dataset_dir, 'sketch', 'fewshot', '2sketch', 'finetune')
         self.query_sketch_dir = osp.join(self.dataset_dir, 'sketch', 'fewshot', '2sketch', 'test')
         
-        self.train_rgb_dir = osp.join(self.dataset_dir, 'photo', 'all')
+        rgb_type = 'all' # 'all', 'b+all', 'b-all', 'gaussian_all'
+
+        self.train_rgb_dir = osp.join(self.dataset_dir, 'photo', rgb_type)
         # for few-shot setting, train_rgb = gallery_rgb
-        self.gallery_rgb_dir = osp.join(self.dataset_dir, 'photo', 'all')
+        self.gallery_rgb_dir = osp.join(self.dataset_dir, 'photo', rgb_type)
+
         self.cluster_dir = osp.join(root, self.root_folder, 'kmeans_results', pretrained)
 
         self._check_before_run()
@@ -255,7 +258,7 @@ class MarketSketch(object):
             rgb_img_paths = glob.glob(osp.join(dir_rgb_path, '*.jpg'))
             sketch_img_paths = glob.glob(osp.join(dir_sketch_path, '*.jpg'))
 
-        # rgb_img_paths = [] # used for not using rgb images to train
+        # sketch_img_paths = [] # used for not using rgb images to train
 
         rgb_pattern = re.compile(r'([-\d]+)_c(\d)')
         # sketch_pattern is like 0001_A.jpg or 0002_B, get the str before and after '_'

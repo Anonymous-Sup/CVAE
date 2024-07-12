@@ -37,8 +37,8 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
         elif latent_z == 'z_c':
             # only if using zc, do reid projection
             retrieval_feature = z_c
-            if config.MODEL.TRAIN_STAGE != 'klNocls_stage':
-                retrieval_feature = model.reid_projection(retrieval_feature)
+            if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch' and config.MODEL.TRAIN_STAGE != 'klNocls_stage':
+                retrieval_feature = model.reid_projector(retrieval_feature)
         elif latent_z == 'new_z':
             retrieval_feature = new_z
         elif latent_z == 'reconx':
@@ -47,7 +47,11 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
             retrieval_feature = mu
 
         if classifier != None:
-            outputs = classifier(z_c)
+            if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch' and config.MODEL.TRAIN_STAGE != 'klNocls_stage':
+                reid_feature = model.reid_projector(z_c)
+            else:
+                reid_feature = z_c
+            outputs = classifier(reid_feature)
             _, preds = torch.max(outputs.data, 1)
             pid_tensor = batch_pids.cuda()
             assert preds.shape == pid_tensor.shape
@@ -57,6 +61,7 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
             assert 1==0
             outputs = None
 
+        # retrieval_feature = torch.cat((retrieval_feature, outputs), dim=-1)
         batach_features_norm = F.normalize(retrieval_feature, p=2, dim=1)
         
         features.append(batach_features_norm.cpu())
@@ -96,7 +101,7 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
 
 def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader, classifier=None, text_embeddings=None, latent_z='z_c'):
     
-    features, pids, camids, cls_result, all_imgs, all_recons = [], torch.tensor([]), torch.tensor([]), [], [], []
+    features, features_cat, pids, camids, cls_result, all_imgs, all_recons = [], [], torch.tensor([]), torch.tensor([]), [], [], []
     
     for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids, _) in enumerate(dataloader):
         if not config.TRAIN.AMP:
@@ -109,14 +114,15 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
         x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_feautres)
         # x_pre, z_0, z_c, new_z, reconx, U, mu = model(pretrained_feautres)
         
-        z_c_proj = model.i2t_projection(z_c)
+        reid_feature = model.reid_projector(z_c)
+        z_c_proj = model.i2t_projector(reid_feature)
 
         if latent_z == 'x_pre':
             retrieval_feature = x_pre
         elif latent_z == 'z_c':
             retrieval_feature = z_c
             if config.MODEL.TRAIN_STAGE != 'klNocls_stage':
-                retrieval_feature = model.reid_projection(retrieval_feature)
+                retrieval_feature = model.reid_projector(retrieval_feature)
         elif latent_z == 'new_z':
             retrieval_feature = new_z
         elif latent_z == 'reconx':
@@ -132,8 +138,13 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
         else:
             outputs = None
 
+        retrieval_feature_cat = torch.cat((retrieval_feature, z_c_proj), dim=-1)
+
         batach_features_norm = F.normalize(retrieval_feature, p=2, dim=1)
+        batch_catfeatures_norm = F.normalize(retrieval_feature_cat, p=2, dim=1)
+
         features.append(batach_features_norm.cpu())
+        features_cat.append(batch_catfeatures_norm.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         camids = torch.cat((camids, batch_camids.cpu()), dim=0)
         all_imgs.append(imgs.cpu())
@@ -144,12 +155,13 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
         
 
     features = torch.cat(features, 0)
+    features_cat = torch.cat(features_cat, 0)
     all_imgs = torch.cat(all_imgs, 0)
     all_recons = torch.cat(all_recons, 0)
     # Assuming `classifier` is your model
     # for name, param in classifier.named_parameters():
     #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
-    return features, pids, camids, all_imgs, all_recons
+    return features, features_cat, pids, camids, all_imgs, all_recons
 
 
 def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, text_embeddings=None, latent_z='fuse_z'):
@@ -165,8 +177,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     g_batch_acc = AverageMeter()
     if config.LOSS.USE_NCE:
         print("==========Test with NCE LOSS=========")
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
+        qf, qf_cat, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
+        gf, gf_cat, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
     else:
         qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z)
         gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y = extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z)
@@ -202,6 +214,25 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
     print("-----------------------------------------------------------")
+    
+    if config.LOSS.USE_NCE:
+        m, n = qf_cat.size(0), gf_cat.size(0)
+        distmat = torch.zeros((m,n))
+        qf_cat, gf_cat = qf_cat.cuda(), gf_cat.cuda()
+        # Cosine similarity
+        for i in range(m):
+            distmat[i] = (- torch.mm(qf_cat[i:i+1], gf_cat.t())).cpu()
+        distmat = distmat.numpy()
+
+        since = time.time()
+        if config.DATA.DATASET == 'market1k':
+            cmc_cat, mAP_cat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
+        else:
+            cmc_cat, mAP_cat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
+        print("CAT Results ---------------------------------------------------")
+        print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc_cat[0], cmc_cat[4], cmc_cat[9], cmc_cat[19], mAP_cat))
+        print("-----------------------------------------------------------")
+        
     time_elapsed = time.time() - since
     print('Using {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
@@ -223,7 +254,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
             pair_plots(run, q_g_imgs, q_g_features, "Q+G X-Z plots")
             pair_plots(run, q_g_recons, q_g_features, "Q+G Recons Rx-Z plots")
 
-            # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
+            # # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
             # q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
             # save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, q_g_domains_y, config.MODEL.RESUME)
         else:

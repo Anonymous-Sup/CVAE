@@ -138,7 +138,7 @@ def main(config):
                         reid_parameters.append(param)
                     else:
                         param.requires_grad = False
-                all_tuned_parameters = i2t_parameters + reid_parameters
+                all_tuned_parameters = i2t_parameters + reid_parameters + cla_parameters
                 optimizer = optim.Adam(all_tuned_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
                                 weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
                 optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)

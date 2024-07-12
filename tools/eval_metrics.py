@@ -15,9 +15,15 @@ def compute_ap_cmc(index, good_index, junk_index):
     rows_good = np.argwhere(mask==True)
     rows_good = rows_good.flatten()
     
+    # Handle case when ngood == 0
+    if len(rows_good) == 0:
+        return 0, cmc # Returns AP as 0.0 and unchanged CMC
+
     cmc[rows_good[0]:] = 1.0
-    for i in range(ngood):
-        d_recall = 1.0/ngood
+    actual_ngood = len(rows_good)
+    for i in range(actual_ngood):
+        d_recall = 1.0 / ngood
+        # print("rows_good", rows_good, "ngood", ngood)
         precision = (i+1)*1.0/(rows_good[i]+1)
         # if rows_good[i]!=0:
         #     old_precision = i*1.0/rows_good[i]

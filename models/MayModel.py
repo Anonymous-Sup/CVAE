@@ -3,10 +3,39 @@ import torch.nn as nn
 
 from torch.nn import functional as F
 from models.adapters import SparseBattery
+from utils import weights_init_kaiming
 
+class MLP(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, number_layers=1, leak_relu_slope=0.2, bn=False):
+        super(MLP, self).__init__()
+
+        layers = []
+        for l in range(number_layers):
+            if l == 0:
+                layers.append(nn.Linear(input_dim, hidden_dim, bias=False))
+                layers.append(nn.LeakyReLU(leak_relu_slope))
+            else:
+                layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
+                layers.append(nn.LeakyReLU(leak_relu_slope))
+            if bn:
+                layers.append(nn.BatchNorm1d(hidden_dim))
+
+        layers.append(nn.Linear(hidden_dim, output_dim, bias=False))
+        layers.append(nn.LeakyReLU(leak_relu_slope))
+        # if bn:
+        #     layers.append(nn.BatchNorm1d(output_dim))
+
+        self.MLP = nn.Sequential(*layers)
+
+        self.MLP.apply(weights_init_kaiming)
+
+    def forward(self, x):
+        x = self.MLP(x)
+        return x
+    
 
 class SinpleVAE(nn.Module):
-    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, n_layers=0, leak_relu_slope=0.0, bn=False):
+    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, n_layers=0, leak_relu_slope=0.2, bn=False):
         super().__init__()
 
         self.ac_fn = 'leaky_relu'
@@ -42,11 +71,31 @@ class SinpleVAE(nn.Module):
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
         
-        # self.i2t_projector = nn.Linear(zc_dim, zc_dim)
-        self.i2t_projector = nn.Linear(zc_dim, 512)
+        self.projection_type = 'MLP+CLS' # ori: 'Linear+CLS'
 
-        self.reid_projector = nn.Linear(zc_dim, zc_dim, bias=False)
+        if self.projection_type == 'Linear+CLS':
+            i2t_input_dim = zc_dim
+            self.reid_output_dim = zc_dim
+            self.reid_projector = nn.Linear(zc_dim, self.reid_output_dim, bias=False)
+        elif self.projection_type == 'Linear1280+CLS':
+            i2t_input_dim = 1280
+            self.reid_output_dim = 1280
+            self.reid_projector = nn.Linear(zc_dim, self.reid_output_dim, bias=False)
+        elif self.projection_type == 'MLP+CLS':
+            i2t_input_dim = zc_dim
+            self.reid_output_dim = zc_dim
+            self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim)  # no bias term
+        elif self.projection_type == 'MLP1280+CLS':
+            i2t_input_dim = 1280
+            self.reid_output_dim = 1280
+            self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim) # no bias term
+        elif self.projection_type == 'MLP768+CLS':
+            i2t_input_dim = 768
+            self.reid_output_dim = 768
+            self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim) # no bias term
 
+        self.i2t_projector = nn.Linear(i2t_input_dim, 512)
+        
         # self.encoder.apply(weights_init_kaiming)
         # self.decoder.apply(weights_init_kaiming)
 
@@ -119,11 +168,11 @@ class SinpleVAE(nn.Module):
         
         return h, mu, log_var, z_c, z_s, U, newz_s, new_z, recon_x
     
-    def i2t_projection(self, z_c):
-        return self.i2t_projector(z_c)
+    # def i2t_projection(self, z_c):
+    #     return self.i2t_projector(z_c)
     
-    def reid_projection(self, z_c):
-        return self.reid_projector(z_c)
+    # def reid_projection(self, z_c):
+    #     return self.reid_projector(z_c)
     
     def load_param(self, param_dict, ignore_i2t=True):
         for i in self.state_dict():
@@ -179,9 +228,30 @@ class SinpleVAE_2Encoder(nn.Module):
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
-        self.i2t_projector = nn.Linear(zc_dim, 512)
+        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
 
-        self.reid_projector = nn.Linear(zc_dim, zc_dim, bias=False)
+        if self.projection_type == 'Linear+CLS':
+            i2t_input_dim = zc_dim
+            self.reid_output_dim = zc_dim
+            self.reid_projector = nn.Linear(zc_dim, self.reid_output_dim, bias=False)
+        elif self.projection_type == 'Linear1280+CLS':
+            i2t_input_dim = 1280
+            self.reid_output_dim = 1280
+            self.reid_projector = nn.Linear(zc_dim, self.reid_output_dim, bias=False)
+        elif self.projection_type == 'MLP+CLS':
+            i2t_input_dim = zc_dim
+            self.reid_output_dim = zc_dim
+            self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim)  # no bias term
+        elif self.projection_type == 'MLP1280+CLS':
+            i2t_input_dim = 1280
+            self.reid_output_dim = 1280
+            self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim) # no bias term
+        elif self.projection_type == 'MLP768+CLS':
+            i2t_input_dim = 768
+            self.reid_output_dim = 768
+            self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim) # no bias term
+
+        self.i2t_projector = nn.Linear(i2t_input_dim, 512)
 
         # if use_orthogonality:
         #     self.orthog_linear_zc = nn.Linear(zc_dim, zc_dim)
@@ -260,11 +330,11 @@ class SinpleVAE_2Encoder(nn.Module):
 
         return x_pre, mean, log_var, z_c, z_s, U, newz_s, new_z, recon_x
     
-    def i2t_projection(self, z_c):
-        return self.i2t_projector(z_c)
+    # def i2t_projection(self, z_c):
+    #     return self.i2t_projector(z_c)
     
-    def reid_projection(self, z_c):
-        return self.reid_projector(z_c)
+    # def reid_projection(self, z_c):
+    #     return self.reid_projector(z_c)
 
     def load_param(self, param_dict, ignore_i2t=True):
         for i in self.state_dict():
