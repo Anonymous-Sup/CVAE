@@ -8,7 +8,7 @@ import glob
 import re
 import os.path as osp
 from collections import defaultdict
-from bases import BaseImageDataset
+from .bases import BaseImageDataset
 import pickle
 
 class SYSU_MM01(BaseImageDataset):
@@ -69,8 +69,7 @@ class SYSU_MM01(BaseImageDataset):
     def _check_before_run(self):
         """Check if all files are available before going deeper"""
         if not osp.exists(self.dataset_dir):
-            raise RuntimeError("'{}' is not available"
-            .format(self.dataset_dir))
+            raise RuntimeError("'{}' is not available".format(self.dataset_dir))
         if not osp.exists(self.train_infrared_dir):
             raise RuntimeError("'{}' is not available".format(self.train_infrared_dir))
         if not osp.exists(self.query_infrared_dir):

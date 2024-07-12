@@ -65,19 +65,22 @@
 
 # scratch with no resume
 # ===========Novel Stage 1 traning================
-nohup python -u main.py --cfg ./configs/ablation_studies/clipreid_cvae_kl.yaml \
+nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
 --dataset market1k \
 --format_tag tensor \
---train_format novel_train_from_scratch \
---train_stage klstage \
+--train_format novel \
+--train_stage reidstage \
+--resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-04/Tuned_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
 --gpu 0 \
---saved_name train_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_cls_onlyRGB+brightPlus \
+--saved_name tune_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_ceText+ce+trip+center \
 --vae_type SinpleVAE \
 --recon_loss mse \
+--use_two_encoder \
+--use_NCE \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> train_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_cls_onlyRGB+brightPlus.log 2>&1 & 
+> tune_Sketch_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_ceText+ce+trip+center.log 2>&1 & 
 
 
 # for cls 

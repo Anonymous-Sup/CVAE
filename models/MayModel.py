@@ -71,7 +71,7 @@ class SinpleVAE(nn.Module):
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
         
-        self.projection_type = 'MLP+CLS' # ori: 'Linear+CLS'
+        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
 
         if self.projection_type == 'Linear+CLS':
             i2t_input_dim = zc_dim
@@ -134,6 +134,7 @@ class SinpleVAE(nn.Module):
     def encode(self, x):
         h = self.encoder(x)
         mu, log_var = self.fc_mu(h), self.fc_logvar(h)
+        
         if self.training:
             z = self.reparameterize(mu, log_var)
         else:
@@ -228,7 +229,7 @@ class SinpleVAE_2Encoder(nn.Module):
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
-        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
+        self.projection_type = 'Linear+CLS' # ori: 'Linear+CLS'
 
         if self.projection_type == 'Linear+CLS':
             i2t_input_dim = zc_dim
@@ -293,16 +294,16 @@ class SinpleVAE_2Encoder(nn.Module):
     def encode(self, x):
         h_c = self.encoder_zc(x)
         mu_c, log_var_c = self.fc_mu_zc(h_c), self.fc_logvar_zc(h_c)
-
-        # if self.training:
-        #     z = self.reparameterize(mu, log_var)
-        # else:
-        #     z = mu
-        z_c = self.reparameterize(mu_c, log_var_c)
         
         h_s = self.encoder_zs(x)
         mu_s, log_var_s = self.fc_mu_zs(h_s), self.fc_mu_zs(h_s)
-        z_s = self.reparameterize(mu_s, log_var_s)
+
+        if self.training:
+            z_c = self.reparameterize(mu_c, log_var_c)
+            z_s = self.reparameterize(mu_s, log_var_s)
+        else:
+            z_c = mu_c
+            z_s = mu_s
 
         gate, U = self.u_embedding(x)
         

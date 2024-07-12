@@ -160,6 +160,7 @@ def main(config):
                 cls_param.requires_grad = False
             optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
                                 weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            optimizer_center = None
         else:
             optimizer = optim.Adam([
             {'params': filter(lambda p: p.requires_grad ,parameters)},
@@ -184,7 +185,8 @@ def main(config):
     if config.TRAIN.LR_SCHEDULER.NAME != 'None':
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
                                             gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
-        scheduler_center = lr_scheduler.MultiStepLR(optimizer_center, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
+        if optimizer_center is not None:
+            scheduler_center = lr_scheduler.MultiStepLR(optimizer_center, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
                                             gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
         
     if config.TRAIN.AMP:
@@ -271,7 +273,7 @@ def main(config):
             results = loadmat(text_path_512)
         elif config.DATA.DATASET == 'duke':
             results = loadmat(test_base_duke)
-        if config.DATA.DATASET == 'sysu_mm01':
+        elif config.DATA.DATASET == 'sysu_mm01':
             results = loadmat(text_tune_sysu)
         else:
             raise KeyError("Unknown Text embedding for: {}".format(config.DATA.DATASET))
@@ -358,7 +360,8 @@ def main(config):
         
         if config.TRAIN.LR_SCHEDULER.NAME != 'None':
             scheduler.step()
-            scheduler_center.step()
+            if optimizer_center is not None:
+                scheduler_center.step()
             run['train/lr'].append(scheduler.get_last_lr()[0])
             
     

@@ -156,12 +156,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
                 plot_histogram(run, fusez_s, "4-fusez_s")
 
         optimizer.zero_grad()
-        optimizer_center.zero_grad()
+        if optimizer_center is not None:
+            optimizer_center.zero_grad()
         
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
         optimizer.step()
-        optimizer_center.step()
+        if optimizer_center is not None:
+            optimizer_center.step()
 
  
         batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))
@@ -347,7 +349,7 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
             loss = cls_loss
             # loss = nce_loss
             loss = loss + pair_loss
-            # loss = loss + center_loss
+            loss = loss + center_loss
         else:
             loss = recon_loss
             loss = loss + beta * kl_loss  # baseline no kl
@@ -416,12 +418,14 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
                 plot_histogram(run, fusez_s, "4-fusez_s")
 
         optimizer.zero_grad()
-        optimizer_center.zero_grad()
+        if optimizer_center is not None:
+            optimizer_center.zero_grad()
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
         optimizer.step()
-        optimizer_center.step()
+        if optimizer_center is not None:
+            optimizer_center.step()
 
         batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))
         batch_i2t_acc = i2t_acc_meter
