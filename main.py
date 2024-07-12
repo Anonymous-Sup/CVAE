@@ -265,10 +265,14 @@ def main(config):
         text_path_512 = '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/Market-Sketch-1K/tensor/CLIPreidFinetune/textemb/2sketch_tune/text_features.mat'
         
         test_base_duke = '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/DukeMTMC-reID/tensor/CLIPreidNew/textemb/base_duke/text_features.mat'
+        
+        text_tune_sysu = '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/sysu_mm_01/fewshot_label/tensor/CLIPreidFinetune/textemb/tune_sysumm01/text_features.mat'
         if config.DATA.DATASET == 'market1k':
             results = loadmat(text_path_512)
         elif config.DATA.DATASET == 'duke':
             results = loadmat(test_base_duke)
+        if config.DATA.DATASET == 'sysu_mm01':
+            results = loadmat(text_tune_sysu)
         else:
             raise KeyError("Unknown Text embedding for: {}".format(config.DATA.DATASET))
 
