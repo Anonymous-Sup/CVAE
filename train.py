@@ -309,13 +309,13 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
 
         outputs = classifier(z_c_reid)
         _, preds = torch.max(outputs.data, 1)
-        cls_loss = criterion_cla(outputs, pids)
+        cls_loss_ce = criterion_cla(outputs, pids)
 
         '''for record'''
         # cls_loss = nce_loss
         cls_loss_i2t = criterion_cla(logits, pids)
 
-        cls_loss = cls_loss + cls_loss_i2t
+        cls_loss = cls_loss_ce + cls_loss_i2t
 
 
         base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
@@ -346,8 +346,8 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
             # loss = loss + center_loss
 
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
-            loss = cls_loss
-            # loss = nce_loss
+            # loss = cls_loss
+            loss = cls_loss_i2t
             loss = loss + pair_loss
             loss = loss + center_loss
         else:

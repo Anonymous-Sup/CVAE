@@ -47,7 +47,7 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
             retrieval_feature = mu
 
         if classifier != None:
-            if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch' and config.MODEL.TRAIN_STAGE != 'klNocls_stage':
+            if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
                 reid_feature = model.reid_projector(z_c)
             else:
                 reid_feature = z_c

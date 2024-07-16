@@ -175,11 +175,15 @@ class SinpleVAE(nn.Module):
     # def reid_projection(self, z_c):
     #     return self.reid_projector(z_c)
     
-    def load_param(self, param_dict, ignore_i2t=True):
+    def load_param(self, param_dict, ignore_i2t=True, ignore_reid=False):
         for i in self.state_dict():
             if i in param_dict.keys():
                 if ignore_i2t:
                     if 'i2t_projector' in i:
+                        print("Ignores parameter: ", i)
+                        continue
+                if ignore_reid:
+                    if 'reid_projector' in i:
                         print("Ignores parameter: ", i)
                         continue
                 self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
@@ -229,7 +233,7 @@ class SinpleVAE_2Encoder(nn.Module):
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
-        self.projection_type = 'Linear+CLS' # ori: 'Linear+CLS'
+        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
 
         if self.projection_type == 'Linear+CLS':
             i2t_input_dim = zc_dim
@@ -251,7 +255,8 @@ class SinpleVAE_2Encoder(nn.Module):
             i2t_input_dim = 768
             self.reid_output_dim = 768
             self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim) # no bias term
-
+        else:
+            raise ValueError("Invalid projection type {}", self.projection_type)
         self.i2t_projector = nn.Linear(i2t_input_dim, 512)
 
         # if use_orthogonality:
@@ -337,11 +342,15 @@ class SinpleVAE_2Encoder(nn.Module):
     # def reid_projection(self, z_c):
     #     return self.reid_projector(z_c)
 
-    def load_param(self, param_dict, ignore_i2t=True):
+    def load_param(self, param_dict, ignore_i2t=True, ignore_reid=False):
         for i in self.state_dict():
             if i in param_dict.keys():
                 if ignore_i2t:
                     if 'i2t_projector' in i:
+                        print("Ignores parameter: ", i)
+                        continue
+                if ignore_reid:
+                    if 'reid_projector' in i:
                         print("Ignores parameter: ", i)
                         continue
                 self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])

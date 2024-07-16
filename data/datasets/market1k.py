@@ -148,7 +148,7 @@ class MarketSketch(object):
             # assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, self.pid_begin + pid, camid, clurster_id))
+            dataset.append((img_path, self.pid_begin + pid, 0, 'rgb'))
         
         num_pids = len(pid_container)
         num_imgs = len(dataset)
@@ -214,7 +214,7 @@ class MarketSketch(object):
             # assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, self.pid_begin + pid, camid, 'rgb'))
+            dataset.append((img_path, self.pid_begin + pid, 0, 'rgb'))
 
         for sketch_img_path in sorted(sketch_img_paths):
             pid, style_id = sketch_pattern.search(sketch_img_path).groups()
@@ -231,8 +231,8 @@ class MarketSketch(object):
             if relabel: pid = pid2label[pid]
             style_id = styleid2label[style_id]
             
-            # camid viewid are set to 0
-            dataset.append((sketch_img_path, self.pid_begin + pid, 0, 'sketch'))
+            # style id is begin form 1, 0 stands for rgb data
+            dataset.append((sketch_img_path, self.pid_begin + pid, 1 + style_id, 'sketch'))
 
         num_pids = len(pid_container)
         num_styles = len(style_container)
@@ -308,7 +308,7 @@ class MarketSketch(object):
             # assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel: pid = pid2label[pid]
-            dataset.append((img_path, self.pid_begin + pid, camid, 'rgb'))
+            dataset.append((img_path, self.pid_begin + pid, 0, 'rgb'))
 
         for sketch_img_path in sorted(sketch_img_paths):
             pid, style_id = sketch_pattern.search(sketch_img_path).groups()
@@ -326,7 +326,7 @@ class MarketSketch(object):
             style_id = styleid2label[style_id]
             
             # camid viewid are set to 0
-            dataset.append((sketch_img_path, self.pid_begin + pid, 0, 'sketch'))
+            dataset.append((sketch_img_path, self.pid_begin + pid, 1 + style_id, 'sketch'))
 
         num_pids = len(pid_container)
         num_styles = len(style_container)
@@ -381,7 +381,7 @@ class MarketSketch(object):
             if relabel: pid = pid2label[pid]
             style_id = styleid2label[style_id]
             # camid viewid are set to 0
-            dataset.append((img_path, self.pid_begin + pid, 0, clurster_id))
+            dataset.append((img_path, self.pid_begin + pid, 1 + style_id, "sketch"))
         
         num_pids = len(pid_container)
         num_styles = len(style_container)
