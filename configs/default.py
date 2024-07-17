@@ -16,6 +16,7 @@ _C.DATA.DATASET = 'duke'
 _C.DATA.FORMAT_TAG = 'tensor'
 _C.DATA.TRAIN_FORMAT = 'base'  # 'base', 'novel'
 
+
 # Workers for dataloader
 _C.DATA.NUM_WORKERS = 4
 # Batch size for training
@@ -68,7 +69,7 @@ _C.MODEL.HIDDEN_DIM = 256
 
 _C.MODEL.ZC_DIM = 128
 _C.MODEL.ZS_DIM = 64
-
+_C.MODEL.STYLE_NUM = 0
 
 # Model path for resuming
 _C.MODEL.RESUME = ''
@@ -242,12 +243,19 @@ def update_config(config, args):
     if args.amp:
         config.TRAIN.AMP = args.amp
 
+    """
+    'duke': DukeMTMCreID,
+    # 'msmt17': MSMT17,
+    'market1k': MarketSketch,
+    'sysu_mm01': SYSU_MM01,
+    """
+
     datetime_today = str(datetime.date.today())
     # output folder
     if 'novel' in config.DATA.TRAIN_FORMAT:
         config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, 'novel', datetime_today, config.SAVED_NAME)
     elif 'reid' in args.train_stage:
-        config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid_'+config.LOSS.CLA_LOSS, datetime_today)
+        config.OUTPUT = os.path.join(config.MODEL.RESUME, 'reid_'+config.LOSS.CLA_LOSS, datetime_today, config.SAVED_NAME)
     else:
         config.OUTPUT = os.path.join(config.OUTPUT, config.DATA.DATASET, config.TAG, datetime_today, config.SAVED_NAME)
 

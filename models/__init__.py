@@ -87,27 +87,30 @@ def build_model(config, num_classes):
     else:
         if config.MODEL.USE_TWO_ENCODER:
             print("Initializing SinpleVAE model with 2 encoders")
-            model = SinpleVAE_2Encoder(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
+            model = SinpleVAE_2Encoder(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM, style_num=config.MODEL.STYLE_NUM)
         else:
             print("Initializing SinpleVAE model")
-            model = SinpleVAE(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
+            model = SinpleVAE(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM, style_num=config.MODEL.STYLE_NUM)
 
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     # print FLOPs
     from thop import profile
     input = torch.randn(64, config.MODEL.FEATURE_DIM)
     input = input.to('cuda')
+    domain_index = torch.randint(0, config.MODEL.STYLE_NUM, (64,))
+    domain_index = domain_index.to('cuda')
     model = model.to('cuda')
-    flops, params = profile(model, inputs=(input,))
+    flops, params = profile(model, inputs=(input, domain_index, ))
     print("FLOPs: {:.5f}G".format(flops/1000000000.0))
     print("Params: {:.5f}M".format(params/1000000.0))
     
     # Build classifier
     if config.LOSS.CLA_LOSS in ['crossentropy', 'crossentropylabelsmooth']:
-        if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
-            feature_dim = config.MODEL.ZC_DIM
-        else:
-            feature_dim = model.reid_output_dim
+        # if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+        #     feature_dim = config.MODEL.ZC_DIM
+        # else:
+        #     feature_dim = model.reid_output_dim
+        feature_dim = model.reid_output_dim
         classifier = Classifier(feature_dim=feature_dim, num_classes=num_classes)
         print("Initialized classifier with feature_dim: {}, num_classes: {}".format(model.reid_output_dim, num_classes))
         # classifier = MLPClassBlock(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)

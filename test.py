@@ -7,31 +7,42 @@ from tools.eval_metrics import evaluate
 from data import build_singe_test_loader
 from torch.cuda.amp import autocast
 from tools.drawer import tSNE_plot
-from utils import pair_plots, save_for_pairplot
+from utils import pair_plots, save_for_pairplot, idx2onehot
 from tools.utils import AverageMeter
+import json
 
 @torch.no_grad()
-def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classifier=None, latent_z='z_c'):
+def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classifier=None, latent_z='z_c', final_epoch=False):
     
-    features, pids, camids, cls_result, all_imgs, all_recons, all_domains_y = [], torch.tensor([]), torch.tensor([]), [], [], [], []
-    for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids, _) in enumerate(dataloader):
+    features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y = [], torch.tensor([]), torch.tensor([]), [], [], [], []
+    for batch_idx, (imgs, batch_pids, batch_styleids, batch_data_tags, batch_ima_path) in enumerate(dataloader):
         if not config.TRAIN.AMP:
             imgs = imgs.float()
 
+        if final_epoch:
+            # Initialize dictionaries to store class accuracy and image paths with classification status
+            class_acc_dict = {}  # Changed part
+            class_img_paths = {}  # Changed part
         # flip_imgs = torch.flip(imgs, [3])
         # imgs, flip_imgs = imgs.cuda(), flip_imgs.cuda()
         # batch_features = model(imgs)
         # batch_features_flip = model(flip_imgs)
         # batch_features += batch_features_flip
         # batch_features = F.normalize(batch_features, p=2, dim=1)
-
-        pretrained_feautres = imgs
-        pretrained_feautres = pretrained_feautres.cuda()
+        pretrained_features = imgs
+        pretrained_features = pretrained_features.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
         
-        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_feautres)
-        # x_pre, z_0, z_c, new_z, reconx, U, mu = model(pretrained_feautres)
-    
+        if config.DATA.DATASET == 'duke':
+            # expand 0 with the same shpe of batch_styleids
+            used_styles = torch.zeros_like(batch_styleids)
+        else:
+            used_styles = batch_styleids
+
+        used_styles = used_styles.cuda()
+        # style_onehot = idx2onehot(used_styles, config.MODEL.STYLE_NUM)
+        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_features, used_styles)
+
         if latent_z == 'x_pre':
             retrieval_feature = x_pre
         elif latent_z == 'z_c':
@@ -56,6 +67,24 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
             pid_tensor = batch_pids.cuda()
             assert preds.shape == pid_tensor.shape
             batch_acc.update((torch.sum(preds == pid_tensor.data)).float()/pid_tensor.size(0), pid_tensor.size(0))
+            
+            if final_epoch:
+                # Update class accuracy dictionary at the final epoch 
+                for i in range(len(pid_tensor)):  
+                    class_idx = pid_tensor[i].item()  
+                    is_correct = preds[i] == pid_tensor[i] 
+                    
+                    if class_idx not in class_acc_dict:  
+                        class_acc_dict[class_idx] = {'correct': 0, 'total': 0}  
+                    if class_idx not in class_img_paths:  
+                        class_img_paths[class_idx] = [] 
+                    
+                    class_acc_dict[class_idx]['total'] += 1 
+                    if is_correct:  
+                        class_acc_dict[class_idx]['correct'] += 1  
+                    
+                    class_img_paths[class_idx].append((batch_ima_path[i], is_correct.item())) 
+        
         else:
             print("Ploting U&y, cls cant be None!")
             assert 1==0
@@ -68,14 +97,14 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
         # features.append(retrieval_feature.cpu())
 
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
-        camids = torch.cat((camids, batch_camids.cpu()), dim=0)
+        styleids = torch.cat((styleids, batch_styleids.cpu()), dim=0)
         all_imgs.append(imgs.cpu())
         all_recons.append(reconx.cpu())
 
         cat_domain_y = torch.cat((U, outputs), dim=1)
         all_domains_y.append(cat_domain_y.cpu())
 
-        drawer.update((batach_features_norm, batch_pids, batch_centroids))
+        drawer.update((batach_features_norm, batch_pids, batch_data_tags))
         drawer.update_U(U)
         
 
@@ -83,10 +112,14 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
     all_imgs = torch.cat(all_imgs, 0)
     all_recons = torch.cat(all_recons, 0)
     all_domains_y = torch.cat(all_domains_y, 0)
+    
+    if final_epoch:
+        class_accuracy = {class_idx: acc['correct'] / acc['total'] for class_idx, acc in class_acc_dict.items()}  # Changed part
+        return features, pids, styleids, all_imgs, all_recons, all_domains_y, class_accuracy, class_img_paths
     # Assuming `classifier` is your model
     # for name, param in classifier.named_parameters():
     #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
-    return features, pids, camids, all_imgs, all_recons, all_domains_y
+    return features, pids, styleids, all_imgs, all_recons, all_domains_y
 
 
 """
@@ -101,18 +134,25 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
 
 def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader, classifier=None, text_embeddings=None, latent_z='z_c'):
     
-    features, features_cat, pids, camids, cls_result, all_imgs, all_recons = [], [], torch.tensor([]), torch.tensor([]), [], [], []
+    features, features_cat, pids, styleids, cls_result, all_imgs, all_recons = [], [], torch.tensor([]), torch.tensor([]), [], [], []
     
-    for batch_idx, (imgs, batch_pids, batch_camids, batch_centroids, _) in enumerate(dataloader):
+    for batch_idx, (imgs, batch_pids, batch_styleids, batch_data_tags, _) in enumerate(dataloader):
         if not config.TRAIN.AMP:
             imgs = imgs.float()
 
-        pretrained_feautres = imgs
-        pretrained_feautres = pretrained_feautres.cuda()
+        pretrained_features = imgs
+        pretrained_features = pretrained_features.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
         
-        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_feautres)
-        # x_pre, z_0, z_c, new_z, reconx, U, mu = model(pretrained_feautres)
+        if config.DATA.DATASET == 'duke':
+            # expand 0 with the same shpe of batch_styleids
+            used_styles = torch.zeros_like(batch_styleids)
+        else:
+            used_styles = batch_styleids
+        used_styles = used_styles.cuda()
+
+        # style_onehot = idx2onehot(used_styles, config.MODEL.STYLE_NUM)
+        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_features, used_styles)
         
         reid_feature = model.reid_projector(z_c)
         z_c_proj = model.i2t_projector(reid_feature)
@@ -146,11 +186,11 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
         features.append(batach_features_norm.cpu())
         features_cat.append(batch_catfeatures_norm.cpu())
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
-        camids = torch.cat((camids, batch_camids.cpu()), dim=0)
+        styleids = torch.cat((styleids, batch_styleids.cpu()), dim=0)
         all_imgs.append(imgs.cpu())
         all_recons.append(reconx.cpu())
 
-        drawer.update((batach_features_norm, batch_pids, batch_centroids))
+        drawer.update((batach_features_norm, batch_pids, batch_data_tags))
         drawer.update_U(U)
         
 
@@ -161,10 +201,11 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
     # Assuming `classifier` is your model
     # for name, param in classifier.named_parameters():
     #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
-    return features, features_cat, pids, camids, all_imgs, all_recons
+    
+    return features, features_cat, pids, styleids, all_imgs, all_recons
 
 
-def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, text_embeddings=None, latent_z='fuse_z'):
+def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False):
     since = time.time()
     model.eval()
     drawer = tSNE_plot(len(dataset.query), trainplot=False)
@@ -179,6 +220,9 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         print("==========Test with NCE LOSS=========")
         qf, qf_cat, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
         gf, gf_cat, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
+    elif final_epoch:
+        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z, final_epoch)
+        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z, final_epoch)
     else:
         qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z)
         gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y = extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z)
@@ -208,7 +252,10 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
 
     since = time.time()
     if config.DATA.DATASET != 'duke':
-        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
+        if final_epoch:
+            cmc, mAP, class_rank1_map_dict = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True, final_epoch=final_epoch)
+        else:
+            cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
     else:
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
     print("Results ---------------------------------------------------")
@@ -225,10 +272,12 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         distmat = distmat.numpy()
 
         since = time.time()
+        
         if config.DATA.DATASET == 'market1k':
             cmc_cat, mAP_cat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
         else:
             cmc_cat, mAP_cat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
+        
         print("CAT Results ---------------------------------------------------")
         print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc_cat[0], cmc_cat[4], cmc_cat[9], cmc_cat[19], mAP_cat))
         print("-----------------------------------------------------------")
@@ -246,6 +295,21 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, q_g_acc))
         
     if run != None:
+        if final_epoch:
+            # save q_class_acc_dict, q_class_path_dict and g_class_acc_dict, g_class_path_dict in a json file
+            data_to_save = {
+            "q_class_acc_dict": q_class_acc_dict,
+            "q_class_path_dict": q_class_path_dict,
+            "g_class_acc_dict": g_class_acc_dict,
+            "g_class_path_dict": g_class_path_dict,
+            'class_rank1_map_dict': class_rank1_map_dict
+            }
+            # Specify the filename
+            filename = "class_data.json"
+            # Open the file and save the combined dictionary
+            with open(filename, 'w') as f:
+                json.dump(data_to_save, f, indent=4)
+
         if latent_z == 'new_z':
             q_g_imgs = torch.cat((q_all_imgs, g_all_imgs), 0)
             q_g_recons = torch.cat((q_all_recons, g_all_recons), 0)

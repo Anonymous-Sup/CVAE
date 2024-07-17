@@ -35,7 +35,7 @@ class MLP(nn.Module):
     
 
 class SinpleVAE(nn.Module):
-    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, n_layers=0, leak_relu_slope=0.2, bn=False):
+    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, style_num=0, n_layers=0, leak_relu_slope=0.2, bn=False):
         super().__init__()
 
         self.ac_fn = 'leaky_relu'
@@ -54,6 +54,8 @@ class SinpleVAE(nn.Module):
         self.zs_dim = zs_dim
         self.z_dim = zc_dim + zs_dim
 
+        self.style_num = style_num
+
         self.encoder =  nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
@@ -69,9 +71,13 @@ class SinpleVAE(nn.Module):
         
 
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
-        self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
         
-        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
+        if self.style_num > 0:
+            self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 3, zs_dim))
+        else:
+            self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
+        
+        self.projection_type = 'Linear+CLS' # ori: 'Linear+CLS'
 
         if self.projection_type == 'Linear+CLS':
             i2t_input_dim = zc_dim
@@ -95,6 +101,9 @@ class SinpleVAE(nn.Module):
             self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim) # no bias term
 
         self.i2t_projector = nn.Linear(i2t_input_dim, 512)
+
+        if self.style_num > 0:
+            self.style_embedding = nn.Embedding(self.style_num, zs_dim)
         
         # self.encoder.apply(weights_init_kaiming)
         # self.decoder.apply(weights_init_kaiming)
@@ -131,7 +140,11 @@ class SinpleVAE(nn.Module):
 
     #     return z, z_s, z_c, mu, log_var
     
-    def encode(self, x):
+    def encode(self, x, style=None):
+        
+        if self.style_num > 0 and style is not None:
+            style_emb = self.style_embedding(style)
+
         h = self.encoder(x)
         mu, log_var = self.fc_mu(h), self.fc_logvar(h)
         
@@ -147,7 +160,10 @@ class SinpleVAE(nn.Module):
         z_s = z[:, z_idx: z_idx + self.zs_dim]
     
         gate, U = self.u_embedding(x)
-        
+
+        if self.style_num > 0 and style is not None:
+            U = torch.cat([U, style_emb], dim=1)
+            
         newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
 
         return h, z, z_c, z_s, newz_s, U, mu, log_var
@@ -156,12 +172,12 @@ class SinpleVAE(nn.Module):
         out = self.decoder(z)
         return out
 
-    def forward(self, x, track_bn=False):
+    def forward(self, x, style=None, track_bn=False):
 
         if self.training:
             self.track_bn_stats(track_bn)
         
-        h, z, z_c, z_s, newz_s, U, mu, log_var = self.encode(x)
+        h, z, z_c, z_s, newz_s, U, mu, log_var = self.encode(x, style)
 
         new_z = torch.cat([z_c, newz_s], dim=1)
 
@@ -189,7 +205,7 @@ class SinpleVAE(nn.Module):
                 self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
 
 class SinpleVAE_2Encoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, n_layers=0, leak_relu_slope=0.0, bn=False):
+    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, style_num=0, n_layers=0, leak_relu_slope=0.0, bn=False):
         super().__init__()
 
         self.ac_fn = 'leaky_relu'
@@ -207,6 +223,8 @@ class SinpleVAE_2Encoder(nn.Module):
         self.zc_dim = zc_dim
         self.zs_dim = zs_dim
         self.z_dim = zc_dim + zs_dim
+
+        self.style_num = style_num
 
         self.encoder_zc =  nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -231,9 +249,13 @@ class SinpleVAE_2Encoder(nn.Module):
         
 
         self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
-        self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
+        
+        if self.style_num > 0:
+            self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 3, zs_dim))
+        else:
+            self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
-        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
+        self.projection_type = 'Linear+CLS' # ori: 'Linear+CLS'
 
         if self.projection_type == 'Linear+CLS':
             i2t_input_dim = zc_dim
@@ -258,6 +280,9 @@ class SinpleVAE_2Encoder(nn.Module):
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
         self.i2t_projector = nn.Linear(i2t_input_dim, 512)
+
+        if self.style_num > 0:
+            self.style_embedding = nn.Embedding(self.style_num, zs_dim)
 
         # if use_orthogonality:
         #     self.orthog_linear_zc = nn.Linear(zc_dim, zc_dim)
@@ -296,7 +321,11 @@ class SinpleVAE_2Encoder(nn.Module):
 
     #     return z, z_s, z_c, mu, log_var
     
-    def encode(self, x):
+    def encode(self, x, style=None):
+        
+        if self.style_num>0 and style is not None:
+            style_emb = self.style_embedding(style)
+
         h_c = self.encoder_zc(x)
         mu_c, log_var_c = self.fc_mu_zc(h_c), self.fc_logvar_zc(h_c)
         
@@ -312,6 +341,9 @@ class SinpleVAE_2Encoder(nn.Module):
 
         gate, U = self.u_embedding(x)
         
+        if self.style_num > 0 and style is not None:
+            U = torch.cat([U, style_emb], dim=1)
+
         newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
 
         return h_c, mu_c, log_var_c, z_c, h_s, mu_s, log_var_s, z_s, U, newz_s
@@ -320,11 +352,11 @@ class SinpleVAE_2Encoder(nn.Module):
         out = self.decoder(z)
         return out
 
-    def forward(self, x, track_bn=False):
+    def forward(self, x, style=None, track_bn=False):
         if self.training:
             self.track_bn_stats(track_bn)
         
-        h_c, mu_c, log_var_c, z_c, h_s, mu_s, log_var_s, z_s, U, newz_s = self.encode(x)
+        h_c, mu_c, log_var_c, z_c, h_s, mu_s, log_var_s, z_s, U, newz_s = self.encode(x, style)
 
         x_pre = torch.cat([h_c, h_s], dim=1)
         mean = torch.cat([mu_c, mu_s], dim=1)

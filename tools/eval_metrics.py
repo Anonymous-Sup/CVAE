@@ -35,7 +35,7 @@ def compute_ap_cmc(index, good_index, junk_index):
     return ap, cmc
 
 
-def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=False):
+def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=False, final_epoch=False):
     num_q, num_g = distmat.shape
     index = np.argsort(distmat, axis=1) # from small to large
 
@@ -44,7 +44,16 @@ def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=False):
     CMC = np.zeros(len(g_pids))
     AP = 0
 
+    if final_epoch:
+        class_metrics = {} 
+
     for i in range(num_q):
+
+        if final_epoch:
+            query_pid = q_pids[i]
+            if query_pid not in class_metrics: 
+                class_metrics[query_pid] = {'num_r1': 0, 'AP': 0, 'count': 0} 
+        
         # groundtruth index
         query_index = np.argwhere(g_pids==q_pids[i])
         if nocam:
@@ -64,10 +73,18 @@ def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=False):
             junk_index = np.intersect1d(query_index, camera_index)
 
         ap_tmp, CMC_tmp = compute_ap_cmc(index[i], good_index, junk_index)
+        
         if CMC_tmp[0]==1:
             num_r1 += 1
+            if final_epoch:
+                class_metrics[query_pid]['num_r1'] += 1 
+
         CMC = CMC + CMC_tmp
         AP += ap_tmp
+
+        if final_epoch:
+            class_metrics[query_pid]['AP'] += ap_tmp  # Changed part
+            class_metrics[query_pid]['count'] += 1  # Changed part
 
     if num_no_gt > 0:
         print("{} query imgs do not have groundtruth.".format(num_no_gt))
@@ -75,4 +92,15 @@ def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=False):
     CMC = CMC / (num_q - num_no_gt)
     mAP = AP / (num_q - num_no_gt)
 
+
+    if final_epoch:
+        # Compute per-class rank@1 and mAP
+        class_rank1_map = {}
+        for class_idx, metrics in class_metrics.items():
+            class_rank1_map[class_idx] = { 
+            'rank1': metrics['num_r1'] / metrics['count'] if metrics['count'] > 0 else 0, 
+            'mAP': metrics['AP'] / metrics['count'] if metrics['count'] > 0 else 0 
+        } 
+        del class_metrics
+        return CMC, mAP, class_rank1_map
     return CMC, mAP

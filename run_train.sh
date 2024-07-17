@@ -5,31 +5,32 @@
 # --dataset duke \
 # --format_tag tensor \
 # --train_format base \
-# --train_stage klstage \
+# --train_stage klNocls_stage \
 # --gpu 0 \
-# --saved_name SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_CLS+Trip+Center \
+# --saved_name SimpleVAE+2E_7styles_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
 # --vae_type SinpleVAE \
 # --recon_loss mse \
 # --use_two_encoder \
 # --reid_loss crossentropy \
 # --gaussian MultivariateNormal \
-# > train_base_clipreid_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_CLS+Trip+Center.log 2>&1 & 
+# > train_base_clipreid_SimpleVAE+2E_7styles_128+64z_1e3+3_60+120_KLtotalZ_noCLS.log 2>&1 &
+
 
 # # ===========Base ReID Stage traning================
-# nohup python -u main.py --cfg ./configs/base_duke/clipreid_cvae_kl.yaml \
+# nohup python -u main.py --cfg ./configs/base_duke/clipreid_cvae_stage2.yaml \
 # --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
 # --dataset duke \
 # --format_tag tensor \
 # --train_format base \
 # --train_stage reidstage \
-# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae_base/2024-06-20/fp32_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
+# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae_base/2024-07-16/SimpleVAE_7styles_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
 # --gpu 0 \
-# --saved_name SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_s2_[MLP_relu_nobn+CLS]+Trip+Center \
+# --saved_name 2nd_SimpleVAE_7styles_128+64z_1e3_60+120_KLtotalZ_ce+trip+center \
 # --vae_type SinpleVAE \
 # --recon_loss mse \
 # --reid_loss crossentropy \
 # --gaussian MultivariateNormal \
-# > train_base_clipreid_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_s2_[MLP_relu_nobn+CLS]+Trip+Center.log 2>&1 & 
+# > train_base_clipreid_2nd_SimpleVAE_7styles_128+64z_1e3_60+120_KLtotalZ_ce+trip+center.log 2>&1 & 
 
 
 
@@ -70,17 +71,16 @@
 # --dataset market1k \
 # --format_tag tensor \
 # --train_format novel \
-# --train_stage reidstage \
-# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-04/Tuned_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
+# --train_stage klNocls_stage \
+# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_simplevae_base/2024-07-16/SimpleVAE+2E_7styles_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
 # --gpu 0 \
-# --saved_name tune_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_ceText+ce+trip+center \
+# --saved_name tune_SimpleVAE+2E_7styles_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
 # --vae_type SinpleVAE \
 # --recon_loss mse \
 # --use_two_encoder \
-# --use_NCE \
 # --reid_loss crossentropy \
 # --gaussian MultivariateNormal \
-# > tune_Sketch_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_ceText+ce+trip+center.log 2>&1 & 
+# > tune_Sketch_SimpleVAE+2E_7styles_128+64z_1e3+3_60+120_KLtotalZ_noCLS.log 2>&1 & 
 
 
 # for cls 
@@ -104,21 +104,21 @@
 # /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-06-22/BaseNCE_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_nocls
 
 # # ===========Novel ReID Stage traning================
-# nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
-# --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
-# --dataset market1k \
-# --format_tag tensor \
-# --train_format novel \
-# --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-04/Tuned_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_noCLS \
-# --train_stage reidstage \
-# --gpu 0 \
-# --saved_name 2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_MLP1280+CLS_ce+trip+center \
-# --vae_type SinpleVAE \
-# --recon_loss mse \
-# --use_two_encoder \
-# --reid_loss crossentropy \
-# --gaussian MultivariateNormal \
-# > 2ndstage_sketch_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_MLP1280+CLS_ce+trip+center.log 2>&1 & 
+nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
+--root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
+--dataset market1k \
+--format_tag tensor \
+--train_format novel \
+--resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-17/tune_SimpleVAE+2E_7styles_128+64z_1e3_60+120_KLtotalZ_noCLS \
+--train_stage reidstage \
+--gpu 0 \
+--saved_name 2ndstage_SimpleVAE+2E_7styles_128+64z_1e3_60+120_KLtotalZ_s2_L128+CLS_ce+trip+center \
+--vae_type SinpleVAE \
+--recon_loss mse \
+--use_two_encoder \
+--reid_loss crossentropy \
+--gaussian MultivariateNormal \
+> 2ndstage_sketch_SimpleVAE+2E_7styles_128+64z_1e3_60+120_KLtotalZ_s2_L128+CLS_ce+trip+center.log 2>&1 & 
 
 
 # # ===========Novel SYSUMM01 KL Stage traning================
@@ -140,21 +140,21 @@
 
 
 # # # ===========Novel SYSUMM01 ReID Stage traning================
-nohup python -u main.py --cfg ./configs/tune_sysu/clipreid_cvae_kl.yaml \
---root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
---dataset sysu_mm01 \
---format_tag tensor \
---train_format novel \
---resume  /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/sysu_mm01/clipreid_simplevae_tune/novel/2024-07-12/tune_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_nocls \
---train_stage reidstage \
---gpu 0 \
---saved_name 2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center \
---vae_type SinpleVAE \
---recon_loss mse \
---use_two_encoder \
---reid_loss crossentropy \
---gaussian MultivariateNormal \
-> 2ndstage_sysumm01_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center.log 2>&1 & 
+# nohup python -u main.py --cfg ./configs/tune_sysu/clipreid_cvae_kl.yaml \
+# --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
+# --dataset sysu_mm01 \
+# --format_tag tensor \
+# --train_format novel \
+# --resume  /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/sysu_mm01/clipreid_simplevae_tune/novel/2024-07-12/tune_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_nocls \
+# --train_stage reidstage \
+# --gpu 0 \
+# --saved_name 2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center \
+# --vae_type SinpleVAE \
+# --recon_loss mse \
+# --use_two_encoder \
+# --reid_loss crossentropy \
+# --gaussian MultivariateNormal \
+# > 2ndstage_sysumm01_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center.log 2>&1 & 
 
 
 

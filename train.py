@@ -7,7 +7,7 @@ from torch.distributions import MultivariateNormal
 from tools.utils import AverageMeter
 import torch.nn.functional as F
 from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, plot_scatter_1D, plot_scatter_2D
-from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot_epoch_Zdim
+from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot_epoch_Zdim, idx2onehot
 from tools.drawer import tSNE_plot
 
 
@@ -54,13 +54,13 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
     end = time.time()
     # run["train/epoch"].append(epoch)
 
-    for batch_idx, (imgs_tensor, pids, camids, clusterids, _) in enumerate(trainloader):
+    for batch_idx, (imgs_tensor, pids, style_ids, data_tag, _) in enumerate(trainloader):
         iteration_num += 1
         # convert fp16 tensor to fp32            
         if not config.TRAIN.AMP:
             imgs_tensor = imgs_tensor.float()
 
-        imgs_tensor, pids, camids = imgs_tensor.cuda(), pids.cuda(), camids.cuda()
+        imgs_tensor, pids, style_ids = imgs_tensor.cuda(), pids.cuda(), style_ids.cuda()
 
         run["train/batch/load_time"].append(time.time() - end)
 
@@ -70,10 +70,16 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # imgs_tensor = model.norm(imgs_tensor)
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
         # x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
-        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor)
+
+        if config.DATA.DATASET == 'duke':
+            style_ids = torch.zeros_like(style_ids)
+            style_ids = style_ids.cuda()
+
+        # styles_onehot =  idx2onehot(style_ids, config.MODEL.STYLE_NUM)
+        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor, style_ids)
 
         if 'novel' in config.DATA.TRAIN_FORMAT and config.MODEL.TRAIN_STAGE != 'reidstage':
-            drawer.update((z_c, pids, clusterids))
+            drawer.update((z_c, pids, data_tag))
             drawer.update_U(domian_feature)
 
         z_c_reid = model.reid_projector(z_c)
@@ -268,13 +274,13 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
     end = time.time()
     # run["train/epoch"].append(epoch)
 
-    for batch_idx, (imgs_tensor, pids, camids, clusterids, _) in enumerate(trainloader):
+    for batch_idx, (imgs_tensor, pids, style_ids, data_tag, _) in enumerate(trainloader):
         iteration_num += 1
         # convert fp16 tensor to fp32            
         if not config.TRAIN.AMP:
             imgs_tensor = imgs_tensor.float()
 
-        imgs_tensor, pids, camids = imgs_tensor.cuda(), pids.cuda(), camids.cuda()
+        imgs_tensor, pids, style_ids = imgs_tensor.cuda(), pids.cuda(), style_ids.cuda()
 
         run["train/batch/load_time"].append(time.time() - end)
 
@@ -284,7 +290,13 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         # imgs_tensor = model.norm(imgs_tensor)
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
         # x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
-        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor)
+
+        if config.DATA.DATASET == 'duke':
+            style_ids = torch.zeros_like(style_ids)
+            style_ids = style_ids.cuda()
+        # styles_onehot = idx2onehot(style_ids, config.MODEL.STYLE_NUM)
+        
+        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor, style_ids)
         
         with torch.no_grad():
             text_feature = text_feature_list[pids]
@@ -303,7 +315,7 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         i2t_acc_meter.update(acc, 1)
 
         if 'novel' in config.DATA.TRAIN_FORMAT and config.MODEL.TRAIN_STAGE != 'reidstage':
-            drawer.update((z_c, pids, clusterids))
+            drawer.update((z_c, pids, data_tag))
             drawer.update_U(domian_feature)
         
 
@@ -316,7 +328,6 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         cls_loss_i2t = criterion_cla(logits, pids)
 
         cls_loss = cls_loss_ce + cls_loss_i2t
-
 
         base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
         prior_p = base_dist.log_prob(z)
@@ -346,8 +357,8 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
             # loss = loss + center_loss
 
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
-            # loss = cls_loss
-            loss = cls_loss_i2t
+            loss = cls_loss
+            # loss = cls_loss_i2t
             loss = loss + pair_loss
             loss = loss + center_loss
         else:

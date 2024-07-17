@@ -45,7 +45,7 @@ class ImageDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, index):
-        img_path, pid, camid, cluster_id = self.dataset[index]
+        img_path, pid, style_id, data_flag = self.dataset[index]
         if self.tag == 'tensor':
             img = read_tensor(img_path)
             if len(img.size()) == 2:
@@ -54,4 +54,4 @@ class ImageDataset(Dataset):
             img = read_image(img_path)
             if self.transform is not None:
                 img = self.transform(img)
-        return img, pid, camid, cluster_id, img_path
+        return img, pid, style_id, data_flag, img_path
