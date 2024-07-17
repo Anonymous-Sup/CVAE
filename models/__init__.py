@@ -87,20 +87,18 @@ def build_model(config, num_classes):
     else:
         if config.MODEL.USE_TWO_ENCODER:
             print("Initializing SinpleVAE model with 2 encoders")
-            model = SinpleVAE_2Encoder(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM, style_num=config.MODEL.STYLE_NUM)
+            model = SinpleVAE_2Encoder(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
         else:
             print("Initializing SinpleVAE model")
-            model = SinpleVAE(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM, style_num=config.MODEL.STYLE_NUM)
+            model = SinpleVAE(config.MODEL.FEATURE_DIM, config.MODEL.HIDDEN_DIM, config.MODEL.ZC_DIM, config.MODEL.ZS_DIM)
 
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     # print FLOPs
     from thop import profile
     input = torch.randn(64, config.MODEL.FEATURE_DIM)
     input = input.to('cuda')
-    domain_index = torch.randint(0, config.MODEL.STYLE_NUM, (64,))
-    domain_index = domain_index.to('cuda')
     model = model.to('cuda')
-    flops, params = profile(model, inputs=(input, domain_index, ))
+    flops, params = profile(model, inputs=(input, ))
     print("FLOPs: {:.5f}G".format(flops/1000000000.0))
     print("Params: {:.5f}M".format(params/1000000.0))
     
@@ -118,8 +116,10 @@ def build_model(config, num_classes):
     else:
         classifier = NormalizedClassifier(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
     
+    domian_classifier = Classifier(feature_dim=config.MODEL.ZS_DIM, num_classes=7)
+    
     print("Classifier size: {:.5f}M".format(sum(p.numel() for p in classifier.parameters())/1000000.0))
 
-    return model, classifier
+    return model, classifier, domian_classifier
 
 

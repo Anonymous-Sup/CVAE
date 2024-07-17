@@ -12,7 +12,7 @@ from tools.utils import AverageMeter
 import json
 
 @torch.no_grad()
-def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classifier=None, latent_z='z_c', final_epoch=False):
+def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classifier=None, domain_classifier=None, latent_z='z_c', final_epoch=False):
     
     features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y = [], torch.tensor([]), torch.tensor([]), [], [], [], []
     for batch_idx, (imgs, batch_pids, batch_styleids, batch_data_tags, batch_ima_path) in enumerate(dataloader):
@@ -33,15 +33,7 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
         pretrained_features = pretrained_features.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
         
-        if config.DATA.DATASET == 'duke':
-            # expand 0 with the same shpe of batch_styleids
-            used_styles = torch.zeros_like(batch_styleids)
-        else:
-            used_styles = batch_styleids
-
-        used_styles = used_styles.cuda()
-        # style_onehot = idx2onehot(used_styles, config.MODEL.STYLE_NUM)
-        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_features, used_styles)
+        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_features)
 
         if latent_z == 'x_pre':
             retrieval_feature = x_pre
@@ -57,7 +49,14 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
         elif latent_z == 'mu':
             retrieval_feature = mu
 
-        if classifier != None:
+
+        if config.DATA.TRAIN_FORMAT == 'novel' and config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+            outputs = domain_classifier(fusez_s)
+            _, preds = torch.max(outputs.data, 1)
+            style_id_tensor = batch_styleids.cuda()
+            batch_acc.update((torch.sum(preds == style_id_tensor.data)).float()/style_id_tensor.size(0), style_id_tensor.size(0))
+
+        elif classifier != None:
             if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
                 reid_feature = model.reid_projector(z_c)
             else:
@@ -89,6 +88,7 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
             print("Ploting U&y, cls cant be None!")
             assert 1==0
             outputs = None
+
 
         # retrieval_feature = torch.cat((retrieval_feature, outputs), dim=-1)
         batach_features_norm = F.normalize(retrieval_feature, p=2, dim=1)
@@ -143,16 +143,8 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
         pretrained_features = imgs
         pretrained_features = pretrained_features.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
-        
-        if config.DATA.DATASET == 'duke':
-            # expand 0 with the same shpe of batch_styleids
-            used_styles = torch.zeros_like(batch_styleids)
-        else:
-            used_styles = batch_styleids
-        used_styles = used_styles.cuda()
-
-        # style_onehot = idx2onehot(used_styles, config.MODEL.STYLE_NUM)
-        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_features, used_styles)
+    
+        x_pre, mu, log_var, z_c, z_s, U, fusez_s, new_z, reconx = model(pretrained_features)
         
         reid_feature = model.reid_projector(z_c)
         z_c_proj = model.i2t_projector(reid_feature)
@@ -205,13 +197,15 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
     return features, features_cat, pids, styleids, all_imgs, all_recons
 
 
-def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False):
+def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, domain_classifier=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False):
     since = time.time()
     model.eval()
     drawer = tSNE_plot(len(dataset.query), trainplot=False)
     drawer.reset()
     if classifer != None:
         classifer.eval()
+    if domain_classifier!= None:
+        domain_classifier.eval()
     # Extract features 
     print("==========Test with latent_z: {} =========".format(latent_z))
     q_batch_acc = AverageMeter()
@@ -224,8 +218,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z, final_epoch)
         gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z, final_epoch)
     else:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y = extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z)
+        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, domain_classifier, latent_z)
+        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y = extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, domain_classifier, latent_z)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))

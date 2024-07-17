@@ -50,7 +50,7 @@ def build_losses(config, num_classes):
 
     NCE_loss = SupConLoss("cuda")
     
-    criterion_center = CenterLoss(num_classes=num_classes, feat_dim=1280)
+    criterion_center = CenterLoss(num_classes=num_classes, feat_dim=128)
     
 
     return criterion_cla, criterion_pair, criterion_kl, criterion_recon, NCE_loss, criterion_center

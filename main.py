@@ -96,7 +96,7 @@ def main(config):
     trainloader, queryloader, galleryloader, dataset = build_dataloader(config)
 
     # Build model 
-    model, classifier = build_model(config, dataset.num_train_pids)
+    model, classifier, domain_classifier = build_model(config, dataset.num_train_pids)
 
     # Build loss
     criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_nce, criterion_circle = build_losses(config, dataset.num_train_pids)
@@ -114,7 +114,8 @@ def main(config):
             parameters.append(param)
 
 
-    cla_parameters = list(classifier.parameters())
+    cla_parameters = list(classifier.parameters()) 
+    domain_cls_parameters = list(domain_classifier.parameters())
 
     if config.DATA.TRAIN_FORMAT == 'novel':
         alpha_lr = 3.0   # base lr 1e-4, classifier lr 1e-3
@@ -158,6 +159,7 @@ def main(config):
         elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
             for cls_param in cla_parameters:
                 cls_param.requires_grad = False
+            parameters = parameters + domain_cls_parameters
             optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
                                 weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
             optimizer_center = None
@@ -260,6 +262,7 @@ def main(config):
     model = model.cuda()
     # flows_model = flows_model.cuda()
     classifier = classifier.cuda()
+    domain_classifier = domain_classifier.cuda()
 
     if config.LOSS.USE_NCE:
         
@@ -291,8 +294,8 @@ def main(config):
         with torch.no_grad():
             print("=> Test pretarined feature form VLP model")
             test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='new_z')
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='z_c')
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, domain_classifier, text_embeddings, latent_z='new_z')
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, domain_classifier, text_embeddings, latent_z='z_c')
 
         if config.EVAL_MODE:
             return
@@ -305,14 +308,14 @@ def main(config):
     for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
         if config.TRAIN.AMP:
-            iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
+            iteration_num = train_cvae(run, config, model, classifier, domain_classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
               optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler)
         else:
             if config.LOSS.USE_NCE:
-                iteration_num = train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
+                iteration_num = train_cvae_nce(run, config, model, classifier, domain_classifier, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
                 optimizer, optimizer_center, trainloader, epoch, iteration_num, text_embeddings)
             else:
-                iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
+                iteration_num = train_cvae(run, config, model, classifier, domain_classifier, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
                 optimizer, optimizer_center, trainloader, epoch, iteration_num)
             # for name, param in classifier.named_parameters():
             #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
@@ -323,8 +326,8 @@ def main(config):
             
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                rank, mAP, acc_total = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='z_c')
-                test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='new_z')
+                rank, mAP, acc_total = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, domain_classifier, text_embeddings, latent_z='z_c')
+                test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, domain_classifier, text_embeddings, latent_z='new_z')
                 # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
                 # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='mu')
                 
@@ -349,6 +352,7 @@ def main(config):
                 'epoch': epoch,
                 'model': model.state_dict(),
                 'classifier': classifier.state_dict(),
+                'domian_classifier': domain_classifier.state_dict(),
                 'cmc': best_cmc,
                 'acc': best_acc,
                 'mAP': best_mAP,

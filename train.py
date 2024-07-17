@@ -11,13 +11,14 @@ from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot
 from tools.drawer import tSNE_plot
 
 
-def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_center,
+def train_cvae(run, config, model, classifier, domain_classifier, criterion_cla, criterion_pair, criterion_recon, criterion_center,
               optimizer, optimizer_center, trainloader, epoch, iteration_num):
     
     if config.DATA.TRAIN_FORMAT == 'novel':
         if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
             model.train()
             model.decoder.eval()
+            domain_classifier.train()
             drawer = tSNE_plot(num_query=None, trainplot=True)
             drawer.reset()
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
@@ -71,12 +72,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
         # x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
 
-        if config.DATA.DATASET == 'duke':
-            style_ids = torch.zeros_like(style_ids)
-            style_ids = style_ids.cuda()
-
-        # styles_onehot =  idx2onehot(style_ids, config.MODEL.STYLE_NUM)
-        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor, style_ids)
+        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor)
 
         if 'novel' in config.DATA.TRAIN_FORMAT and config.MODEL.TRAIN_STAGE != 'reidstage':
             drawer.update((z_c, pids, data_tag))
@@ -86,10 +82,15 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         pair_loss = criterion_pair(z_c_reid, pids)
         center_loss = criterion_center(z_c_reid, pids)
 
-        outputs = classifier(z_c_reid)
-        # outputs = classifier(z_c)
-        _, preds = torch.max(outputs.data, 1)
-        cls_loss = criterion_cla(outputs, pids)
+        if config.DATA.TRAIN_FORMAT == 'novel' and config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+            outputs = domain_classifier(fusez_s)
+            _, preds = torch.max(outputs.data, 1)
+            cls_loss = criterion_cla(outputs, style_ids)
+        else:
+            outputs = classifier(z_c_reid)
+            # outputs = classifier(z_c)
+            _, preds = torch.max(outputs.data, 1)
+            cls_loss = criterion_cla(outputs, pids)
 
         base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
         prior_p = base_dist.log_prob(z)
@@ -113,6 +114,7 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
             loss = recon_loss
             loss = loss + beta * kl_loss
+            loss = loss + cls_loss
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             loss = cls_loss
             loss = loss + pair_loss
@@ -290,13 +292,8 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         # imgs_tensor = model.norm(imgs_tensor)
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
         # x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
-
-        if config.DATA.DATASET == 'duke':
-            style_ids = torch.zeros_like(style_ids)
-            style_ids = style_ids.cuda()
-        # styles_onehot = idx2onehot(style_ids, config.MODEL.STYLE_NUM)
         
-        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor, style_ids)
+        x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor)
         
         with torch.no_grad():
             text_feature = text_feature_list[pids]
