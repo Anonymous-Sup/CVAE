@@ -77,7 +77,7 @@ class SinpleVAE(nn.Module):
         else:
             self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
         
-        self.projection_type = 'Linear+CLS' # ori: 'Linear+CLS'
+        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
 
         if self.projection_type == 'Linear+CLS':
             i2t_input_dim = zc_dim
@@ -255,7 +255,7 @@ class SinpleVAE_2Encoder(nn.Module):
         else:
             self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
-        self.projection_type = 'Linear+CLS' # ori: 'Linear+CLS'
+        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
 
         if self.projection_type == 'Linear+CLS':
             i2t_input_dim = zc_dim
