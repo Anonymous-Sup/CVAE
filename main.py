@@ -107,11 +107,27 @@ def main(config):
     # select parameters beside the FLOWs parameters in the model
     parameters = []
 
+    # for name, param in model.named_parameters():
+    #     if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
+    #         param.requires_grad = False
+    #     else:
+    #         parameters.append(param)
+
+
     for name, param in model.named_parameters():
-        if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
-            param.requires_grad = False
+        if config.DATA.TRAIN_FORMAT == 'novel':
+            if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+                if 'reid_projector' in name or 'decoder' in name:
+                    param.requires_grad = False
+                else:
+                    parameters.append(param)
         else:
-            parameters.append(param)
+            if config.MODEL.TRAIN_STAGE != 'reidstage':
+                parameters.append(param)
+
+
+
+
 
 
     cla_parameters = list(classifier.parameters())
@@ -150,7 +166,12 @@ def main(config):
                         reid_parameters.append(param)
                     else:
                         param.requires_grad = False
-                all_tuned_parameters = cla_parameters + reid_parameters
+                
+                if config.DATA.TRAIN_FORMAT == 'novel':
+                    all_tuned_parameters = cla_parameters + reid_parameters
+                elif config.DATA.TRAIN_FORMAT == 'base':
+                    all_tuned_parameters = reid_parameters + cla_parameters
+
                 optimizer = optim.Adam(all_tuned_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
                             weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
                 optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
@@ -180,14 +201,24 @@ def main(config):
     else:
         raise KeyError("Unknown optimizer: {}".format(config.TRAIN.OPTIMIZER.NAME))
     
+    # Custom warm-up function
+    def warmup_lr_lambda(current_epoch, warmup_epochs, regualr_scheduler):
+        if current_epoch < warmup_epochs:
+            return float(current_epoch+1) / float(warmup_epochs)
+        else:
+            return regualr_scheduler.get_last_lr()[0] / regualr_scheduler.base_lrs[0]
 
     # Build lr_scheduler
     if config.TRAIN.LR_SCHEDULER.NAME != 'None':
-        scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
+        # main scheduler
+        main_scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
                                             gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
         if optimizer_center is not None:
             scheduler_center = lr_scheduler.MultiStepLR(optimizer_center, milestones=config.TRAIN.LR_SCHEDULER.STEPSIZE, 
                                             gamma=config.TRAIN.LR_SCHEDULER.DECAY_RATE)
+        warmup_epochs = 5
+        # Combined scheduler using LambdaLR
+        scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: warmup_lr_lambda(epoch, warmup_epochs, main_scheduler))
         
     if config.TRAIN.AMP:
         scaler = GradScaler()
@@ -200,9 +231,9 @@ def main(config):
 
     if config.EVAL_MODE:
         print("Overwrite the checkpoint for evaluation")
-        print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+        print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
         checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
-        model.load_param(checkpoint['model'], ignore_i2t=False)
+        model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
         # flows_model.load_state_dict(checkpoint['flows_model'])
         classifier.load_state_dict(checkpoint['classifier'])
         start_epoch = checkpoint['epoch']
@@ -212,10 +243,10 @@ def main(config):
         if config.DATA.TRAIN_FORMAT == "novel":
             if config.MODEL.TRAIN_STAGE != 'reidstage':
                 print("=> Start training the model on Novel data")
-                print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+                print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
                 # ignore_i2t means that the i2t_projector is not loaded
-                model.load_param(checkpoint['model'], ignore_i2t=True)
+                model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 # flows_model.load_state_dict(checkpoint['flows_model'])
                 del checkpoint
@@ -226,27 +257,27 @@ def main(config):
                 mkdir_if_missing(output_file)
                 shutil.copy(config.MODEL.RESUME + '/best_model.pth.tar', output_file)
             else:
-                print("=> Start Training Classifier Only")
-                print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+                print("=> Start Training ReID projector and Classifier")
+                print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
-                model.load_param(checkpoint['model'], ignore_i2t=True, ignore_reid=True)
+                model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 del checkpoint
 
         elif config.DATA.TRAIN_FORMAT == "novel_train_from_scratch":
             print("=> Start training the model on Novel data from scratch")
-        else:
+        else: # base data
             if config.MODEL.TRAIN_STAGE == 'reidstage':
                 print("=> Start Training REID model")
-                print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+                print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
-                model.load_param(checkpoint['model'], ignore_i2t=True)
+                model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 del checkpoint
                 # flows_model.load_state_dict(checkpoint['flows_model'])
             else:
                 if config.MODEL.RESUME:
-                    print("Loading checkpoint from '{}.{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
+                    print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                     checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
                     model.load_param(checkpoint['model'])
                     # flows_model.load_state_dict(checkpoint['flows_model'])
@@ -292,7 +323,11 @@ def main(config):
             print("=> Test pretarined feature form VLP model")
             test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
             test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='new_z')
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='z_c')
+            if config.EVAL_MODE:
+                final_epoch = True
+            else:
+                final_epoch = False
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='z_c', final_epoch=False)
 
         if config.EVAL_MODE:
             return
@@ -358,11 +393,18 @@ def main(config):
             }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
         
         
+        # Function to get the current learning rate
+        def get_current_lr(optimizer):
+            for param_group in optimizer.param_groups:
+                return param_group['lr']
+        
         if config.TRAIN.LR_SCHEDULER.NAME != 'None':
+            run['train/lr'].append(get_current_lr(optimizer))
+            main_scheduler.step()
             scheduler.step()
             if optimizer_center is not None:
                 scheduler_center.step()
-            run['train/lr'].append(scheduler.get_last_lr()[0])
+            
             
     
 

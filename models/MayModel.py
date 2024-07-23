@@ -32,7 +32,46 @@ class MLP(nn.Module):
     def forward(self, x):
         x = self.MLP(x)
         return x
+
+class TransformerReIDProjection(nn.Module):
+    def __init__(self, input_dim, projection_dim=1280, num_heads=8, num_layers=6, dropout=0.1):
+        super(TransformerReIDProjection, self).__init__()
+        
+        # Linear layer to project z_c to the projection dimension
+        self.fc_input = nn.Linear(input_dim, projection_dim)
+
+        # Positional encoding
+        # self.positional_encoding = nn.Parameter(torch.randn(1, projection_dim))
+
+        # Transformer encoder layers
+        encoder_layer = nn.TransformerEncoderLayer(d_model=projection_dim, nhead=num_heads, dropout=dropout)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        
+        # Final projection layer
+        self.fc_proj = nn.Linear(projection_dim, projection_dim)
+        self.bn_proj = nn.BatchNorm1d(projection_dim)
     
+    def forward(self, x):
+        # Project input to projection dimension
+        x = self.fc_input(x)
+
+        # Add positional encoding to input
+        # x = x + self.positional_encoding
+        
+         # Transformer encoding
+        x = x.unsqueeze(1).permute(1, 0, 2)  # Transformer expects input shape (seq_len, batch, dim)
+        x = self.transformer_encoder(x)
+        x = x.squeeze(0)  # Revert back to shape (batch, dim)
+        
+        # Final projection
+        x = self.fc_proj(x)
+        x_bn = self.bn_proj(x)
+        x_bn = F.relu(x_bn)
+        
+        if self.training:
+            return x_bn
+        else:
+            return x
 
 class SinpleVAE(nn.Module):
     def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, style_num=0, n_layers=0, leak_relu_slope=0.2, bn=False):
@@ -99,6 +138,12 @@ class SinpleVAE(nn.Module):
             i2t_input_dim = 768
             self.reid_output_dim = 768
             self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim) # no bias term
+        elif self.projection_type == 'Transforer1280+CLS':
+            i2t_input_dim = 1280
+            self.reid_output_dim = 1280
+            self.reid_projector = TransformerReIDProjection(zc_dim, self.reid_output_dim)
+        else:
+            raise ValueError("Invalid projection type {}", self.projection_type)
 
         self.i2t_projector = nn.Linear(i2t_input_dim, 512)
 
@@ -202,6 +247,9 @@ class SinpleVAE(nn.Module):
                     if 'reid_projector' in i:
                         print("Ignores parameter: ", i)
                         continue
+                elif 'reid_projector' in i:
+                    print("Loading parameter: ", i)
+    
                 self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
 
 class SinpleVAE_2Encoder(nn.Module):
@@ -277,8 +325,13 @@ class SinpleVAE_2Encoder(nn.Module):
             i2t_input_dim = 768
             self.reid_output_dim = 768
             self.reid_projector = MLP(zc_dim, 256, self.reid_output_dim) # no bias term
+        elif self.projection_type == 'Transforer1280+CLS':
+            i2t_input_dim = 1280
+            self.reid_output_dim = 1280
+            self.reid_projector = TransformerReIDProjection(zc_dim, self.reid_output_dim)
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
+        
         self.i2t_projector = nn.Linear(i2t_input_dim, 512)
 
         if self.style_num > 0:
@@ -385,4 +438,6 @@ class SinpleVAE_2Encoder(nn.Module):
                     if 'reid_projector' in i:
                         print("Ignores parameter: ", i)
                         continue
+                elif 'reid_projector' in i:
+                    print("Loading parameter: ", i)
                 self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])

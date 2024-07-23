@@ -95,12 +95,17 @@ def build_model(config, num_classes):
     print("Model size: {:.5f}M".format(sum(p.numel() for p in model.parameters())/1000000.0))
     # print FLOPs
     from thop import profile
+
+    model = model.to('cuda')
+
     input = torch.randn(64, config.MODEL.FEATURE_DIM)
     input = input.to('cuda')
-    domain_index = torch.randint(0, config.MODEL.STYLE_NUM, (64,))
-    domain_index = domain_index.to('cuda')
-    model = model.to('cuda')
-    flops, params = profile(model, inputs=(input, domain_index, ))
+    if config.MODEL.STYLE_NUM != 0:
+        domain_index = torch.randint(0, config.MODEL.STYLE_NUM, (64,))
+        domain_index = domain_index.to('cuda')
+        flops, params = profile(model, inputs=(input, domain_index, ))
+    else:
+        flops, params = profile(model, inputs=(input, ))
     print("FLOPs: {:.5f}G".format(flops/1000000000.0))
     print("Params: {:.5f}M".format(params/1000000.0))
     

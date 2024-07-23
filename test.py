@@ -10,19 +10,22 @@ from tools.drawer import tSNE_plot
 from utils import pair_plots, save_for_pairplot, idx2onehot
 from tools.utils import AverageMeter
 import json
+import scipy.io
+import os
 
 @torch.no_grad()
 def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classifier=None, latent_z='z_c', final_epoch=False):
     
-    features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y = [], torch.tensor([]), torch.tensor([]), [], [], [], []
+    features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths = [], torch.tensor([]), torch.tensor([]), [], [], [], [], []
+    
+    if final_epoch:
+        # Initialize dictionaries to store class accuracy and image paths with classification status
+        class_acc_dict = {}  # Changed part
+        class_img_paths = {}  # Changed part
+    
     for batch_idx, (imgs, batch_pids, batch_styleids, batch_data_tags, batch_ima_path) in enumerate(dataloader):
         if not config.TRAIN.AMP:
             imgs = imgs.float()
-
-        if final_epoch:
-            # Initialize dictionaries to store class accuracy and image paths with classification status
-            class_acc_dict = {}  # Changed part
-            class_img_paths = {}  # Changed part
         # flip_imgs = torch.flip(imgs, [3])
         # imgs, flip_imgs = imgs.cuda(), flip_imgs.cuda()
         # batch_features = model(imgs)
@@ -103,6 +106,7 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
 
         cat_domain_y = torch.cat((U, outputs), dim=1)
         all_domains_y.append(cat_domain_y.cpu())
+        all_img_paths += batch_ima_path
 
         drawer.update((batach_features_norm, batch_pids, batch_data_tags))
         drawer.update_U(U)
@@ -115,11 +119,11 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
     
     if final_epoch:
         class_accuracy = {class_idx: acc['correct'] / acc['total'] for class_idx, acc in class_acc_dict.items()}  # Changed part
-        return features, pids, styleids, all_imgs, all_recons, all_domains_y, class_accuracy, class_img_paths
+        return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, class_accuracy, class_img_paths
     # Assuming `classifier` is your model
     # for name, param in classifier.named_parameters():
     #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
-    return features, pids, styleids, all_imgs, all_recons, all_domains_y
+    return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths
 
 
 """
@@ -204,6 +208,14 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
     
     return features, features_cat, pids, styleids, all_imgs, all_recons
 
+def convert_keys_to_string(input_dict):
+    """
+    Recursively converts dictionary keys to strings.
+    """
+    if not isinstance(input_dict, dict):
+        return input_dict
+    return {str(key): convert_keys_to_string(value) for key, value in input_dict.items()}
+
 
 def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False):
     since = time.time()
@@ -221,11 +233,11 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         qf, qf_cat, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
         gf, gf_cat, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
     elif final_epoch:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z, final_epoch)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z, final_epoch)
+        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z, final_epoch)
+        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z, final_epoch)
     else:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y = extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z)
+        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z)
+        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path = extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -253,11 +265,11 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     since = time.time()
     if config.DATA.DATASET != 'duke':
         if final_epoch:
-            cmc, mAP, class_rank1_map_dict = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True, final_epoch=final_epoch)
+            cmc, mAP, class_rank1_map_dict, all_results = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True, final_epoch=final_epoch)
         else:
-            cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
+            cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True)
     else:
-        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
+        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path)
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
     print("-----------------------------------------------------------")
@@ -296,6 +308,10 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         
     if run != None:
         if final_epoch:
+            mat_save_path = os.path.join(config.MODEL.RESUME, 'visual_results')
+            if not os.path.exists(mat_save_path):
+                os.makedirs(mat_save_path)
+
             # save q_class_acc_dict, q_class_path_dict and g_class_acc_dict, g_class_path_dict in a json file
             data_to_save = {
             "q_class_acc_dict": q_class_acc_dict,
@@ -304,11 +320,27 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
             "g_class_path_dict": g_class_path_dict,
             'class_rank1_map_dict': class_rank1_map_dict
             }
+
+            data_to_save = convert_keys_to_string(data_to_save)
             # Specify the filename
-            filename = "class_data.json"
+            filename = os.path.join(mat_save_path, "class_data.json")
             # Open the file and save the combined dictionary
             with open(filename, 'w') as f:
                 json.dump(data_to_save, f, indent=4)
+
+            
+            # Save to Matlab for check
+            gf, qf = gf.cpu().numpy(), qf.cpu().numpy()
+            result = {'gallery_f':gf,'gallery_label':g_pids,'gallery_cam':g_camids, 'gallery_name': g_all_img_path ,'query_f':qf,'query_label':q_pids,'query_cam':q_camids, 'query_name': q_all_img_path}
+            scipy.io.savemat(mat_save_path + '/pytorch_result.mat', result)
+            
+            # save all_results in a json file
+            rank_results_path = os.path.join(mat_save_path, "rank_results.json")
+            with open(rank_results_path, 'w') as f:
+                json.dump(all_results, f, indent=4)
+                
+            del result
+            del data_to_save            
 
         if latent_z == 'new_z':
             q_g_imgs = torch.cat((q_all_imgs, g_all_imgs), 0)
@@ -333,7 +365,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
 
 
 @torch.no_grad()
-def extract_test_feature_only(dataloader):
+def extract_test_feature_only(dataloader, final_epoch=False):
     features, pids, camids = [], torch.tensor([]), torch.tensor([])
     for batch_idx, (imgs, batch_pids, batch_camids, centroid,_) in enumerate(dataloader):
         features.append(imgs.cpu())
@@ -345,11 +377,15 @@ def extract_test_feature_only(dataloader):
     return features, pids, camids
 
 
-def test_clip_feature(queryloader, galleryloader, dataset):
+def test_clip_feature(queryloader, galleryloader, dataset, final_epoch=False):
     since = time.time()
     # Extract features 
-    qf, q_pids, q_camids = extract_test_feature_only(queryloader)
-    gf, g_pids, g_camids = extract_test_feature_only(galleryloader)
+    if final_epoch:
+        qf, q_pids, q_camids = extract_test_feature_only(queryloader)
+        gf, g_pids, g_camids = extract_test_feature_only(galleryloader)
+    else:
+        qf, q_pids, q_camids = extract_test_feature_only(queryloader)
+        gf, g_pids, g_camids = extract_test_feature_only(galleryloader)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))

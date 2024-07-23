@@ -35,9 +35,14 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
         classifier.train()
         drawer = tSNE_plot(num_query=None, trainplot=True)
         drawer.reset()
-    else:
-        model.train()
-        classifier.train()
+    elif config.DATA.TRAIN_FORMAT == 'base':
+        if config.MODEL.TRAIN_STAGE == 'reidstage':
+            model.eval()
+            model.reid_projector.train()
+            classifier.train()
+        else:
+            model.train()
+            classifier.train()
     
     batch_cls_loss = AverageMeter()
     batch_center_loss = AverageMeter()
@@ -114,9 +119,9 @@ def train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, cr
             loss = recon_loss
             loss = loss + beta * kl_loss
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
-            loss = cls_loss
-            loss = loss + pair_loss
+            loss = pair_loss
             loss = loss + center_loss
+            loss = loss + cls_loss
         else:
             loss = recon_loss
             loss = loss + beta * kl_loss  # baseline no kl

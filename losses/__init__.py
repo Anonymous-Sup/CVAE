@@ -1,7 +1,7 @@
 from torch import nn
 
 from losses.cross_entropy_label_smooth import CrossEntropyLabelSmooth
-from losses.triplet_loss import TripletLoss
+from losses.triplet_loss import TripletLoss, TripletLoss_WRT
 from losses.contrastive_loss import ContrastiveLoss, SupConLoss
 from losses.arcface_loss import ArcFaceLoss
 from losses.cosface_loss import CosFaceLoss, PairwiseCosFaceLoss
@@ -26,6 +26,8 @@ def build_losses(config, num_classes):
     # Build pairwise loss
     if config.LOSS.PAIR_LOSS == 'triplet':
         criterion_pair = TripletLoss(margin=config.LOSS.PAIR_M, distance=config.TEST.DISTANCE)
+    elif config.LOSS.PAIR_LOSS == 'triplet_wrt':
+        criterion_pair = TripletLoss_WRT()
     elif config.LOSS.PAIR_LOSS == 'contrastive':
         criterion_pair = ContrastiveLoss(scale=config.LOSS.PAIR_S)
     elif config.LOSS.PAIR_LOSS == 'cosface':

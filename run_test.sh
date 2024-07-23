@@ -1,22 +1,23 @@
 # python test.py --pretrained CLIPreid
 
-
+# [market1k, duke, sysu_mm01]
 # ===============For Regular testing================
-nohup python -u main.py --cfg ./configs/tune_sysu/clipreid_cvae_kl.yaml \
+nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
---dataset sysu_mm01 \
+--dataset market1k \
 --format_tag tensor \
 --train_format base \
 --train_stage klstage \
---resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/sysu_mm01/clipreid_simplevae_tune/novel/2024-07-13/2ndstage_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ceText+ce+trip+center \
+--resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-14/2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center \
 --gpu 0 \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
+--use_two_encoder \
 --eval \
---saved_name 2ndstage_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ceText+ce+trip+center \
-> test_L1280_sysu.log 2>&1 & 
+--saved_name 2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center \
+> test_L1280_market1K.log 2>&1 & 
 
 
 
