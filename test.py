@@ -14,7 +14,7 @@ import scipy.io
 import os
 
 @torch.no_grad()
-def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classifier=None, latent_z='z_c', final_epoch=False):
+def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dataloader, classifier=None, classifier_reID=None, latent_z='z_c', final_epoch=False):
     
     features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths = [], torch.tensor([]), torch.tensor([]), [], [], [], [], []
     
@@ -51,10 +51,10 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
         elif latent_z == 'z_c':
             # only if using zc, do reid projection
             retrieval_feature = z_c
-            if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch' and config.MODEL.TRAIN_STAGE != 'klNocls_stage':
-                retrieval_feature = model.reid_projector(retrieval_feature)
         elif latent_z == 'new_z':
             retrieval_feature = new_z
+            if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch' and config.MODEL.TRAIN_STAGE != 'klNocls_stage':
+                retrieval_feature = model.reid_projector(retrieval_feature)
         elif latent_z == 'reconx':
             retrieval_feature = reconx
         elif latent_z == 'mu':
@@ -62,15 +62,22 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
 
         if classifier != None:
             if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
-                reid_feature = model.reid_projector(z_c)
+                z_c_proj = model.i2t_projector(z_c)
+                # z_c_proj = z_c
             else:
-                reid_feature = z_c
-            outputs = classifier(reid_feature)
+                z_c_proj = z_c
+            outputs = classifier(z_c_proj)
             _, preds = torch.max(outputs.data, 1)
             pid_tensor = batch_pids.cuda()
             assert preds.shape == pid_tensor.shape
             batch_acc.update((torch.sum(preds == pid_tensor.data)).float()/pid_tensor.size(0), pid_tensor.size(0))
             
+            if classifier_reID != None:
+                reid_feature = model.reid_projector(new_z)
+                outputs_last = classifier_reID(reid_feature)
+                _, preds_last = torch.max(outputs_last.data, 1)
+                reid_batch_acc.update((torch.sum(preds_last == pid_tensor.data)).float()/pid_tensor.size(0), pid_tensor.size(0))
+
             if final_epoch:
                 # Update class accuracy dictionary at the final epoch 
                 for i in range(len(pid_tensor)):  
@@ -78,7 +85,8 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
                     is_correct = preds[i] == pid_tensor[i] 
                     
                     if class_idx not in class_acc_dict:  
-                        class_acc_dict[class_idx] = {'correct': 0, 'total': 0}  
+                        # class_acc_dict[class_idx] = {'correct': 0, 'total': 0}  
+                        class_acc_dict[class_idx] = {'correct': 0, 'total': 0, 'top10_scores': [], 'top10_labels': []}
                     if class_idx not in class_img_paths:  
                         class_img_paths[class_idx] = [] 
                     
@@ -87,6 +95,14 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
                         class_acc_dict[class_idx]['correct'] += 1  
                     
                     class_img_paths[class_idx].append((batch_ima_path[i], is_correct.item())) 
+                    
+                    # Get top 10 classification scores and corresponding labels
+                    top10_scores, top10_indices = torch.topk(outputs.data[i], 10)
+                    top10_labels = top10_indices.cpu().numpy()
+                    top10_scores = top10_scores.cpu().numpy()
+                    
+                    class_acc_dict[class_idx]['top10_scores'].append(top10_scores)
+                    class_acc_dict[class_idx]['top10_labels'].append(top10_labels)
         
         else:
             print("Ploting U&y, cls cant be None!")
@@ -118,7 +134,16 @@ def extract_midium_feature(batch_acc, drawer, config, model, dataloader, classif
     all_domains_y = torch.cat(all_domains_y, 0)
     
     if final_epoch:
-        class_accuracy = {class_idx: acc['correct'] / acc['total'] for class_idx, acc in class_acc_dict.items()}  # Changed part
+        class_accuracy = {}
+        for class_idx, acc in class_acc_dict.items():
+            accuracy = acc['correct'] / acc['total'] if acc['total'] > 0 else 0
+            class_accuracy[class_idx] = {
+                'accuracy': accuracy,
+                'top10_scores': acc['top10_scores'],
+                'top10_labels': acc['top10_labels']
+            }
+        del class_acc_dict
+        # class_accuracy = {class_idx: acc['correct'] / acc['total'] for class_idx, acc in class_acc_dict.items()}
         return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, class_accuracy, class_img_paths
     # Assuming `classifier` is your model
     # for name, param in classifier.named_parameters():
@@ -217,27 +242,31 @@ def convert_keys_to_string(input_dict):
     return {str(key): convert_keys_to_string(value) for key, value in input_dict.items()}
 
 
-def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False):
+def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, classifier_reID=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False):
     since = time.time()
     model.eval()
     drawer = tSNE_plot(len(dataset.query), trainplot=False)
     drawer.reset()
     if classifer != None:
         classifer.eval()
+    if classifier_reID != None:
+        classifier_reID.eval()
     # Extract features 
     print("==========Test with latent_z: {} =========".format(latent_z))
     q_batch_acc = AverageMeter()
     g_batch_acc = AverageMeter()
+    q_reid_batch_acc = AverageMeter()
+    g_reid_batch_acc = AverageMeter()
     if config.LOSS.USE_NCE:
         print("==========Test with NCE LOSS=========")
         qf, qf_cat, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
         gf, gf_cat, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
     elif final_epoch:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z, final_epoch)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z, final_epoch)
+        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z, final_epoch)
+        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, q_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z, final_epoch)
     else:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path = extract_midium_feature(q_batch_acc, drawer, config, model, queryloader, classifer, latent_z)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path = extract_midium_feature(g_batch_acc, drawer, config, model, galleryloader, classifer, latent_z)
+        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
+        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -305,7 +334,14 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         # total_acc = (q_acc + g_acc) / 2
         print("Classifier results ---------------------------------------------------") 
         print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, q_g_acc))
-        
+    if classifier_reID != None:
+        q_acc_reid = q_reid_batch_acc.avg
+        g_acc_reid = g_reid_batch_acc.avg
+        q_reid_batch_acc.merge(g_reid_batch_acc)
+        q_g_acc_reid = q_reid_batch_acc.avg
+        # total_acc = (q_acc + g_acc) / 2
+        print("ReID Classifier results ---------------------------------------------------")
+        print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc_reid, g_acc_reid, q_g_acc_reid))
     if run != None:
         if final_epoch:
             mat_save_path = os.path.join(config.MODEL.RESUME, 'visual_results')
@@ -353,7 +389,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
             # # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
             # q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
             # save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, q_g_domains_y, config.MODEL.RESUME)
-        else:
+        # else:
             run["test/mAP"].append(mAP)
             run["test/top1"].append(cmc[0])
             run["test/top5"].append(cmc[4])

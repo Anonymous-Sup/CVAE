@@ -1,6 +1,6 @@
 from models.CVAE import VAE
 from models.MayModel import SinpleVAE, SinpleVAE_2Encoder
-from models.Classifier import Classifier, NormalizedClassifier, MLPClassBlock
+from models.Classifier import Classifier, NormalizedClassifier, MLPClassBlock, distLinear
 from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ, YuKeMLPFLOW_onlyX_seperateZ_init
 from models.NIPS import NIPS
 import torch
@@ -115,8 +115,14 @@ def build_model(config, num_classes):
         #     feature_dim = config.MODEL.ZC_DIM
         # else:
         #     feature_dim = model.reid_output_dim
-        feature_dim = model.reid_output_dim
-        classifier = Classifier(feature_dim=feature_dim, num_classes=num_classes)
+        feature_dim = model.cls_input_dim
+        # feature_dim = config.MODEL.ZC_DIM
+
+        # classifier = Classifier(feature_dim=feature_dim, num_classes=num_classes)
+
+        classifier = distLinear(feature_dim, num_classes)
+
+
         print("Initialized classifier with feature_dim: {}, num_classes: {}".format(model.reid_output_dim, num_classes))
         # classifier = MLPClassBlock(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
         # classifier = NormalizedClassifier(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
@@ -125,6 +131,8 @@ def build_model(config, num_classes):
     
     print("Classifier size: {:.5f}M".format(sum(p.numel() for p in classifier.parameters())/1000000.0))
 
-    return model, classifier
+    classifier_reID = Classifier(feature_dim=model.reid_output_dim, num_classes=num_classes)
+    # classifier_reID = distLinear(model.reid_output_dim, num_classes)
+    return model, classifier, classifier_reID
 
 

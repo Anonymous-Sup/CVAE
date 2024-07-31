@@ -96,7 +96,7 @@ def main(config):
     trainloader, queryloader, galleryloader, dataset = build_dataloader(config)
 
     # Build model 
-    model, classifier = build_model(config, dataset.num_train_pids)
+    model, classifier, classifier_reID = build_model(config, dataset.num_train_pids)
 
     # Build loss
     criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_nce, criterion_circle = build_losses(config, dataset.num_train_pids)
@@ -117,25 +117,24 @@ def main(config):
     for name, param in model.named_parameters():
         if config.DATA.TRAIN_FORMAT == 'novel':
             if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
-                if 'reid_projector' in name or 'decoder' in name:
+                if 'reid_projector' in name or 'i2t_projector' in name or 'decoder' in name:
                     param.requires_grad = False
                 else:
                     parameters.append(param)
         else:
             if config.MODEL.TRAIN_STAGE != 'reidstage':
-                parameters.append(param)
+                if 'reid_projector' in name or 'i2t_projector' in name:
+                    param.requires_grad = False
+                else:
+                    parameters.append(param)
 
 
-
-
-
-
-    cla_parameters = list(classifier.parameters())
+    cla_parameters = list(classifier.parameters()) + list(classifier_reID.parameters())
 
     if config.DATA.TRAIN_FORMAT == 'novel':
-        alpha_lr = 3.0   # base lr 1e-4, classifier lr 1e-3
+        alpha_lr = 1.0   # base lr 1e-4, classifier lr 1e-3
     else:
-        alpha_lr = 3.0
+        alpha_lr = 1.0
     
     i2t_parameters = []
     reid_parameters = []
@@ -164,16 +163,26 @@ def main(config):
                         param.requires_grad = True
                         print("{} is tuneable".format(name))
                         reid_parameters.append(param)
+                    elif 'i2t_projector' in name:
+                        param.requires_grad = True
+                        print("{} is tuneable".format(name))
+                        i2t_parameters.append(param)
                     else:
                         param.requires_grad = False
                 
+                reid_parameters += i2t_parameters
                 if config.DATA.TRAIN_FORMAT == 'novel':
                     all_tuned_parameters = cla_parameters + reid_parameters
                 elif config.DATA.TRAIN_FORMAT == 'base':
                     all_tuned_parameters = reid_parameters + cla_parameters
 
-                optimizer = optim.Adam(all_tuned_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
-                            weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+                # optimizer = optim.Adam(all_tuned_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+                #             weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+                
+                optimizer = optim.Adam([
+                    {'params': filter(lambda p: p.requires_grad, reid_parameters)},
+                    {'params': filter(lambda p: p.requires_grad, cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+                    lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
                 optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
 
         elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
@@ -236,6 +245,8 @@ def main(config):
         model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
         # flows_model.load_state_dict(checkpoint['flows_model'])
         classifier.load_state_dict(checkpoint['classifier'])
+        if "classifier_reID" in checkpoint:
+            classifier_reID.load_state_dict(checkpoint['classifier_reID'])
         start_epoch = checkpoint['epoch']
         best_rank1 = checkpoint['rank1']
         del checkpoint
@@ -291,6 +302,7 @@ def main(config):
     model = model.cuda()
     # flows_model = flows_model.cuda()
     classifier = classifier.cuda()
+    classifier_reID = classifier_reID.cuda()
 
     if config.LOSS.USE_NCE:
         
@@ -314,7 +326,7 @@ def main(config):
     else:
         text_embeddings = None
     
-    if config.EVAL_MODE or config.DATA.TRAIN_FORMAT == 'novel':
+    if config.EVAL_MODE or config.DATA.TRAIN_FORMAT == 'novel' or config.MODEL.TRAIN_STAGE == 'reidstage':
         if config.DATA.TRAIN_FORMAT == 'novel':
             print("=> Start evaluation on Novel data without finetuning")
         else:
@@ -322,12 +334,12 @@ def main(config):
         with torch.no_grad():
             print("=> Test pretarined feature form VLP model")
             test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='new_z')
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
             if config.EVAL_MODE:
                 final_epoch = True
             else:
                 final_epoch = False
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='z_c', final_epoch=False)
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c', final_epoch=False)
 
         if config.EVAL_MODE:
             return
@@ -344,10 +356,10 @@ def main(config):
               optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler)
         else:
             if config.LOSS.USE_NCE:
-                iteration_num = train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
+                iteration_num = train_cvae_nce(run, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
                 optimizer, optimizer_center, trainloader, epoch, iteration_num, text_embeddings)
             else:
-                iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
+                iteration_num = train_cvae(run, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
                 optimizer, optimizer_center, trainloader, epoch, iteration_num)
             # for name, param in classifier.named_parameters():
             #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
@@ -358,8 +370,8 @@ def main(config):
             
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                rank, mAP, acc_total = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='z_c')
-                test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, text_embeddings, latent_z='new_z')
+                test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                rank, mAP, acc_total = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
                 # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
                 # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='mu')
                 
@@ -384,6 +396,7 @@ def main(config):
                 'epoch': epoch,
                 'model': model.state_dict(),
                 'classifier': classifier.state_dict(),
+                'classifier_reID': classifier_reID.state_dict(),
                 'cmc': best_cmc,
                 'acc': best_acc,
                 'mAP': best_mAP,
@@ -406,8 +419,6 @@ def main(config):
                 scheduler_center.step()
             
             
-    
-
     print("=> Best Rank-1 {:.1%}, mAP {:.1%} achieved at epoch {}".format(best_rank1, best_mAP, best_epoch))
     run["best_rank1"] = best_rank1
     run['best_mAP'] = best_mAP
