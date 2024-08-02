@@ -14,29 +14,31 @@ from tools.drawer import tSNE_plot
 def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, criterion_pair, criterion_recon, criterion_center,
               optimizer, optimizer_center, trainloader, epoch, iteration_num):
     
+    drawer = tSNE_plot(num_query=None, trainplot=True)
+    drawer.reset()
     if config.DATA.TRAIN_FORMAT == 'novel':
-        if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
-            model.train()
-            model.decoder.eval()
-            model.reid_projector.eval()
-            model.i2t_projector.eval()
-            drawer = tSNE_plot(num_query=None, trainplot=True)
-            drawer.reset()
+        if 'kl' not in config.MODEL.TRAIN_STAGE:
+            model.eval()
             classifier.eval()
-            classifer_reid.eval()
-        elif config.MODEL.TRAIN_STAGE == 'reidstage':
-            model.eval() 
-            model.reid_projector.train()
-            model.i2t_projector.train()
-            classifier.train()
-            classifer_reid.train()
+            if config.MODEL.TRAIN_STAGE == 'reidstage':
+                model.reid_projector.train()
+            elif config.MODEL.TRAIN_STAGE == 'CLSstage':
+                model.i2t_projector.train()
+                classifier.train()
         else:
             model.train()
-            model.decoder.eval()
             classifier.train()
-            classifer_reid.train()
-            drawer = tSNE_plot(num_query=None, trainplot=True)
-            drawer.reset()
+            model.decoder.eval()
+            if config.MODEL.TRAIN_STAGE == 'kl_reid_stage':
+                model.i2t_projector.eval()
+                classifier.eval()
+            elif config.MODEL.TRAIN_STAGE == 'kl_cls_stage':
+                model.reid_projector.eval()
+            elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+                model.i2t_projector.eval()
+                model.reid_projector.eval()
+                classifier.eval()
+            
     elif config.DATA.TRAIN_FORMAT == 'novel_train_from_scratch':
         """
         Todo:
@@ -44,19 +46,28 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         """
         model.train()
         classifier.train()
-        drawer = tSNE_plot(num_query=None, trainplot=True)
-        drawer.reset()
-    elif config.DATA.TRAIN_FORMAT == 'base':
-        if config.MODEL.TRAIN_STAGE == 'reidstage':
-            model.eval()
-            model.i2t_projector.train()
-            model.reid_projector.train()
-            classifier.train()
-            classifer_reid.train()
-        elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+    else: # for base data
+        if 'kl' in config.MODEL.TRAIN_STAGE:
             model.train()
+            classifier.train()
+            if config.MODEL.TRAIN_STAGE == 'kl_reid_stage':
+                model.i2t_projector.eval()
+                classifier.eval()
+            elif config.MODEL.TRAIN_STAGE == 'kl_cls_stage':
+                model.reid_projector.eval()
+            elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+                model.i2t_projector.eval()
+                model.reid_projector.eval()
+                classifier.eval()
         else:
-            raise ValueError("Not support yet")
+            model.eval()
+            classifier.eval()
+            if config.MODEL.TRAIN_STAGE == 'reidstage':
+                model.reid_projector.train()
+            elif config.MODEL.TRAIN_STAGE == 'CLSstage':
+                model.i2t_projector.train()
+                classifier.train()
+
     
     batch_cls_loss = AverageMeter()
     batch_cls_reid_loss = AverageMeter()
@@ -98,7 +109,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         # styles_onehot =  idx2onehot(style_ids, config.MODEL.STYLE_NUM)
         x_pre, mean, log_var, z_c, z_s, domian_feature, fusez_s, z, recon_x = model(imgs_tensor, style_ids)
 
-        if 'novel' in config.DATA.TRAIN_FORMAT and config.MODEL.TRAIN_STAGE != 'reidstage':
+        if 'novel' in config.DATA.TRAIN_FORMAT and 'kl' in config.MODEL.TRAIN_STAGE:
             drawer.update((z_c, pids, data_tag))
             drawer.update_U(domian_feature)
 
@@ -137,37 +148,32 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         gamma = 1.0
 
         loss = 0.0
-        if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+        if 'kl' in config.MODEL.TRAIN_STAGE:
             loss = recon_loss
             loss = loss + beta * kl_loss
+            if config.MODEL.TRAIN_STAGE == 'kl_reid_stage':
+                loss += pair_loss + center_loss
+            elif config.MODEL.TRAIN_STAGE == 'kl_cls_stage':
+                loss += cls_loss
+            elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
+                continue
+            else: # for all loss joint training 
+                loss += cls_loss
+                loss += pair_loss
+                # loss += center_loss
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
-            
-            # loss = pair_loss
-            # loss = loss + center_loss
-            
-            loss = loss + cls_loss
+            loss = pair_loss 
+            # loss += center_loss
+        elif config.MODEL.TRAIN_STAGE == 'CLSstage':
+            loss = cls_loss
 
-            # which is optional, need testing
-            # loss = loss + cls_loss_reid
-        else:
-            loss = recon_loss
-            loss = loss + beta * kl_loss  # baseline no kl
-            loss = loss + gamma * cls_loss
-            # loss = loss + pair_loss
-            # loss = loss + center_loss
-
-
-        # elif config.MODEL.TRAIN_STAGE == 'reidstage':
-        #     loss = cls_loss
-        #     # loss = pair_loss
-        #     # loss = 0.5 * loss + pair_loss
 
         z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
         if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1: 
             if 'reid' not in config.MODEL.TRAIN_STAGE:
-                if 'novel' in config.DATA.TRAIN_FORMAT:
+                if 'kl' in config.MODEL.TRAIN_STAGE:
                     number_sample = 16
                 else:
                     number_sample = 64
@@ -249,7 +255,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
             kl_loss=batch_kl_loss, bce_loss=batch_recon_loss, acc=batch_acc, acc_reid=batch_reid_acc)
           )
     if 'reid' not in config.MODEL.TRAIN_STAGE:
-        if 'novel' in config.DATA.TRAIN_FORMAT:
+        if 'kl' in config.MODEL.TRAIN_STAGE:
             if (epoch+1) % 10 == 0:
                 print("Jump TSNE")
                 # drawer.compute(run)

@@ -16,7 +16,7 @@ import os
 @torch.no_grad()
 def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dataloader, classifier=None, classifier_reID=None, latent_z='z_c', final_epoch=False):
     
-    features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths = [], torch.tensor([]), torch.tensor([]), [], [], [], [], []
+    features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels = [], torch.tensor([]), torch.tensor([]), [], [], [], [], [], [], []
     
     if final_epoch:
         # Initialize dictionaries to store class accuracy and image paths with classification status
@@ -53,8 +53,9 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
             retrieval_feature = z_c
         elif latent_z == 'new_z':
             retrieval_feature = new_z
-            if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch' and config.MODEL.TRAIN_STAGE != 'klNocls_stage':
-                retrieval_feature = model.reid_projector(retrieval_feature)
+            if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
+                if config.MODEL.TRAIN_STAGE != 'klNocls_stage' and config.MODEL.TRAIN_STAGE != 'kl_cls_stage':
+                    retrieval_feature = model.reid_projector(retrieval_feature)
         elif latent_z == 'reconx':
             retrieval_feature = reconx
         elif latent_z == 'mu':
@@ -72,6 +73,9 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
             assert preds.shape == pid_tensor.shape
             batch_acc.update((torch.sum(preds == pid_tensor.data)).float()/pid_tensor.size(0), pid_tensor.size(0))
             
+            # keep the top10 labels and scores for each class
+            batch_top10_scores, batch_top10_labels = torch.topk(outputs.data, 10)
+
             if classifier_reID != None:
                 reid_feature = model.reid_projector(new_z)
                 outputs_last = classifier_reID(reid_feature)
@@ -97,12 +101,12 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
                     class_img_paths[class_idx].append((batch_ima_path[i], is_correct.item())) 
                     
                     # Get top 10 classification scores and corresponding labels
-                    top10_scores, top10_indices = torch.topk(outputs.data[i], 10)
-                    top10_labels = top10_indices.cpu().numpy()
-                    top10_scores = top10_scores.cpu().numpy()
+                    id_top10_scores, id_top10_labels = torch.topk(outputs.data[i], 10)
+                    id_top10_labels = id_top10_labels.cpu().numpy()
+                    id_top10_scores = id_top10_scores.cpu().numpy()
                     
-                    class_acc_dict[class_idx]['top10_scores'].append(top10_scores)
-                    class_acc_dict[class_idx]['top10_labels'].append(top10_labels)
+                    class_acc_dict[class_idx]['top10_scores'].append(id_top10_scores)
+                    class_acc_dict[class_idx]['top10_labels'].append(id_top10_labels)
         
         else:
             print("Ploting U&y, cls cant be None!")
@@ -114,6 +118,9 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
         
         features.append(batach_features_norm.cpu())
         # features.append(retrieval_feature.cpu())
+
+        all_top10_scores.append(batch_top10_scores.cpu())
+        all_top10_labels.append(batch_top10_labels.cpu())
 
         pids = torch.cat((pids, batch_pids.cpu()), dim=0)
         styleids = torch.cat((styleids, batch_styleids.cpu()), dim=0)
@@ -127,7 +134,8 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
         drawer.update((batach_features_norm, batch_pids, batch_data_tags))
         drawer.update_U(U)
         
-
+    all_top10_scores = torch.cat(all_top10_scores, 0)
+    all_top10_labels = torch.cat(all_top10_labels, 0)
     features = torch.cat(features, 0)
     all_imgs = torch.cat(all_imgs, 0)
     all_recons = torch.cat(all_recons, 0)
@@ -144,11 +152,12 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
             }
         del class_acc_dict
         # class_accuracy = {class_idx: acc['correct'] / acc['total'] for class_idx, acc in class_acc_dict.items()}
-        return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, class_accuracy, class_img_paths
+        return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels, class_accuracy, class_img_paths
+
     # Assuming `classifier` is your model
     # for name, param in classifier.named_parameters():
     #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
-    return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths
+    return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels
 
 
 """
@@ -262,11 +271,12 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         qf, qf_cat, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
         gf, gf_cat, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
     elif final_epoch:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z, final_epoch)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, q_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z, final_epoch)
+        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z, final_epoch)
+        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, q_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z, final_epoch)
     else:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
+        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
+        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
+
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))

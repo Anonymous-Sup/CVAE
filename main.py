@@ -44,7 +44,7 @@ def parse_option():
     
     # Training
     parser.add_argument('--train_format', type=str, required= True, choices=['base', 'novel', 'novel_train_from_scratch'], help="Select the datatype for training or finetuning")
-    parser.add_argument('--train_stage', type=str, choices=['klstage', 'reidstage', 'klNocls_stage'], required=True, help="Select the stage for training")
+    parser.add_argument('--train_stage', type=str, choices=['klstage', 'klNocls_stage', 'kl_cls_stage', 'kl_reid_stage', 'CLSstage', 'reidstage'], required=True, help="Select the stage for training")
 
     # Parameters 
     parser.add_argument('--vae_type', type=str, choices=['cvae','SinpleVAE'], help="Type of VAE model")
@@ -121,12 +121,40 @@ def main(config):
                     param.requires_grad = False
                 else:
                     parameters.append(param)
-        else:
-            if config.MODEL.TRAIN_STAGE != 'reidstage':
+            elif config.MODEL.TRAIN_STAGE == 'kl_cls_stage':
+                if 'reid_projector' in name or 'decoder' in name:
+                    param.requires_grad = False
+                else:
+                    parameters.append(param)
+            elif config.MODEL.TRAIN_STAGE == 'kl_reid_stage':
+                if 'i2t_projector' in name or 'decoder' in name:
+                    param.requires_grad = False
+                else:
+                    parameters.append(param)
+            else:
+                if 'decoder' in name:
+                    param.requires_grad = False
+                else:
+                    parameters.append(param)
+        else: # for base data
+            if config.MODEL.TRAIN_STAGE == 'klNocls_stage':
                 if 'reid_projector' in name or 'i2t_projector' in name:
                     param.requires_grad = False
                 else:
                     parameters.append(param)
+            elif config.MODEL.TRAIN_STAGE == 'kl_cls_stage':
+                if 'reid_projector' in name:
+                    param.requires_grad = False
+                else:
+                    parameters.append(param)
+            elif config.MODEL.TRAIN_STAGE == 'kl_reid_stage':
+                if 'i2t_projector' in name:
+                    param.requires_grad = False
+                else:
+                    parameters.append(param)
+            else:
+                parameters.append(param)
+        
 
 
     cla_parameters = list(classifier.parameters()) + list(classifier_reID.parameters())
@@ -163,34 +191,37 @@ def main(config):
                         param.requires_grad = True
                         print("{} is tuneable".format(name))
                         reid_parameters.append(param)
-                    elif 'i2t_projector' in name:
-                        param.requires_grad = True
-                        print("{} is tuneable".format(name))
-                        i2t_parameters.append(param)
-                    else:
-                        param.requires_grad = False
-                
-                reid_parameters += i2t_parameters
-                if config.DATA.TRAIN_FORMAT == 'novel':
-                    all_tuned_parameters = cla_parameters + reid_parameters
-                elif config.DATA.TRAIN_FORMAT == 'base':
-                    all_tuned_parameters = reid_parameters + cla_parameters
+                for cls_param in cla_parameters:
+                    cls_param.requires_grad = False
 
-                # optimizer = optim.Adam(all_tuned_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
-                #             weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
-                
-                optimizer = optim.Adam([
-                    {'params': filter(lambda p: p.requires_grad, reid_parameters)},
-                    {'params': filter(lambda p: p.requires_grad, cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
-                    lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+                optimizer = optim.Adam(reid_parameters, lr=config.TRAIN.OPTIMIZER.LR, 
+                            weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
                 optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
-
+        elif config.MODEL.TRAIN_STAGE == 'CLSstage':
+            for name, param in model.named_parameters():
+                if 'i2t_projector' in name:
+                    param.requires_grad = True
+                    print("{} is tuneable".format(name))
+                    i2t_parameters.append(param)
+                else:
+                    param.requires_grad = False
+            optimizer = optim.Adam([ 
+                {'params': filter(lambda p: p.requires_grad ,parameters)},
+                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            optimizer_center = None
         elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
             for cls_param in cla_parameters:
                 cls_param.requires_grad = False
             optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR, 
                                 weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
             optimizer_center = None
+        elif config.MODEL.TRAIN_STAGE == 'kl_reid_stage':
+            for cls_param in cla_parameters:
+                cls_param.requires_grad = False
+            optimizer = optim.Adam(parameters, lr=config.TRAIN.OPTIMIZER.LR,
+                                weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
         else:
             optimizer = optim.Adam([
             {'params': filter(lambda p: p.requires_grad ,parameters)},
@@ -252,8 +283,8 @@ def main(config):
         del checkpoint
     else:
         if config.DATA.TRAIN_FORMAT == "novel":
-            if config.MODEL.TRAIN_STAGE != 'reidstage':
-                print("=> Start training the model on Novel data")
+            if 'kl' in config.MODEL.TRAIN_STAGE:
+                print("=> Start tuning the model on Novel data")
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
                 # ignore_i2t means that the i2t_projector is not loaded
@@ -272,17 +303,19 @@ def main(config):
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
                 model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
+                classifier.load_state_dict(checkpoint['classifier'])
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 del checkpoint
 
         elif config.DATA.TRAIN_FORMAT == "novel_train_from_scratch":
             print("=> Start training the model on Novel data from scratch")
         else: # base data
-            if config.MODEL.TRAIN_STAGE == 'reidstage':
-                print("=> Start Training REID model")
+            if 'kl' not in config.MODEL.TRAIN_STAGE:
+                print("=> Start Training second stage model")
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
                 model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
+                classifier.load_state_dict(checkpoint['classifier'])
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 del checkpoint
                 # flows_model.load_state_dict(checkpoint['flows_model'])
@@ -297,7 +330,6 @@ def main(config):
                     best_rank1 = checkpoint['rank1']
                     del checkpoint
         
-
     # Set device
     model = model.cuda()
     # flows_model = flows_model.cuda()
@@ -326,7 +358,7 @@ def main(config):
     else:
         text_embeddings = None
     
-    if config.EVAL_MODE or config.DATA.TRAIN_FORMAT == 'novel' or config.MODEL.TRAIN_STAGE == 'reidstage':
+    if config.EVAL_MODE or config.DATA.TRAIN_FORMAT == 'novel' or 'kl' not in config.MODEL.TRAIN_STAGE:
         if config.DATA.TRAIN_FORMAT == 'novel':
             print("=> Start evaluation on Novel data without finetuning")
         else:
