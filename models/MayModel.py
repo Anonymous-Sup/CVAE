@@ -248,6 +248,8 @@ class SinpleVAE(nn.Module):
                     print("Loading parameter: ", i)
     
                 self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
+            else:
+                print("Missing and Initializing parameter: ", i)
 
 class SinpleVAE_2Encoder(nn.Module):
     def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, style_num=0, n_layers=0, leak_relu_slope=0.0, bn=False):
@@ -422,7 +424,7 @@ class SinpleVAE_2Encoder(nn.Module):
     # def reid_projection(self, z_c):
     #     return self.reid_projector(z_c)
 
-    def load_param(self, param_dict, ignore_i2t=False, ignore_reid=False):
+    def load_param(self, param_dict, ignore_i2t=False, ignore_reid=False, ignore_encoder=False):
         for i in self.state_dict():
             if i in param_dict.keys():
                 if ignore_i2t:
@@ -433,6 +435,12 @@ class SinpleVAE_2Encoder(nn.Module):
                     if 'reid_projector' in i:
                         print("Ignores parameter: ", i)
                         continue
+                if ignore_encoder:
+                    if 'fc' in i or 'encoder' in i:
+                        print("Ignores parameter: ", i)
+                        continue
                 elif 'reid_projector' in i:
                     print("Loading parameter: ", i)
                 self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
+            else:
+                print("Missing and Initializing parameter: ", i)
