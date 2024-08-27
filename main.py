@@ -371,7 +371,7 @@ def main(config):
                 final_epoch = True
             else:
                 final_epoch = False
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c', final_epoch=False)
+            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, None, text_embeddings, latent_z='z_c', final_epoch=False)
 
         if config.EVAL_MODE:
             return

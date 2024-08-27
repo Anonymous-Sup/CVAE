@@ -156,14 +156,14 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
             elif config.MODEL.TRAIN_STAGE == 'kl_cls_stage':
                 loss += cls_loss
             elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
-                continue
+                loss = loss
             else: # for all loss joint training 
                 loss += cls_loss
                 loss += pair_loss
                 # loss += center_loss
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             loss = pair_loss 
-            # loss += center_loss
+            loss += center_loss
         elif config.MODEL.TRAIN_STAGE == 'CLSstage':
             loss = cls_loss
 

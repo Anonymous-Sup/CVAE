@@ -16,7 +16,7 @@ import os
 @torch.no_grad()
 def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dataloader, classifier=None, classifier_reID=None, latent_z='z_c', final_epoch=False):
     
-    features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels = [], torch.tensor([]), torch.tensor([]), [], [], [], [], [], [], []
+    features, pids, styleids, cls_result, all_imgs10, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels = [], torch.tensor([]), torch.tensor([]), [], [], [], [], [], [], []
     
     if final_epoch:
         # Initialize dictionaries to store class accuracy and image paths with classification status
@@ -51,6 +51,8 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
         elif latent_z == 'z_c':
             # only if using zc, do reid projection
             retrieval_feature = z_c
+            # # for old testing
+            # retrieval_feature = model.reid_projector(retrieval_feature)
         elif latent_z == 'new_z':
             retrieval_feature = new_z
             if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
@@ -63,6 +65,7 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
 
         if classifier != None:
             if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
+                # z_c_proj = model.reid_projector(z_c)
                 z_c_proj = model.i2t_projector(z_c)
                 # z_c_proj = z_c
             else:
@@ -251,7 +254,64 @@ def convert_keys_to_string(input_dict):
     return {str(key): convert_keys_to_string(value) for key, value in input_dict.items()}
 
 
-def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, classifier_reID=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False):
+def evaluate_classification_accuracy(distmat, qf, gf, classifer, qids, gids):
+    """
+    Evaluate classification accuracy for person re-identification using the top-1 matched gallery.
+
+    Parameters:
+    - distmat: numpy.ndarray
+      The distance matrix between query and gallery features.
+    - qf: torch.Tensor
+      The feature matrix for query images (size: [num_queries, feature_dim]).
+    - gf: torch.Tensor
+      The feature matrix for gallery images (size: [num_gallery, feature_dim]).
+    - classifer: torch.nn.Module
+      The classifier model to predict the class labels.
+
+    Returns:
+    - classification_accuracy: float
+      The accuracy of the classification based on top-1 gallery matches.
+    """
+    m = qf.size(0)  # number of queries
+    correct_classification_count = 0
+    query_cls_count = 0
+    gallery_cls_count = 0
+    for i in range(m):
+        # Find the index of the top-1 closest gallery image
+        top1_index = np.argmin(distmat[i])
+
+        # Extract the corresponding query and gallery features
+        query_feature = qf[i].unsqueeze(0)  # (1, feature_dim)
+        gallery_feature = gf[top1_index].unsqueeze(0)  # (1, feature_dim)
+
+        # Pass both features through the classifier
+        query_pred = classifer(query_feature)
+        gallery_pred = classifer(gallery_feature)
+
+        # Get the predicted labels
+        _, query_label_pred = torch.max(query_pred, 1)
+        _, gallery_label_pred = torch.max(gallery_pred, 1)
+
+        # Compare the predicted labels
+        if query_label_pred.item() == gallery_label_pred.item():
+            correct_classification_count += 1
+            if query_label_pred.item() != qids[i]:
+                print("Query prediction: {}, Gallery prediction: {}".format(query_label_pred.item(), gallery_label_pred.item()))
+                print("Query label: {}, Gallery label: {}".format(qids[i], gids[top1_index]))
+
+        if query_label_pred.item() == qids[i]:
+            query_cls_count += 1
+
+        if gallery_label_pred.item() == gids[top1_index]:
+            gallery_cls_count += 1
+
+    # Calculate the overall classification accuracy
+    classification_accuracy = correct_classification_count / m
+    query_cls_accuracy = query_cls_count / m
+    gallery_cls_accuracy = gallery_cls_count / m
+    return classification_accuracy, query_cls_accuracy, gallery_cls_accuracy
+
+def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer=None, classifier_reID=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False, cls_rerank=False):
     since = time.time()
     model.eval()
     drawer = tSNE_plot(len(dataset.query), trainplot=False)
@@ -277,6 +337,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
         gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
 
+    qf_norm = F.normalize(qf, p=2, dim=1)
+    gf_norm = F.normalize(gf, p=2, dim=1)
     # Gather samples from different GPUs
     # torch.cuda.empty_cache()
     # qf, q_pids, q_camids, q_clothes_ids = concat_all_gather([qf, q_pids, q_camids, q_clothes_ids], len(dataset.query))
@@ -292,27 +354,48 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     m, n = qf.size(0), gf.size(0)
     distmat = torch.zeros((m,n))
     qf, gf = qf.cuda(), gf.cuda()
+    qf_norm, gf_norm = qf_norm.cuda(), gf_norm.cuda()
     # Cosine similarity
     for i in range(m):
-        distmat[i] = (- torch.mm(qf[i:i+1], gf.t())).cpu()
+        # distmat[i] = (- torch.mm(qf[i:i+1], gf.t())).cpu()
+        distmat[i] = (- torch.mm(qf_norm[i:i+1], gf_norm.t())).cpu()
     distmat = distmat.numpy()
     q_pids, q_camids = q_pids.numpy(), q_camids.numpy()
     g_pids, g_camids = g_pids.numpy(), g_camids.numpy()
     time_elapsed = time.time() - since
     print('Distance computing in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
+    former_merge_acc, former_q_pred, former_g_pred = evaluate_classification_accuracy(distmat, qf, gf, classifer, q_pids, g_pids)
     since = time.time()
     if config.DATA.DATASET != 'duke':
-        if final_epoch:
-            cmc, mAP, class_rank1_map_dict, all_results = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True, final_epoch=final_epoch)
+        if cls_rerank:
+            if final_epoch:
+                cmc, mAP, class_rank1_map_dict, all_results = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True, final_epoch=final_epoch, cls_rerank=cls_rerank, q_10_scores=q_10_scores, q_10_labels=q_10_labels)
+            else:
+                cmc, mAP, updatemat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True, cls_rerank=cls_rerank, q_10_scores=q_10_scores, q_10_labels=q_10_labels)
         else:
-            cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True)
+            if final_epoch:
+                cmc, mAP, class_rank1_map_dict, all_results = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True, final_epoch=final_epoch)
+            else:
+                cmc, mAP, updatemat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True)
+            
     else:
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path)
+    
+    later_merge_acc, later_q_pred, later_g_pred = evaluate_classification_accuracy(updatemat, qf, gf, classifer, q_pids, g_pids)
+    
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
     print("-----------------------------------------------------------")
     
+    print("Classification accuracy before cls-ranking: {:.1%}".format(former_merge_acc))
+    print("query accuracy after cls-ranking: {:.1%}".format(former_q_pred))
+    print("gallery accuracy after cls-ranking: {:.1%}".format(former_g_pred))
+
+    print("Classification accuracy after cls-ranking: {:.1%}".format(later_merge_acc))
+    print("query accuracy after cls-ranking: {:.1%}".format(later_q_pred))
+    print("gallery accuracy after cls-ranking: {:.1%}".format(later_g_pred))
+
     if config.LOSS.USE_NCE:
         m, n = qf_cat.size(0), gf_cat.size(0)
         distmat = torch.zeros((m,n))
@@ -459,9 +542,9 @@ def test_clip_feature(queryloader, galleryloader, dataset, final_epoch=False):
     since = time.time()
     print("Computing CMC and mAP")
     if dataset != 'duke':
-        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
+        cmc, mAP, _ = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
     else:
-        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
+        cmc, mAP, _ = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
     print("-----------------------------------------------------------")

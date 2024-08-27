@@ -1,12 +1,15 @@
 # python test.py --pretrained CLIPreid
 
+# /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-14/2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center
+# /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_tune_wReID/novel/2024-08-03/sketch_3rdstage_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280_NewE+Znew_center+trip_disCLS+ce
+
 # [market1k, duke, sysu_mm01]
 # ===============For Regular testing================
 nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
 --dataset market1k \
 --format_tag tensor \
---train_format base \
+--train_format novel \
 --train_stage klstage \
 --resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-14/2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center \
 --gpu 0 \
@@ -14,10 +17,10 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
---use_two_encoder \
 --eval \
---saved_name 2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center \
-> test_L1280_market1K.log 2>&1 & 
+--use_two_encoder \
+--saved_name test \
+> test_sketch_old.log 2>&1 & 
 
 
 

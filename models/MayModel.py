@@ -236,6 +236,7 @@ class SinpleVAE(nn.Module):
     def load_param(self, param_dict, ignore_i2t=False, ignore_reid=False, ignore_encoder=False):
         for i in self.state_dict():
             if i in param_dict.keys():
+                print("Loading all parameter: ", i)
                 if ignore_i2t:
                     if 'i2t_projector' in i:
                         print("Ignores parameter: ", i)
@@ -318,6 +319,7 @@ class SinpleVAE_2Encoder(nn.Module):
         elif self.projection_type == 'Linear1280+CLS':
             self.reid_output_dim = 1280
             self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
+            # self.reid_projector = nn.Linear(self.zc_dim, self.reid_output_dim, bias=False)
         elif self.projection_type == 'MLP1280+CLS':
             self.reid_output_dim = 1280
             self.reid_projector = MLP(self.z_dim, 256, self.reid_output_dim) # no bias term
@@ -332,6 +334,7 @@ class SinpleVAE_2Encoder(nn.Module):
             raise ValueError("Invalid projection type {}", self.projection_type)
 
         i2t_input_dim = zc_dim
+        # i2t_input_dim = 1280 # test for old methods
         self.cls_input_dim = 1280
         self.i2t_projector = nn.Linear(i2t_input_dim, self.cls_input_dim)
 
@@ -431,6 +434,7 @@ class SinpleVAE_2Encoder(nn.Module):
     def load_param(self, param_dict, ignore_i2t=False, ignore_reid=False, ignore_encoder=False):
         for i in self.state_dict():
             if i in param_dict.keys():
+                print("Loading all parameter: ", i)
                 if ignore_i2t:
                     if 'i2t_projector' in i:
                         print("Ignores parameter: ", i)
