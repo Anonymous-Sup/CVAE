@@ -1,0 +1,945 @@
+https://app.neptune.ai/Zhengwei-Lab/MayCVAE/e/MAY-207
+=> merge config from ./configs/clipreid_cvae_kl.yaml
+/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/main.py:91: NeptuneUnsupportedType: You're attempting to log a type that is not directly supported by Neptune (<class 'list'>).
+        Convert the value to a supported type, such as a string or float, or use stringify_unsupported(obj)
+        for dictionaries or collections that contain unsupported values.
+        For more, see https://docs.neptune.ai/help/value_of_unsupported_type
+  run["parameters"] = param
+=> Configurations:
+-------------------------
+AMP: True
+AUG:
+  RC_PROB: 0.5
+  RE_PROB: 0.5
+DATA:
+  CUHK03_CLASSIC_SPLIT: False
+  CUHK03_LABELED: False
+  DATASET: market1k
+  FORMAT_TAG: tensor
+  HEIGHT: 256
+  NUM_INSTANCES: 4
+  NUM_WORKERS: 4
+  ROOT: /home/zhengwei/Desktop/Zhengwei/Projects/datasets
+  SPLIT_ID: 0
+  TEST_BATCH: 512
+  TRAIN_BATCH: 64
+  TRAIN_FORMAT: novel
+  WIDTH: 128
+EVAL_MODE: False
+GPU: 0
+LOSS:
+  CLA_LOSS: crossentropy
+  CLA_M: 0.0
+  CLA_S: 16.0
+  PAIR_LOSS: triplet
+  PAIR_M: 0.3
+  PAIR_S: 16.0
+  RECON_LOSS: mse
+  USE_NCE: True
+MODEL:
+  CONDITIONAL: False
+  FEATURE_DIM: 1280
+  FEAT_FUSION: True
+  FLOW_TYPE: 
+  GAUSSIAN: MultivariateNormal
+  HIDDEN_DIM: 256
+  LATENT_SIZE: 64
+  NAME: CVAE
+  ONLY_CVAE_KL: False
+  ONLY_X_INPUT: False
+  PRETRAIN: CLIPreidNew
+  RES4_STRIDE: 1
+  RESUME: /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae/novel/2024-06-13/fp32_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_nocls
+  TRAIN_STAGE: reidstage
+  USE_CENTROID: False
+  USE_TWO_ENCODER: False
+  VAE_TYPE: SinpleVAE
+  ZC_DIM: 128
+  ZS_DIM: 64
+OUTPUT: ./outputs/market1k/clipreid_simplevae/novel/2024-06-14/fp32_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_S2NCE512
+SAVED_NAME: fp32_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_S2NCE512
+SEED: 0
+TAG: clipreid_simplevae
+TEST:
+  DISTANCE: cosine
+  EVAL_STEP: 5
+  START_EVAL: -1
+TRAIN:
+  AMP: False
+  LR_SCHEDULER:
+    DECAY_RATE: 0.1
+    NAME: MultiStepLR
+    STEPSIZE: [60]
+  MAX_EPOCH: 120
+  OPTIMIZER:
+    LR: 0.001
+    NAME: adam
+    SGDLR: 0.01
+    SGD_MOMENTUM: 0.9
+    SGD_WEIGHT_DECAY: 0.0005
+    WEIGHT_DECAY: 0.0001
+  START_EPOCH: 0
+----------------------
+Initializing dataset market1k
+Warning: string series 'monitoring/cd8929fa/stdout' value was longer than 1000 characters and was truncated. This warning is printed only once per series.
+=> Market-Sketch-1K tensor loaded
+Dataset statistics:
+  ------------------------------
+  subset   | # ids | # images
+  ------------------------------
+  train    |   996 |     3992
+  query    |   996 |     2709
+  gallery  |   996 |     2000
+  ------------------------------
+  total    |  1992 |     8701
+  ------------------------------
+Initializing SinpleVAE model
+Model size: 11.53824M
+Classifier size: 0.12749M
+i2t_projector.weight is tuneable
+i2t_projector.bias is tuneable
+=> Start Training Classifier Only
+Loading checkpoint from '/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae/novel/2024-06-13/fp32_SimpleVAE_128+64z_1e3+3_60+120_KLtotalZ_nocls.best_model.pth.tar'
+orginal best rank1 = 0.011812476928755998
+=> Start evaluation on Novel data without finetuning
+=> Test pretarined feature form VLP model
+Normalizing features
+Normalizing features
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 1s
+Computing CMC and mAP
+Results ---------------------------------------------------
+top1:3.7% top5:8.7% top10:13.0% top20:19.0% mAP:4.8%
+-----------------------------------------------------------
+Using 0m 0s
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 0.1% Gallery acc: 0.0% Total acc: 0.1%
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 0.1% Gallery acc: 0.0% Total acc: 0.1%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+=> Start training
+Epoch:1 Time:6.4 Data:0.0 Loss:19.3728 Cls Loss:19.3728 Pair Loss:0.6550 KL Loss:390.5338 Recon Loss:0.1198 Acc:0.0164 Acc NCE:0.0164
+Epoch:2 Time:3.6 Data:0.0 Loss:9.6230 Cls Loss:9.6230 Pair Loss:0.6541 KL Loss:389.9338 Recon Loss:0.1198 Acc:0.0844 Acc NCE:0.0844
+Epoch:3 Time:4.2 Data:0.0 Loss:7.2937 Cls Loss:7.2937 Pair Loss:0.6556 KL Loss:392.3065 Recon Loss:0.1198 Acc:0.1147 Acc NCE:0.1147
+Epoch:4 Time:6.1 Data:0.0 Loss:6.3964 Cls Loss:6.3964 Pair Loss:0.6556 KL Loss:389.9514 Recon Loss:0.1198 Acc:0.1384 Acc NCE:0.1384
+Epoch:5 Time:5.2 Data:0.0 Loss:6.0662 Cls Loss:6.0662 Pair Loss:0.6536 KL Loss:389.3300 Recon Loss:0.1198 Acc:0.1590 Acc NCE:0.1590
+=> Test at epoch 5
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 1.5% Gallery acc: 26.0% Total acc: 13.7%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 1.5% Gallery acc: 26.0% Total acc: 13.7%
+Epoch:6 Time:6.7 Data:0.0 Loss:5.8832 Cls Loss:5.8832 Pair Loss:0.6557 KL Loss:388.5096 Recon Loss:0.1198 Acc:0.1867 Acc NCE:0.1867
+Epoch:7 Time:5.4 Data:0.0 Loss:5.6474 Cls Loss:5.6474 Pair Loss:0.6542 KL Loss:388.7018 Recon Loss:0.1198 Acc:0.1918 Acc NCE:0.1918
+Epoch:8 Time:3.3 Data:0.0 Loss:5.5166 Cls Loss:5.5166 Pair Loss:0.6549 KL Loss:388.4259 Recon Loss:0.1198 Acc:0.2127 Acc NCE:0.2127
+Epoch:9 Time:4.4 Data:0.0 Loss:5.1393 Cls Loss:5.1393 Pair Loss:0.6549 KL Loss:387.8918 Recon Loss:0.1198 Acc:0.2377 Acc NCE:0.2377
+Epoch:10 Time:5.8 Data:0.0 Loss:5.4064 Cls Loss:5.4064 Pair Loss:0.6549 KL Loss:387.3537 Recon Loss:0.1198 Acc:0.2193 Acc NCE:0.2193
+=> Test at epoch 10
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.3% Gallery acc: 33.5% Total acc: 17.9%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 7s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.3% Gallery acc: 33.5% Total acc: 17.9%
+Epoch:11 Time:6.7 Data:0.0 Loss:5.1517 Cls Loss:5.1517 Pair Loss:0.6533 KL Loss:388.3685 Recon Loss:0.1199 Acc:0.2349 Acc NCE:0.2349
+Epoch:12 Time:5.9 Data:0.0 Loss:5.1326 Cls Loss:5.1326 Pair Loss:0.6549 KL Loss:388.0314 Recon Loss:0.1199 Acc:0.2601 Acc NCE:0.2601
+Epoch:13 Time:3.6 Data:0.0 Loss:5.1993 Cls Loss:5.1993 Pair Loss:0.6559 KL Loss:387.3631 Recon Loss:0.1198 Acc:0.2618 Acc NCE:0.2618
+Epoch:14 Time:4.1 Data:0.0 Loss:4.9856 Cls Loss:4.9856 Pair Loss:0.6559 KL Loss:387.3916 Recon Loss:0.1199 Acc:0.2681 Acc NCE:0.2681
+Epoch:15 Time:5.8 Data:0.0 Loss:4.9389 Cls Loss:4.9389 Pair Loss:0.6547 KL Loss:388.1966 Recon Loss:0.1198 Acc:0.2621 Acc NCE:0.2621
+=> Test at epoch 15
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 1.6% Gallery acc: 33.6% Total acc: 17.6%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 6s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 1.6% Gallery acc: 33.6% Total acc: 17.6%
+Epoch:16 Time:6.4 Data:0.0 Loss:4.9104 Cls Loss:4.9104 Pair Loss:0.6545 KL Loss:386.3109 Recon Loss:0.1198 Acc:0.2684 Acc NCE:0.2684
+Epoch:17 Time:5.6 Data:0.0 Loss:4.9641 Cls Loss:4.9641 Pair Loss:0.6549 KL Loss:386.8182 Recon Loss:0.1198 Acc:0.2603 Acc NCE:0.2603
+Epoch:18 Time:5.5 Data:0.0 Loss:5.0204 Cls Loss:5.0204 Pair Loss:0.6559 KL Loss:385.7550 Recon Loss:0.1198 Acc:0.2692 Acc NCE:0.2692
+Epoch:19 Time:3.5 Data:0.0 Loss:4.9161 Cls Loss:4.9161 Pair Loss:0.6545 KL Loss:386.1417 Recon Loss:0.1198 Acc:0.2941 Acc NCE:0.2941
+Epoch:20 Time:4.2 Data:0.0 Loss:4.7624 Cls Loss:4.7624 Pair Loss:0.6557 KL Loss:385.7680 Recon Loss:0.1198 Acc:0.3072 Acc NCE:0.3072
+=> Test at epoch 20
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.5% Gallery acc: 38.0% Total acc: 20.2%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.5% Gallery acc: 38.0% Total acc: 20.2%
+Epoch:21 Time:6.6 Data:0.0 Loss:4.9425 Cls Loss:4.9425 Pair Loss:0.6551 KL Loss:386.2767 Recon Loss:0.1198 Acc:0.3022 Acc NCE:0.3022
+Epoch:22 Time:5.8 Data:0.0 Loss:4.8257 Cls Loss:4.8257 Pair Loss:0.6542 KL Loss:386.0104 Recon Loss:0.1198 Acc:0.3284 Acc NCE:0.3284
+Epoch:23 Time:6.0 Data:0.0 Loss:4.8325 Cls Loss:4.8325 Pair Loss:0.6562 KL Loss:384.5645 Recon Loss:0.1198 Acc:0.3002 Acc NCE:0.3002
+Epoch:24 Time:5.9 Data:0.0 Loss:4.8520 Cls Loss:4.8520 Pair Loss:0.6548 KL Loss:383.6590 Recon Loss:0.1198 Acc:0.3206 Acc NCE:0.3206
+Epoch:25 Time:3.6 Data:0.0 Loss:4.8287 Cls Loss:4.8287 Pair Loss:0.6553 KL Loss:384.4429 Recon Loss:0.1198 Acc:0.3299 Acc NCE:0.3299
+=> Test at epoch 25
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.1% Gallery acc: 44.1% Total acc: 23.1%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 7s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.1% Gallery acc: 44.1% Total acc: 23.1%
+Epoch:26 Time:6.1 Data:0.0 Loss:4.8201 Cls Loss:4.8201 Pair Loss:0.6572 KL Loss:384.0899 Recon Loss:0.1199 Acc:0.3417 Acc NCE:0.3417
+Epoch:27 Time:5.5 Data:0.0 Loss:4.8236 Cls Loss:4.8236 Pair Loss:0.6555 KL Loss:383.7092 Recon Loss:0.1198 Acc:0.3246 Acc NCE:0.3246
+Epoch:28 Time:6.1 Data:0.0 Loss:4.9130 Cls Loss:4.9130 Pair Loss:0.6557 KL Loss:384.6703 Recon Loss:0.1198 Acc:0.3299 Acc NCE:0.3299
+Epoch:29 Time:5.9 Data:0.0 Loss:4.7541 Cls Loss:4.7541 Pair Loss:0.6551 KL Loss:383.9464 Recon Loss:0.1199 Acc:0.3475 Acc NCE:0.3475
+Epoch:30 Time:5.7 Data:0.0 Loss:4.7165 Cls Loss:4.7165 Pair Loss:0.6539 KL Loss:382.7599 Recon Loss:0.1198 Acc:0.3652 Acc NCE:0.3652
+=> Test at epoch 30
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.2% Gallery acc: 47.5% Total acc: 24.9%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.2% Gallery acc: 47.5% Total acc: 24.9%
+Epoch:31 Time:4.0 Data:0.0 Loss:4.7415 Cls Loss:4.7415 Pair Loss:0.6558 KL Loss:382.5117 Recon Loss:0.1199 Acc:0.3611 Acc NCE:0.3611
+Epoch:32 Time:3.4 Data:0.0 Loss:4.9148 Cls Loss:4.9148 Pair Loss:0.6550 KL Loss:382.4782 Recon Loss:0.1199 Acc:0.3737 Acc NCE:0.3737
+Epoch:33 Time:3.3 Data:0.0 Loss:4.7317 Cls Loss:4.7317 Pair Loss:0.6555 KL Loss:382.1714 Recon Loss:0.1199 Acc:0.3765 Acc NCE:0.3765
+Epoch:34 Time:3.4 Data:0.0 Loss:4.8263 Cls Loss:4.8263 Pair Loss:0.6544 KL Loss:382.0566 Recon Loss:0.1198 Acc:0.3624 Acc NCE:0.3624
+Epoch:35 Time:3.7 Data:0.0 Loss:4.8349 Cls Loss:4.8349 Pair Loss:0.6533 KL Loss:381.6694 Recon Loss:0.1199 Acc:0.3601 Acc NCE:0.3601
+=> Test at epoch 35
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.0% Gallery acc: 44.5% Total acc: 23.7%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.0% Gallery acc: 44.5% Total acc: 23.7%
+Epoch:36 Time:4.3 Data:0.0 Loss:4.5932 Cls Loss:4.5932 Pair Loss:0.6537 KL Loss:382.0088 Recon Loss:0.1199 Acc:0.3687 Acc NCE:0.3687
+Epoch:37 Time:3.5 Data:0.0 Loss:4.8897 Cls Loss:4.8897 Pair Loss:0.6541 KL Loss:380.7366 Recon Loss:0.1198 Acc:0.3921 Acc NCE:0.3921
+Epoch:38 Time:3.5 Data:0.0 Loss:4.8098 Cls Loss:4.8098 Pair Loss:0.6536 KL Loss:383.0886 Recon Loss:0.1198 Acc:0.3795 Acc NCE:0.3795
+Epoch:39 Time:3.6 Data:0.0 Loss:4.6586 Cls Loss:4.6586 Pair Loss:0.6548 KL Loss:380.8712 Recon Loss:0.1199 Acc:0.3969 Acc NCE:0.3969
+Epoch:40 Time:3.6 Data:0.0 Loss:4.7562 Cls Loss:4.7562 Pair Loss:0.6559 KL Loss:380.6299 Recon Loss:0.1198 Acc:0.3768 Acc NCE:0.3768
+=> Test at epoch 40
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.3% Gallery acc: 44.6% Total acc: 23.4%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.3% Gallery acc: 44.6% Total acc: 23.4%
+Epoch:41 Time:4.0 Data:0.0 Loss:4.8219 Cls Loss:4.8219 Pair Loss:0.6544 KL Loss:379.7966 Recon Loss:0.1198 Acc:0.3979 Acc NCE:0.3979
+Epoch:42 Time:3.6 Data:0.0 Loss:4.7771 Cls Loss:4.7771 Pair Loss:0.6556 KL Loss:379.8108 Recon Loss:0.1198 Acc:0.3871 Acc NCE:0.3871
+Epoch:43 Time:3.3 Data:0.0 Loss:4.8306 Cls Loss:4.8306 Pair Loss:0.6564 KL Loss:379.8656 Recon Loss:0.1199 Acc:0.3889 Acc NCE:0.3889
+Epoch:44 Time:3.7 Data:0.0 Loss:4.8173 Cls Loss:4.8173 Pair Loss:0.6552 KL Loss:379.0163 Recon Loss:0.1198 Acc:0.4078 Acc NCE:0.4078
+Epoch:45 Time:3.6 Data:0.0 Loss:4.7171 Cls Loss:4.7171 Pair Loss:0.6554 KL Loss:378.4745 Recon Loss:0.1198 Acc:0.3989 Acc NCE:0.3989
+=> Test at epoch 45
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.4% Gallery acc: 48.5% Total acc: 25.4%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.4% Gallery acc: 48.5% Total acc: 25.4%
+Epoch:46 Time:4.1 Data:0.0 Loss:4.7217 Cls Loss:4.7217 Pair Loss:0.6555 KL Loss:379.8242 Recon Loss:0.1199 Acc:0.3924 Acc NCE:0.3924
+Epoch:47 Time:3.5 Data:0.0 Loss:4.7958 Cls Loss:4.7958 Pair Loss:0.6558 KL Loss:379.0731 Recon Loss:0.1198 Acc:0.4252 Acc NCE:0.4252
+Epoch:48 Time:3.4 Data:0.0 Loss:4.7174 Cls Loss:4.7174 Pair Loss:0.6545 KL Loss:379.1052 Recon Loss:0.1198 Acc:0.4423 Acc NCE:0.4423
+Epoch:49 Time:3.6 Data:0.0 Loss:4.6749 Cls Loss:4.6749 Pair Loss:0.6546 KL Loss:378.3463 Recon Loss:0.1198 Acc:0.4264 Acc NCE:0.4264
+Epoch:50 Time:3.4 Data:0.0 Loss:4.6584 Cls Loss:4.6584 Pair Loss:0.6535 KL Loss:379.6487 Recon Loss:0.1198 Acc:0.4274 Acc NCE:0.4274
+=> Test at epoch 50
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.2% Gallery acc: 54.1% Total acc: 28.1%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.2% Gallery acc: 54.1% Total acc: 28.1%
+Epoch:51 Time:4.1 Data:0.0 Loss:4.6277 Cls Loss:4.6277 Pair Loss:0.6541 KL Loss:378.1042 Recon Loss:0.1198 Acc:0.4556 Acc NCE:0.4556
+Epoch:52 Time:3.7 Data:0.0 Loss:4.5423 Cls Loss:4.5423 Pair Loss:0.6549 KL Loss:377.5479 Recon Loss:0.1198 Acc:0.4385 Acc NCE:0.4385
+Epoch:53 Time:3.6 Data:0.0 Loss:4.7562 Cls Loss:4.7562 Pair Loss:0.6540 KL Loss:377.8836 Recon Loss:0.1198 Acc:0.4357 Acc NCE:0.4357
+Epoch:54 Time:3.7 Data:0.0 Loss:4.9102 Cls Loss:4.9102 Pair Loss:0.6552 KL Loss:377.9243 Recon Loss:0.1198 Acc:0.4173 Acc NCE:0.4173
+Epoch:55 Time:3.4 Data:0.0 Loss:4.8382 Cls Loss:4.8382 Pair Loss:0.6551 KL Loss:377.0672 Recon Loss:0.1199 Acc:0.4544 Acc NCE:0.4544
+=> Test at epoch 55
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.7% Gallery acc: 56.2% Total acc: 29.4%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.7% Gallery acc: 56.2% Total acc: 29.4%
+Epoch:56 Time:4.2 Data:0.0 Loss:4.6312 Cls Loss:4.6312 Pair Loss:0.6548 KL Loss:376.5050 Recon Loss:0.1198 Acc:0.4619 Acc NCE:0.4619
+Epoch:57 Time:3.6 Data:0.0 Loss:4.7659 Cls Loss:4.7659 Pair Loss:0.6533 KL Loss:376.6505 Recon Loss:0.1198 Acc:0.4481 Acc NCE:0.4481
+Epoch:58 Time:3.5 Data:0.0 Loss:4.5987 Cls Loss:4.5987 Pair Loss:0.6542 KL Loss:376.0133 Recon Loss:0.1198 Acc:0.4473 Acc NCE:0.4473
+Epoch:59 Time:3.5 Data:0.0 Loss:4.7091 Cls Loss:4.7091 Pair Loss:0.6550 KL Loss:376.1353 Recon Loss:0.1199 Acc:0.4511 Acc NCE:0.4511
+Epoch:60 Time:3.6 Data:0.0 Loss:4.7424 Cls Loss:4.7424 Pair Loss:0.6559 KL Loss:375.5118 Recon Loss:0.1198 Acc:0.4534 Acc NCE:0.4534
+=> Test at epoch 60
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.6% Gallery acc: 57.0% Total acc: 29.8%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 2.6% Gallery acc: 57.0% Total acc: 29.8%
+Epoch:61 Time:4.0 Data:0.0 Loss:4.2727 Cls Loss:4.2727 Pair Loss:0.6562 KL Loss:375.4022 Recon Loss:0.1199 Acc:0.5086 Acc NCE:0.5086
+Epoch:62 Time:3.6 Data:0.0 Loss:3.6933 Cls Loss:3.6933 Pair Loss:0.6547 KL Loss:374.4855 Recon Loss:0.1198 Acc:0.5852 Acc NCE:0.5852
+Epoch:63 Time:3.6 Data:0.0 Loss:3.4117 Cls Loss:3.4117 Pair Loss:0.6559 KL Loss:377.6421 Recon Loss:0.1199 Acc:0.6182 Acc NCE:0.6182
+Epoch:64 Time:3.4 Data:0.0 Loss:3.2475 Cls Loss:3.2475 Pair Loss:0.6556 KL Loss:376.3661 Recon Loss:0.1198 Acc:0.6431 Acc NCE:0.6431
+Epoch:65 Time:3.6 Data:0.0 Loss:3.1377 Cls Loss:3.1377 Pair Loss:0.6559 KL Loss:374.3014 Recon Loss:0.1198 Acc:0.6628 Acc NCE:0.6628
+=> Test at epoch 65
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.2% Gallery acc: 73.3% Total acc: 38.3%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.2% Gallery acc: 73.3% Total acc: 38.3%
+Epoch:66 Time:4.1 Data:0.0 Loss:3.0320 Cls Loss:3.0320 Pair Loss:0.6540 KL Loss:373.6968 Recon Loss:0.1198 Acc:0.6772 Acc NCE:0.6772
+Epoch:67 Time:3.6 Data:0.0 Loss:2.9958 Cls Loss:2.9958 Pair Loss:0.6550 KL Loss:374.0162 Recon Loss:0.1198 Acc:0.6782 Acc NCE:0.6782
+Epoch:68 Time:3.8 Data:0.0 Loss:2.9509 Cls Loss:2.9509 Pair Loss:0.6545 KL Loss:373.6198 Recon Loss:0.1199 Acc:0.6779 Acc NCE:0.6779
+Epoch:69 Time:3.5 Data:0.0 Loss:2.9242 Cls Loss:2.9242 Pair Loss:0.6552 KL Loss:373.5752 Recon Loss:0.1198 Acc:0.6883 Acc NCE:0.6883
+Epoch:70 Time:3.6 Data:0.0 Loss:2.9267 Cls Loss:2.9267 Pair Loss:0.6548 KL Loss:372.8532 Recon Loss:0.1198 Acc:0.7004 Acc NCE:0.7004
+=> Test at epoch 70
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.5% Gallery acc: 75.2% Total acc: 39.4%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.5% Gallery acc: 75.2% Total acc: 39.4%
+Epoch:71 Time:4.1 Data:0.0 Loss:2.8981 Cls Loss:2.8981 Pair Loss:0.6547 KL Loss:372.2692 Recon Loss:0.1198 Acc:0.6998 Acc NCE:0.6998
+Epoch:72 Time:3.6 Data:0.0 Loss:2.8861 Cls Loss:2.8861 Pair Loss:0.6553 KL Loss:374.8914 Recon Loss:0.1199 Acc:0.7092 Acc NCE:0.7092
+Epoch:73 Time:3.8 Data:0.0 Loss:2.9056 Cls Loss:2.9056 Pair Loss:0.6551 KL Loss:371.5060 Recon Loss:0.1198 Acc:0.7069 Acc NCE:0.7069
+Epoch:74 Time:3.6 Data:0.0 Loss:2.9020 Cls Loss:2.9020 Pair Loss:0.6552 KL Loss:371.7693 Recon Loss:0.1198 Acc:0.7044 Acc NCE:0.7044
+Epoch:75 Time:3.5 Data:0.0 Loss:2.8811 Cls Loss:2.8811 Pair Loss:0.6543 KL Loss:372.2082 Recon Loss:0.1199 Acc:0.7160 Acc NCE:0.7160
+=> Test at epoch 75
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.6% Gallery acc: 76.7% Total acc: 40.1%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.6% Gallery acc: 76.7% Total acc: 40.1%
+Epoch:76 Time:3.9 Data:0.0 Loss:2.8728 Cls Loss:2.8728 Pair Loss:0.6538 KL Loss:371.1343 Recon Loss:0.1198 Acc:0.7248 Acc NCE:0.7248
+Epoch:77 Time:3.3 Data:0.0 Loss:2.8893 Cls Loss:2.8893 Pair Loss:0.6551 KL Loss:371.0665 Recon Loss:0.1198 Acc:0.7180 Acc NCE:0.7180
+Epoch:78 Time:3.1 Data:0.0 Loss:2.8985 Cls Loss:2.8985 Pair Loss:0.6555 KL Loss:371.6013 Recon Loss:0.1198 Acc:0.7205 Acc NCE:0.7205
+Epoch:79 Time:3.6 Data:0.0 Loss:2.8785 Cls Loss:2.8785 Pair Loss:0.6551 KL Loss:371.0018 Recon Loss:0.1198 Acc:0.7190 Acc NCE:0.7190
+Epoch:80 Time:3.6 Data:0.0 Loss:2.9002 Cls Loss:2.9002 Pair Loss:0.6532 KL Loss:370.3444 Recon Loss:0.1198 Acc:0.7233 Acc NCE:0.7233
+=> Test at epoch 80
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.3% Gallery acc: 76.6% Total acc: 39.9%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.3% Gallery acc: 76.6% Total acc: 39.9%
+Epoch:81 Time:4.0 Data:0.0 Loss:2.8729 Cls Loss:2.8729 Pair Loss:0.6537 KL Loss:370.4674 Recon Loss:0.1198 Acc:0.7326 Acc NCE:0.7326
+Epoch:82 Time:3.7 Data:0.0 Loss:2.8828 Cls Loss:2.8828 Pair Loss:0.6545 KL Loss:370.3398 Recon Loss:0.1198 Acc:0.7291 Acc NCE:0.7291
+Epoch:83 Time:3.6 Data:0.0 Loss:2.8718 Cls Loss:2.8718 Pair Loss:0.6544 KL Loss:370.9601 Recon Loss:0.1198 Acc:0.7409 Acc NCE:0.7409
+Epoch:84 Time:3.7 Data:0.0 Loss:2.8708 Cls Loss:2.8708 Pair Loss:0.6554 KL Loss:370.3829 Recon Loss:0.1198 Acc:0.7341 Acc NCE:0.7341
+Epoch:85 Time:3.7 Data:0.0 Loss:2.8747 Cls Loss:2.8747 Pair Loss:0.6545 KL Loss:370.0670 Recon Loss:0.1198 Acc:0.7314 Acc NCE:0.7314
+=> Test at epoch 85
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.6% Gallery acc: 78.3% Total acc: 41.0%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.6% Gallery acc: 78.3% Total acc: 41.0%
+Epoch:86 Time:4.1 Data:0.0 Loss:2.8660 Cls Loss:2.8660 Pair Loss:0.6552 KL Loss:372.4217 Recon Loss:0.1198 Acc:0.7324 Acc NCE:0.7324
+Epoch:87 Time:3.6 Data:0.0 Loss:2.8757 Cls Loss:2.8757 Pair Loss:0.6548 KL Loss:371.8434 Recon Loss:0.1198 Acc:0.7293 Acc NCE:0.7293
+Epoch:88 Time:3.5 Data:0.0 Loss:2.8874 Cls Loss:2.8874 Pair Loss:0.6555 KL Loss:370.3108 Recon Loss:0.1199 Acc:0.7346 Acc NCE:0.7346
+Epoch:89 Time:3.6 Data:0.0 Loss:2.8651 Cls Loss:2.8651 Pair Loss:0.6532 KL Loss:371.2513 Recon Loss:0.1199 Acc:0.7392 Acc NCE:0.7392
+Epoch:90 Time:3.8 Data:0.0 Loss:2.8606 Cls Loss:2.8606 Pair Loss:0.6554 KL Loss:370.1395 Recon Loss:0.1198 Acc:0.7432 Acc NCE:0.7432
+=> Test at epoch 90
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.2% Gallery acc: 78.9% Total acc: 41.1%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.2% Gallery acc: 78.9% Total acc: 41.1%
+Epoch:91 Time:4.1 Data:0.0 Loss:2.8752 Cls Loss:2.8752 Pair Loss:0.6548 KL Loss:371.6992 Recon Loss:0.1198 Acc:0.7382 Acc NCE:0.7382
+Epoch:92 Time:3.6 Data:0.0 Loss:2.8728 Cls Loss:2.8728 Pair Loss:0.6555 KL Loss:369.9656 Recon Loss:0.1198 Acc:0.7382 Acc NCE:0.7382
+Epoch:93 Time:3.3 Data:0.0 Loss:2.8551 Cls Loss:2.8551 Pair Loss:0.6539 KL Loss:370.0860 Recon Loss:0.1198 Acc:0.7409 Acc NCE:0.7409
+Epoch:94 Time:3.6 Data:0.0 Loss:2.8625 Cls Loss:2.8625 Pair Loss:0.6545 KL Loss:370.4023 Recon Loss:0.1199 Acc:0.7440 Acc NCE:0.7440
+Epoch:95 Time:3.6 Data:0.0 Loss:2.8819 Cls Loss:2.8819 Pair Loss:0.6552 KL Loss:371.6419 Recon Loss:0.1199 Acc:0.7422 Acc NCE:0.7422
+=> Test at epoch 95
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.7% Gallery acc: 79.0% Total acc: 41.3%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.7% Gallery acc: 79.0% Total acc: 41.3%
+Epoch:96 Time:4.1 Data:0.0 Loss:2.8651 Cls Loss:2.8651 Pair Loss:0.6547 KL Loss:370.5716 Recon Loss:0.1198 Acc:0.7447 Acc NCE:0.7447
+Epoch:97 Time:3.7 Data:0.0 Loss:2.8689 Cls Loss:2.8689 Pair Loss:0.6546 KL Loss:370.5262 Recon Loss:0.1198 Acc:0.7467 Acc NCE:0.7467
+Epoch:98 Time:3.6 Data:0.0 Loss:2.8668 Cls Loss:2.8668 Pair Loss:0.6553 KL Loss:371.8491 Recon Loss:0.1198 Acc:0.7520 Acc NCE:0.7520
+Epoch:99 Time:4.1 Data:0.0 Loss:2.8573 Cls Loss:2.8573 Pair Loss:0.6557 KL Loss:370.5492 Recon Loss:0.1198 Acc:0.7568 Acc NCE:0.7568
+Epoch:100 Time:3.6 Data:0.0 Loss:2.8682 Cls Loss:2.8682 Pair Loss:0.6546 KL Loss:370.1659 Recon Loss:0.1198 Acc:0.7571 Acc NCE:0.7571
+=> Test at epoch 100
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.4% Gallery acc: 80.0% Total acc: 41.7%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.4% Gallery acc: 80.0% Total acc: 41.7%
+Epoch:101 Time:4.7 Data:0.0 Loss:2.8540 Cls Loss:2.8540 Pair Loss:0.6550 KL Loss:370.8752 Recon Loss:0.1199 Acc:0.7555 Acc NCE:0.7555
+Epoch:102 Time:4.2 Data:0.0 Loss:2.8762 Cls Loss:2.8762 Pair Loss:0.6553 KL Loss:370.1233 Recon Loss:0.1199 Acc:0.7611 Acc NCE:0.7611
+Epoch:103 Time:4.1 Data:0.0 Loss:2.8638 Cls Loss:2.8638 Pair Loss:0.6550 KL Loss:370.1980 Recon Loss:0.1199 Acc:0.7586 Acc NCE:0.7586
+Epoch:104 Time:6.0 Data:0.0 Loss:2.8722 Cls Loss:2.8722 Pair Loss:0.6548 KL Loss:370.0063 Recon Loss:0.1198 Acc:0.7543 Acc NCE:0.7543
+Epoch:105 Time:6.3 Data:0.0 Loss:2.8528 Cls Loss:2.8528 Pair Loss:0.6552 KL Loss:370.3395 Recon Loss:0.1199 Acc:0.7550 Acc NCE:0.7550
+=> Test at epoch 105
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.4% Gallery acc: 79.8% Total acc: 41.6%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.4% Gallery acc: 79.8% Total acc: 41.6%
+Epoch:106 Time:6.5 Data:0.0 Loss:2.8898 Cls Loss:2.8898 Pair Loss:0.6553 KL Loss:370.1125 Recon Loss:0.1198 Acc:0.7525 Acc NCE:0.7525
+Epoch:107 Time:6.1 Data:0.0 Loss:2.8564 Cls Loss:2.8564 Pair Loss:0.6534 KL Loss:370.3488 Recon Loss:0.1199 Acc:0.7560 Acc NCE:0.7560
+Epoch:108 Time:5.3 Data:0.0 Loss:2.8860 Cls Loss:2.8860 Pair Loss:0.6561 KL Loss:370.2747 Recon Loss:0.1198 Acc:0.7558 Acc NCE:0.7558
+Epoch:109 Time:5.7 Data:0.0 Loss:2.8468 Cls Loss:2.8468 Pair Loss:0.6553 KL Loss:371.1475 Recon Loss:0.1198 Acc:0.7588 Acc NCE:0.7588
+Epoch:110 Time:5.7 Data:0.0 Loss:2.8688 Cls Loss:2.8688 Pair Loss:0.6552 KL Loss:370.4975 Recon Loss:0.1198 Acc:0.7598 Acc NCE:0.7598
+=> Test at epoch 110
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.6% Gallery acc: 81.2% Total acc: 42.4%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 6s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.6% Gallery acc: 81.2% Total acc: 42.4%
+Epoch:111 Time:5.3 Data:0.0 Loss:2.8717 Cls Loss:2.8717 Pair Loss:0.6532 KL Loss:369.9303 Recon Loss:0.1198 Acc:0.7606 Acc NCE:0.7606
+Epoch:112 Time:4.5 Data:0.0 Loss:2.8496 Cls Loss:2.8496 Pair Loss:0.6542 KL Loss:369.8095 Recon Loss:0.1199 Acc:0.7596 Acc NCE:0.7596
+Epoch:113 Time:5.2 Data:0.0 Loss:2.8538 Cls Loss:2.8538 Pair Loss:0.6551 KL Loss:370.5419 Recon Loss:0.1199 Acc:0.7603 Acc NCE:0.7603
+Epoch:114 Time:4.7 Data:0.0 Loss:2.8553 Cls Loss:2.8553 Pair Loss:0.6537 KL Loss:370.5406 Recon Loss:0.1199 Acc:0.7601 Acc NCE:0.7601
+Epoch:115 Time:6.0 Data:0.0 Loss:2.8562 Cls Loss:2.8562 Pair Loss:0.6548 KL Loss:370.4516 Recon Loss:0.1198 Acc:0.7629 Acc NCE:0.7629
+=> Test at epoch 115
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.5% Gallery acc: 80.9% Total acc: 42.2%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.5% Gallery acc: 80.9% Total acc: 42.2%
+Epoch:116 Time:7.0 Data:0.0 Loss:2.8627 Cls Loss:2.8627 Pair Loss:0.6552 KL Loss:370.7390 Recon Loss:0.1198 Acc:0.7598 Acc NCE:0.7598
+Epoch:117 Time:5.8 Data:0.0 Loss:2.8720 Cls Loss:2.8720 Pair Loss:0.6555 KL Loss:371.8912 Recon Loss:0.1198 Acc:0.7626 Acc NCE:0.7626
+Epoch:118 Time:5.3 Data:0.0 Loss:2.8602 Cls Loss:2.8602 Pair Loss:0.6538 KL Loss:370.6149 Recon Loss:0.1199 Acc:0.7646 Acc NCE:0.7646
+Epoch:119 Time:4.6 Data:0.0 Loss:2.8570 Cls Loss:2.8570 Pair Loss:0.6532 KL Loss:372.9344 Recon Loss:0.1198 Acc:0.7656 Acc NCE:0.7656
+Epoch:120 Time:4.2 Data:0.0 Loss:2.8687 Cls Loss:2.8687 Pair Loss:0.6559 KL Loss:370.0989 Recon Loss:0.1198 Acc:0.7636 Acc NCE:0.7636
+=> Test at epoch 120
+==========Test with latent_z: z_c =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 128]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.2% top10:4.9% top20:8.3% mAP:2.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.7% Gallery acc: 81.2% Total acc: 42.5%
+The test feature is normalized
+The number of query sketch samples: 2709
+The number of gallery rgb samples: 2000
+==========Test with latent_z: new_z =========
+==========Test with NCE LOSS=========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:1.2% top5:3.1% top10:5.3% top20:8.5% mAP:2.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 3.7% Gallery acc: 81.2% Total acc: 42.5%
+Keep checkpoint file: checkpoint_ep120.pth.tar
+=> Best Rank-1 1.2%, mAP 2.0% achieved at epoch 120
+Finished. Total elapsed time (h:m:s): 0:25:38. Training time (h:m:s): 0:09:05.
+Shutting down background jobs, please wait a moment...
+Done!
+Waiting for the remaining 35 operations to synchronize with Neptune. Do not kill this process.
+All 35 operations synced, thanks for waiting!
+Explore the metadata in the Neptune app:
+https://app.neptune.ai/Zhengwei-Lab/MayCVAE/e/MAY-207/metadata

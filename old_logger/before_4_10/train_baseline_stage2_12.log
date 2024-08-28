@@ -1,0 +1,953 @@
+https://app.neptune.ai/Zhengwei-Lab/NIPSTransferReID/e/NIPS-500
+=> merge config from ./configs/clipreid_cvae_kl.yaml
+Use only x as input for flow model
+Use original kl loss for cvae model
+Use centroid as domain embedding
+/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/main.py:94: NeptuneUnsupportedType: You're attempting to log a type that is not directly supported by Neptune (<class 'list'>).
+        Convert the value to a supported type, such as a string or float, or use stringify_unsupported(obj)
+        for dictionaries or collections that contain unsupported values.
+        For more, see https://docs.neptune.ai/help/value_of_unsupported_type
+  run["parameters"] = param
+=> Configurations:
+-------------------------
+AMP: True
+AUG:
+  RC_PROB: 0.5
+  RE_PROB: 0.5
+DATA:
+  CUHK03_CLASSIC_SPLIT: False
+  CUHK03_LABELED: False
+  DATASET: duke
+  FORMAT_TAG: tensor
+  HEIGHT: 256
+  NUM_INSTANCES: 4
+  NUM_WORKERS: 4
+  ROOT: /home/zhengwei/Desktop/Zhengwei/Projects/datasets
+  SPLIT_ID: 0
+  TEST_BATCH: 512
+  TRAIN_BATCH: 64
+  TRAIN_FORMAT: base
+  WIDTH: 128
+EVAL_MODE: False
+GPU: 0
+LOSS:
+  CLA_LOSS: crossentropy
+  CLA_M: 0.0
+  CLA_S: 16.0
+  PAIR_LOSS: triplet
+  PAIR_M: 0.3
+  PAIR_S: 16.0
+  RECON_LOSS: mse
+MODEL:
+  CONDITIONAL: False
+  FEATURE_DIM: 1280
+  FEAT_FUSION: True
+  FLOW_TYPE: yuke_mlpflow
+  GAUSSIAN: MultivariateNormal
+  LATENT_SIZE: 12
+  NAME: CVAE
+  ONLY_CVAE_KL: True
+  ONLY_X_INPUT: True
+  PRETRAIN: CLIPreid
+  RES4_STRIDE: 1
+  RESUME: /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_cvae_ce_trip_cesmooth/2024-04-01/baseline_fp32_l4vaeleakRelu-lre4_12z_yuke_mlpflow_mse
+  TRAIN_STAGE: reidstage
+  USE_CENTROID: True
+  VAE_TYPE: cvae
+OUTPUT: /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_cvae_ce_trip_cesmooth/2024-04-01/baseline_fp32_l4vaeleakRelu-lre4_12z_yuke_mlpflow_mse/reid_crossentropy
+SAVED_NAME: baseline_fp32_l4vaeleakRelu-lre4_12z
+SEED: 0
+TAG: clipreid_cvae_ce_trip_cesmooth
+TEST:
+  DISTANCE: cosine
+  EVAL_STEP: 5
+  START_EVAL: -1
+TRAIN:
+  AMP: False
+  LR_SCHEDULER:
+    DECAY_RATE: 0.1
+    NAME: MultiStepLR
+    STEPSIZE: [20, 40]
+  MAX_EPOCH: 60
+  OPTIMIZER:
+    LR: 0.0001
+    NAME: adam
+    WEIGHT_DECAY: 0.0001
+  START_EPOCH: 0
+----------------------
+Initializing dataset duke
+Warning: string series 'monitoring/faecd8c1/stdout' value was longer than 1000 characters and was truncated. This warning is printed only once per series.
+Loading cluster results from '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/DukeMTMC-reID/kmeans_results/CLIPreid/train_all_25k_euclidean.pt'
+Clustering stastistics: [(0, 984), (1, 911), (2, 811), (3, 960), (4, 799), (5, 813), (6, 562), (7, 133), (8, 227), (9, 675), (10, 1504), (11, 473), (12, 654), (13, 332), (14, 589), (15, 801), (16, 694), (17, 480), (18, 621), (19, 567), (20, 527), (21, 1042), (22, 1102), (23, 88), (24, 173)]
+Loading cluster results from '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/DukeMTMC-reID/kmeans_results/CLIPreid/query_25k_euclidean.pt'
+Clustering stastistics: [(0, 158), (1, 127), (2, 88), (3, 147), (4, 53), (5, 90), (6, 110), (7, 91), (8, 44), (9, 71), (10, 114), (11, 87), (12, 71), (13, 31), (14, 82), (15, 74), (16, 92), (17, 62), (18, 109), (19, 93), (20, 113), (21, 48), (22, 100), (23, 65), (24, 108)]
+Loading cluster results from '/home/zhengwei/Desktop/Zhengwei/Projects/datasets/DukeMTMC-reID/kmeans_results/CLIPreid/gallery_25k_euclidean.pt'
+Clustering stastistics: [(0, 854), (1, 463), (2, 629), (3, 835), (4, 599), (5, 803), (6, 822), (7, 1079), (8, 824), (9, 262), (10, 711), (11, 521), (12, 613), (13, 659), (14, 347), (15, 306), (16, 901), (17, 881), (18, 750), (19, 893), (20, 826), (21, 627), (22, 938), (23, 868), (24, 650)]
+=> DukeMTMC-reID tensor loaded
+Dataset statistics:
+  ------------------------------
+  subset   | # ids | # images
+  ------------------------------
+  train    |   702 |    16522
+  query    |   702 |     2228
+  gallery  |  1110 |    17661
+  ------------------------------
+  total    |  1404 |    36411
+  ------------------------------
+Initializing Flow model: yuke_mlpflow
+Initializing vae model: cvae
+Model size: 1.74467M
+Using MLPClassBlock with hiidem_dim_list: [64, 128, 256, 512]
+=> Start Training REID model
+Loading checkpoint from '/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/duke/clipreid_cvae_ce_trip_cesmooth/2024-04-01/baseline_fp32_l4vaeleakRelu-lre4_12z_yuke_mlpflow_mse.best_model.pth.tar'
+orginal best rank1 = 0.7360861759425493
+=> Start training
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0219, -0.0346,  0.0277,  ...,  0.0021,  0.0164,  0.0044],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.3872,  0.1850,  0.1695,  0.1575,  0.2349,  0.2243,  0.3037,  0.5786,
+         0.3597,  0.2825,  0.1430, -0.0031], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.3872],
+        [ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.1850]], device='cuda:0')
+Epoch:1 Time:60.9 Data:0.0 Loss:6.5858 Cls Loss:6.2619 Cls Loss Theta:6.4869 Pair Loss:0.3239 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.0339 Theta Acc:0.0117 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0260, -0.0231,  0.0260,  ...,  0.0219,  0.0047,  0.0010],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1992, 0.3119, 0.1831, 0.2371, 0.2131, 0.2041, 0.3202, 0.3124, 0.2981,
+        0.5631, 0.2477, 0.1366], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0483,  0.0602, -0.0365, -0.0464,  0.0597,  0.1153, -0.1251,  0.0942,
+          0.0048,  0.1992],
+        [ 0.0483,  0.0602, -0.0365, -0.0464,  0.0597,  0.1153, -0.1251,  0.0942,
+          0.0048,  0.3119]], device='cuda:0')
+Epoch:2 Time:42.3 Data:0.0 Loss:5.9462 Cls Loss:5.6042 Cls Loss Theta:6.6310 Pair Loss:0.3420 KL Loss:12.9460 KLD Theta:12.9460 Recon Loss:0.0001 Acc:0.0744 Theta Acc:0.0041 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0332, -0.0240,  0.0215,  ...,  0.0157,  0.0181,  0.0038],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2074, 0.1405, 0.1811, 0.3659, 0.2395, 0.2606, 0.2926, 0.2805, 0.4987,
+        0.4076, 0.2535, 0.0406], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0461,  0.0551, -0.0505, -0.0862,  0.1494,  0.0968, -0.1614,  0.0891,
+         -0.0102,  0.2074],
+        [ 0.0461,  0.0551, -0.0505, -0.0862,  0.1494,  0.0968, -0.1614,  0.0891,
+         -0.0102,  0.1405]], device='cuda:0')
+Epoch:3 Time:41.8 Data:0.0 Loss:5.2807 Cls Loss:4.9247 Cls Loss Theta:7.0345 Pair Loss:0.3560 KL Loss:12.9454 KLD Theta:12.9454 Recon Loss:0.0001 Acc:0.1209 Theta Acc:0.0060 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0231,  0.0052,  0.0313,  ..., -0.0003,  0.0284,  0.0013],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.4707, 0.0797, 0.1171, 0.0399, 0.4964, 0.0317, 0.1826, 0.3400, 0.2016,
+        0.4493, 0.2436, 0.2415], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0977,  0.0966, -0.0137, -0.0698,  0.0405,  0.0682, -0.1408,  0.1125,
+         -0.0056,  0.4707],
+        [ 0.0977,  0.0966, -0.0137, -0.0698,  0.0405,  0.0682, -0.1408,  0.1125,
+         -0.0056,  0.0797]], device='cuda:0')
+Epoch:4 Time:42.2 Data:0.0 Loss:4.6970 Cls Loss:4.3433 Cls Loss Theta:7.6049 Pair Loss:0.3536 KL Loss:12.9459 KLD Theta:12.9459 Recon Loss:0.0001 Acc:0.1603 Theta Acc:0.0060 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0324,  0.0061,  0.0155,  ...,  0.0102,  0.0042,  0.0133],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.3052, 0.1726, 0.3379, 0.3252, 0.0935, 0.0824, 0.3773, 0.4133, 0.1952,
+        0.4817, 0.2381, 0.0361], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0483,  0.0602, -0.0365, -0.0464,  0.0597,  0.1153, -0.1251,  0.0942,
+          0.0048,  0.3052],
+        [ 0.0483,  0.0602, -0.0365, -0.0464,  0.0597,  0.1153, -0.1251,  0.0942,
+          0.0048,  0.1726]], device='cuda:0')
+Epoch:5 Time:41.9 Data:0.0 Loss:4.2719 Cls Loss:3.9211 Cls Loss Theta:8.1980 Pair Loss:0.3507 KL Loss:12.9454 KLD Theta:12.9454 Recon Loss:0.0001 Acc:0.1931 Theta Acc:0.0057 
+=> Test at epoch 5
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 6s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.2% top5:0.4% top10:0.5% top20:0.8% mAP:0.3%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0472, -0.0128,  0.0253,  ...,  0.0039,  0.0198, -0.0007],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.6197,  0.0550, -0.0100,  0.3130,  0.0514,  0.1729,  0.2122,  0.4313,
+         0.4258,  0.0548,  0.2557, -0.0332], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0146,  0.1122,  0.0082, -0.0093,  0.2006,  0.1010, -0.1417,  0.1013,
+         -0.0291,  0.6197],
+        [ 0.0146,  0.1122,  0.0082, -0.0093,  0.2006,  0.1010, -0.1417,  0.1013,
+         -0.0291,  0.0550]], device='cuda:0')
+Epoch:6 Time:39.9 Data:0.0 Loss:3.9539 Cls Loss:3.6059 Cls Loss Theta:8.7561 Pair Loss:0.3480 KL Loss:12.9458 KLD Theta:12.9458 Recon Loss:0.0001 Acc:0.2271 Theta Acc:0.0042 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0481, -0.0090,  0.0196,  ...,  0.0001,  0.0146, -0.0012],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0921, 0.3186, 0.2823, 0.3604, 0.2323, 0.3454, 0.1547, 0.3735, 0.2823,
+        0.3155, 0.4049, 0.0181], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0232,  0.1053, -0.0930, -0.0565,  0.0646,  0.0721, -0.1225,  0.0645,
+          0.0081,  0.0921],
+        [ 0.0232,  0.1053, -0.0930, -0.0565,  0.0646,  0.0721, -0.1225,  0.0645,
+          0.0081,  0.3186]], device='cuda:0')
+Epoch:7 Time:43.0 Data:0.0 Loss:3.7074 Cls Loss:3.3638 Cls Loss Theta:9.3472 Pair Loss:0.3436 KL Loss:12.9458 KLD Theta:12.9458 Recon Loss:0.0001 Acc:0.2493 Theta Acc:0.0049 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0014,  0.0193,  0.0384,  ...,  0.0042,  0.0175,  0.0021],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.4533, 0.1138, 0.0040, 0.3089, 0.3353, 0.0710, 0.6656, 0.2520, 0.0841,
+        0.1288, 0.1879, 0.0531], device='cuda:0')
+domian_feature+Z: tensor([[ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.4533],
+        [ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.1138]], device='cuda:0')
+Epoch:8 Time:42.6 Data:0.0 Loss:3.5133 Cls Loss:3.1761 Cls Loss Theta:9.8348 Pair Loss:0.3372 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.2693 Theta Acc:0.0054 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([ 0.0119, -0.0149,  0.0068,  ...,  0.0084,  0.0131,  0.0155],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2715, 0.2494, 0.3519, 0.5464, 0.2520, 0.2187, 0.3371, 0.2074, 0.2665,
+        0.0335, 0.3182, 0.0069], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0618,  0.0299, -0.0939, -0.0582,  0.0723,  0.1485, -0.1288,  0.1970,
+         -0.0284,  0.2715],
+        [ 0.0618,  0.0299, -0.0939, -0.0582,  0.0723,  0.1485, -0.1288,  0.1970,
+         -0.0284,  0.2494]], device='cuda:0')
+Epoch:9 Time:42.1 Data:0.0 Loss:3.3658 Cls Loss:3.0298 Cls Loss Theta:10.3320 Pair Loss:0.3359 KL Loss:12.9455 KLD Theta:12.9455 Recon Loss:0.0001 Acc:0.2891 Theta Acc:0.0056 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0247, -0.0211,  0.0126,  ..., -0.0091,  0.0295,  0.0005],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2393, 0.1707, 0.2548, 0.4001, 0.4635, 0.3340, 0.1879, 0.3720, 0.2258,
+        0.2503, 0.2480, 0.1148], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.2393],
+        [ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.1707]], device='cuda:0')
+Epoch:10 Time:42.7 Data:0.0 Loss:3.2699 Cls Loss:2.9354 Cls Loss Theta:10.7763 Pair Loss:0.3345 KL Loss:12.9458 KLD Theta:12.9458 Recon Loss:0.0001 Acc:0.2957 Theta Acc:0.0053 
+=> Test at epoch 10
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 7s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.7% top5:0.9% top10:1.3% top20:1.8% mAP:0.7%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([ 0.0135, -0.0063,  0.0252,  ..., -0.0021,  0.0068, -0.0004],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1537, 0.4066, 0.3950, 0.3673, 0.2324, 0.3058, 0.2842, 0.3693, 0.0567,
+        0.2772, 0.2614, 0.0828], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.1537],
+        [ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.4066]], device='cuda:0')
+Epoch:11 Time:40.4 Data:0.0 Loss:3.1781 Cls Loss:2.8462 Cls Loss Theta:11.1657 Pair Loss:0.3319 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.3093 Theta Acc:0.0058 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0211, -0.0467,  0.0162,  ...,  0.0101,  0.0107,  0.0097],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.2326,  0.1636,  0.3256,  0.5480,  0.3191,  0.3746,  0.2836,  0.2424,
+        -0.0060,  0.2667,  0.1631,  0.1827], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0624,  0.0425, -0.0829, -0.0435,  0.1114,  0.1538, -0.1678,  0.1387,
+         -0.0058,  0.2326],
+        [ 0.0624,  0.0425, -0.0829, -0.0435,  0.1114,  0.1538, -0.1678,  0.1387,
+         -0.0058,  0.1636]], device='cuda:0')
+Epoch:12 Time:42.7 Data:0.0 Loss:3.1202 Cls Loss:2.7901 Cls Loss Theta:11.4886 Pair Loss:0.3301 KL Loss:12.9455 KLD Theta:12.9455 Recon Loss:0.0001 Acc:0.3135 Theta Acc:0.0071 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0207, -0.0467,  0.0489,  ..., -0.0062,  0.0159,  0.0020],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2322, 0.2449, 0.2623, 0.4478, 0.3757, 0.1762, 0.2849, 0.2763, 0.4373,
+        0.2606, 0.0795, 0.1464], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0342,  0.0839, -0.0662, -0.0040,  0.1091,  0.1674, -0.1711,  0.1316,
+          0.0144,  0.2322],
+        [ 0.0342,  0.0839, -0.0662, -0.0040,  0.1091,  0.1674, -0.1711,  0.1316,
+          0.0144,  0.2449]], device='cuda:0')
+Epoch:13 Time:42.8 Data:0.0 Loss:3.0496 Cls Loss:2.7205 Cls Loss Theta:11.7864 Pair Loss:0.3291 KL Loss:12.9450 KLD Theta:12.9450 Recon Loss:0.0001 Acc:0.3227 Theta Acc:0.0056 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0134, -0.0350,  0.0146,  ...,  0.0035,  0.0286,  0.0141],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1362, 0.2355, 0.4466, 0.5109, 0.0767, 0.2629, 0.2314, 0.2078, 0.2924,
+        0.2476, 0.3830, 0.0093], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0594,  0.1112, -0.0548, -0.0574,  0.0890,  0.1406, -0.1648,  0.1735,
+         -0.0567,  0.1362],
+        [ 0.0594,  0.1112, -0.0548, -0.0574,  0.0890,  0.1406, -0.1648,  0.1735,
+         -0.0567,  0.2355]], device='cuda:0')
+Epoch:14 Time:43.0 Data:0.0 Loss:2.9996 Cls Loss:2.6720 Cls Loss Theta:12.1514 Pair Loss:0.3276 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.3323 Theta Acc:0.0063 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0037,  0.0288,  0.0571,  ..., -0.0037,  0.0106, -0.0025],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1832, 0.5213, 0.0104, 0.4386, 0.2404, 0.0817, 0.3228, 0.1376, 0.1328,
+        0.3969, 0.3433, 0.1461], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0483,  0.0602, -0.0365, -0.0464,  0.0597,  0.1153, -0.1251,  0.0942,
+          0.0048,  0.1832],
+        [ 0.0483,  0.0602, -0.0365, -0.0464,  0.0597,  0.1153, -0.1251,  0.0942,
+          0.0048,  0.5213]], device='cuda:0')
+Epoch:15 Time:42.4 Data:0.0 Loss:2.9580 Cls Loss:2.6324 Cls Loss Theta:12.3526 Pair Loss:0.3255 KL Loss:12.9457 KLD Theta:12.9457 Recon Loss:0.0001 Acc:0.3416 Theta Acc:0.0058 
+=> Test at epoch 15
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 7s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.8% top5:1.0% top10:1.3% top20:1.8% mAP:0.8%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([ 0.0220,  0.0093,  0.0272,  ...,  0.0220,  0.0093, -0.0023],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0770, 0.2109, 0.5314, 0.1282, 0.1881, 0.3773, 0.2817, 0.3939, 0.1786,
+        0.3569, 0.2678, 0.0855], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.0770],
+        [ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.2109]], device='cuda:0')
+Epoch:16 Time:40.8 Data:0.0 Loss:2.8918 Cls Loss:2.5678 Cls Loss Theta:12.6115 Pair Loss:0.3239 KL Loss:12.9460 KLD Theta:12.9460 Recon Loss:0.0001 Acc:0.3460 Theta Acc:0.0060 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0010, -0.0488,  0.0088,  ..., -0.0111,  0.0067,  0.0087],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0655, 0.3707, 0.0598, 0.3811, 0.3802, 0.2559, 0.3212, 0.0519, 0.5092,
+        0.2112, 0.2560, 0.1548], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0560,  0.1015, -0.0969, -0.1105,  0.0783,  0.1198, -0.2006,  0.1165,
+         -0.0083,  0.0655],
+        [ 0.0560,  0.1015, -0.0969, -0.1105,  0.0783,  0.1198, -0.2006,  0.1165,
+         -0.0083,  0.3707]], device='cuda:0')
+Epoch:17 Time:42.7 Data:0.0 Loss:2.8695 Cls Loss:2.5450 Cls Loss Theta:12.7948 Pair Loss:0.3245 KL Loss:12.9463 KLD Theta:12.9463 Recon Loss:0.0001 Acc:0.3496 Theta Acc:0.0060 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0034,  0.0235,  0.0370,  ...,  0.0166,  0.0133, -0.0054],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0200, 0.3403, 0.0647, 0.2666, 0.2784, 0.0290, 0.6018, 0.4187, 0.1613,
+        0.0485, 0.4047, 0.0182], device='cuda:0')
+domian_feature+Z: tensor([[ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.0200],
+        [ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.3403]], device='cuda:0')
+Epoch:18 Time:42.9 Data:0.0 Loss:2.8375 Cls Loss:2.5144 Cls Loss Theta:12.9599 Pair Loss:0.3231 KL Loss:12.9459 KLD Theta:12.9459 Recon Loss:0.0001 Acc:0.3534 Theta Acc:0.0054 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0398, -0.0521, -0.0011,  ...,  0.0073,  0.0110,  0.0003],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.1075,  0.2651,  0.2245,  0.3351,  0.1379,  0.4271,  0.2681,  0.4593,
+         0.3477,  0.2600,  0.2868, -0.0143], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0232,  0.1053, -0.0930, -0.0565,  0.0646,  0.0721, -0.1225,  0.0645,
+          0.0081,  0.1075],
+        [ 0.0232,  0.1053, -0.0930, -0.0565,  0.0646,  0.0721, -0.1225,  0.0645,
+          0.0081,  0.2651]], device='cuda:0')
+Epoch:19 Time:42.8 Data:0.0 Loss:2.8330 Cls Loss:2.5100 Cls Loss Theta:13.1810 Pair Loss:0.3229 KL Loss:12.9467 KLD Theta:12.9467 Recon Loss:0.0001 Acc:0.3589 Theta Acc:0.0054 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0172, -0.0302,  0.0232,  ..., -0.0021,  0.0126,  0.0003],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1391, 0.4219, 0.3644, 0.3539, 0.3410, 0.2997, 0.0822, 0.3261, 0.1739,
+        0.3233, 0.2593, 0.1525], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0524,  0.1075, -0.0597, -0.0134,  0.1087,  0.1221, -0.1378,  0.0543,
+          0.0029,  0.1391],
+        [ 0.0524,  0.1075, -0.0597, -0.0134,  0.1087,  0.1221, -0.1378,  0.0543,
+          0.0029,  0.4219]], device='cuda:0')
+Epoch:20 Time:41.6 Data:0.0 Loss:2.7991 Cls Loss:2.4771 Cls Loss Theta:13.2564 Pair Loss:0.3219 KL Loss:12.9460 KLD Theta:12.9460 Recon Loss:0.0001 Acc:0.3632 Theta Acc:0.0063 
+=> Test at epoch 20
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 6s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.7% top5:1.2% top10:1.5% top20:1.6% mAP:0.7%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0302,  0.0082,  0.0273,  ...,  0.0055,  0.0130,  0.0048],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.2114,  0.1556,  0.0181,  0.2956,  0.1881,  0.1955,  0.4791,  0.3051,
+         0.3765,  0.2157,  0.5081, -0.0236], device='cuda:0')
+domian_feature+Z: tensor([[ 3.2441e-02,  1.4999e-01, -7.5453e-05, -1.5232e-02,  3.4888e-02,
+          6.8694e-02, -1.4641e-01,  9.7013e-02,  1.5038e-03,  2.1141e-01],
+        [ 3.2441e-02,  1.4999e-01, -7.5453e-05, -1.5232e-02,  3.4888e-02,
+          6.8694e-02, -1.4641e-01,  9.7013e-02,  1.5038e-03,  1.5565e-01]],
+       device='cuda:0')
+Epoch:21 Time:40.6 Data:0.0 Loss:2.6340 Cls Loss:2.3125 Cls Loss Theta:13.3274 Pair Loss:0.3215 KL Loss:12.9460 KLD Theta:12.9460 Recon Loss:0.0001 Acc:0.4005 Theta Acc:0.0055 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0414, -0.0561, -0.0124,  ..., -0.0105,  0.0166, -0.0056],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0089, 0.5241, 0.2027, 0.2689, 0.1903, 0.2340, 0.1484, 0.4888, 0.3363,
+        0.3268, 0.1343, 0.1478], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0034,  0.0625, -0.0556, -0.0376,  0.0865,  0.0556, -0.1169,  0.1604,
+          0.0061,  0.0089],
+        [ 0.0034,  0.0625, -0.0556, -0.0376,  0.0865,  0.0556, -0.1169,  0.1604,
+          0.0061,  0.5241]], device='cuda:0')
+Epoch:22 Time:42.2 Data:0.0 Loss:2.6508 Cls Loss:2.3288 Cls Loss Theta:13.4400 Pair Loss:0.3220 KL Loss:12.9448 KLD Theta:12.9448 Recon Loss:0.0001 Acc:0.4040 Theta Acc:0.0058 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0003, -0.0115,  0.0412,  ...,  0.0135,  0.0059, -0.0017],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.1917,  0.4885, -0.0009,  0.2119,  0.2274,  0.3746,  0.4087,  0.2296,
+         0.1853,  0.3970,  0.2604,  0.0893], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0141,  0.0525, -0.0565, -0.0376,  0.0981,  0.0873, -0.1218,  0.1558,
+         -0.0049,  0.1917],
+        [ 0.0141,  0.0525, -0.0565, -0.0376,  0.0981,  0.0873, -0.1218,  0.1558,
+         -0.0049,  0.4885]], device='cuda:0')
+Epoch:23 Time:42.1 Data:0.0 Loss:2.6434 Cls Loss:2.3217 Cls Loss Theta:13.3255 Pair Loss:0.3217 KL Loss:12.9457 KLD Theta:12.9457 Recon Loss:0.0001 Acc:0.4014 Theta Acc:0.0057 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0522, -0.0050, -0.0186,  ...,  0.0003,  0.0181,  0.0030],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.5270, -0.0303,  0.0368,  0.0281,  0.2178,  0.4446,  0.3175,  0.1371,
+         0.5443, -0.0040,  0.2400, -0.0107], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0146,  0.1122,  0.0082, -0.0093,  0.2006,  0.1010, -0.1417,  0.1013,
+         -0.0291,  0.5270],
+        [ 0.0146,  0.1122,  0.0082, -0.0093,  0.2006,  0.1010, -0.1417,  0.1013,
+         -0.0291, -0.0303]], device='cuda:0')
+Epoch:24 Time:43.0 Data:0.0 Loss:2.5937 Cls Loss:2.2724 Cls Loss Theta:13.3498 Pair Loss:0.3213 KL Loss:12.9467 KLD Theta:12.9467 Recon Loss:0.0001 Acc:0.4151 Theta Acc:0.0063 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0049,  0.0208,  0.0258,  ..., -0.0045,  0.0049,  0.0009],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1232, 0.3208, 0.2078, 0.4168, 0.3980, 0.0774, 0.3462, 0.0755, 0.3032,
+        0.3401, 0.3561, 0.2013], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0342,  0.0839, -0.0662, -0.0040,  0.1091,  0.1674, -0.1711,  0.1316,
+          0.0144,  0.1232],
+        [ 0.0342,  0.0839, -0.0662, -0.0040,  0.1091,  0.1674, -0.1711,  0.1316,
+          0.0144,  0.3208]], device='cuda:0')
+Epoch:25 Time:42.2 Data:0.0 Loss:2.6114 Cls Loss:2.2909 Cls Loss Theta:13.3382 Pair Loss:0.3206 KL Loss:12.9457 KLD Theta:12.9457 Recon Loss:0.0001 Acc:0.4098 Theta Acc:0.0066 
+=> Test at epoch 25
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 6s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.8% top5:1.3% top10:1.4% top20:1.9% mAP:0.8%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0132, -0.0328,  0.0289,  ...,  0.0027,  0.0112, -0.0100],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0867, 0.2406, 0.3523, 0.2304, 0.2655, 0.3282, 0.3187, 0.4751, 0.3345,
+        0.3222, 0.1810, 0.0570], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.0867],
+        [ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.2406]], device='cuda:0')
+Epoch:26 Time:40.5 Data:0.0 Loss:2.6357 Cls Loss:2.3130 Cls Loss Theta:13.3879 Pair Loss:0.3227 KL Loss:12.9460 KLD Theta:12.9460 Recon Loss:0.0001 Acc:0.4040 Theta Acc:0.0063 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0530, -0.0245,  0.0203,  ...,  0.0109,  0.0050, -0.0036],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1064, 0.2025, 0.1057, 0.1201, 0.3375, 0.0864, 0.1311, 0.3446, 0.7002,
+        0.3085, 0.1346, 0.2467], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0461,  0.0551, -0.0505, -0.0862,  0.1494,  0.0968, -0.1614,  0.0891,
+         -0.0102,  0.1064],
+        [ 0.0461,  0.0551, -0.0505, -0.0862,  0.1494,  0.0968, -0.1614,  0.0891,
+         -0.0102,  0.2025]], device='cuda:0')
+Epoch:27 Time:43.2 Data:0.0 Loss:2.6254 Cls Loss:2.3030 Cls Loss Theta:13.3585 Pair Loss:0.3225 KL Loss:12.9458 KLD Theta:12.9458 Recon Loss:0.0001 Acc:0.4096 Theta Acc:0.0069 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0006,  0.0099,  0.0381,  ...,  0.0017,  0.0099, -0.0069],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0121, 0.4087, 0.3045, 0.2498, 0.2162, 0.3954, 0.4445, 0.3520, 0.1675,
+        0.2949, 0.1613, 0.1089], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.0121],
+        [ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.4087]], device='cuda:0')
+Epoch:28 Time:42.2 Data:0.0 Loss:2.6022 Cls Loss:2.2812 Cls Loss Theta:13.3806 Pair Loss:0.3210 KL Loss:12.9455 KLD Theta:12.9455 Recon Loss:0.0001 Acc:0.4118 Theta Acc:0.0064 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0009, -0.0341,  0.0496,  ..., -0.0059, -0.0069, -0.0075],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0985, 0.3768, 0.4360, 0.1915, 0.0765, 0.3406, 0.2542, 0.4897, 0.1927,
+        0.3842, 0.0611, 0.0807], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.0985],
+        [ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.3768]], device='cuda:0')
+Epoch:29 Time:42.8 Data:0.0 Loss:2.6070 Cls Loss:2.2857 Cls Loss Theta:13.3687 Pair Loss:0.3213 KL Loss:12.9451 KLD Theta:12.9451 Recon Loss:0.0001 Acc:0.4088 Theta Acc:0.0058 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([ 0.0145, -0.0112,  0.0462,  ...,  0.0091,  0.0115, -0.0047],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.3439,  0.2602,  0.0575,  0.2362,  0.2124,  0.1019,  0.5036,  0.5351,
+         0.0484,  0.1643,  0.3598, -0.0223], device='cuda:0')
+domian_feature+Z: tensor([[ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.3439],
+        [ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.2602]], device='cuda:0')
+Epoch:30 Time:42.6 Data:0.0 Loss:2.5662 Cls Loss:2.2455 Cls Loss Theta:13.3936 Pair Loss:0.3207 KL Loss:12.9454 KLD Theta:12.9454 Recon Loss:0.0001 Acc:0.4234 Theta Acc:0.0063 
+=> Test at epoch 30
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 6s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.8% top5:1.1% top10:1.3% top20:1.6% mAP:0.8%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0043, -0.0249,  0.0216,  ...,  0.0050,  0.0127,  0.0126],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0784, 0.5082, 0.2414, 0.5520, 0.2674, 0.0737, 0.0665, 0.2761, 0.2681,
+        0.1914, 0.3036, 0.1189], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0627,  0.1089, -0.0851, -0.0395,  0.1180,  0.1227, -0.1424,  0.1724,
+         -0.0105,  0.0784],
+        [ 0.0627,  0.1089, -0.0851, -0.0395,  0.1180,  0.1227, -0.1424,  0.1724,
+         -0.0105,  0.5082]], device='cuda:0')
+Epoch:31 Time:40.8 Data:0.0 Loss:2.5970 Cls Loss:2.2759 Cls Loss Theta:13.4114 Pair Loss:0.3211 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.4092 Theta Acc:0.0058 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0063,  0.0037,  0.0290,  ...,  0.0003,  0.0045,  0.0176],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2878, 0.2589, 0.2183, 0.2889, 0.3137, 0.1746, 0.3107, 0.4455, 0.2796,
+        0.3595, 0.2958, 0.0101], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.2878],
+        [ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.2589]], device='cuda:0')
+Epoch:32 Time:42.5 Data:0.0 Loss:2.5899 Cls Loss:2.2693 Cls Loss Theta:13.4552 Pair Loss:0.3206 KL Loss:12.9458 KLD Theta:12.9458 Recon Loss:0.0001 Acc:0.4164 Theta Acc:0.0070 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0406, -0.0279,  0.0320,  ...,  0.0047,  0.0089,  0.0018],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2085, 0.0742, 0.5895, 0.2469, 0.2188, 0.0032, 0.4142, 0.0610, 0.3265,
+        0.3337, 0.0432, 0.3148], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0602,  0.0880, -0.0962,  0.0436,  0.1868,  0.1781, -0.1643,  0.1373,
+         -0.0680,  0.2085],
+        [ 0.0602,  0.0880, -0.0962,  0.0436,  0.1868,  0.1781, -0.1643,  0.1373,
+         -0.0680,  0.0742]], device='cuda:0')
+Epoch:33 Time:42.8 Data:0.0 Loss:2.5760 Cls Loss:2.2542 Cls Loss Theta:13.5327 Pair Loss:0.3219 KL Loss:12.9454 KLD Theta:12.9454 Recon Loss:0.0001 Acc:0.4187 Theta Acc:0.0062 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0173, -0.0644,  0.0042,  ..., -0.0077,  0.0216,  0.0098],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1131, 0.2322, 0.3988, 0.4200, 0.2506, 0.2662, 0.2608, 0.3140, 0.3078,
+        0.2621, 0.3646, 0.0321], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.1131],
+        [ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.2322]], device='cuda:0')
+Epoch:34 Time:42.4 Data:0.0 Loss:2.5790 Cls Loss:2.2589 Cls Loss Theta:13.5312 Pair Loss:0.3201 KL Loss:12.9458 KLD Theta:12.9458 Recon Loss:0.0001 Acc:0.4144 Theta Acc:0.0071 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0105, -0.0139,  0.0052,  ...,  0.0078,  0.0032,  0.0031],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1511, 0.2747, 0.4070, 0.2937, 0.2262, 0.1839, 0.1781, 0.4227, 0.2913,
+        0.4200, 0.2941, 0.0807], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.1511],
+        [ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.2747]], device='cuda:0')
+Epoch:35 Time:42.0 Data:0.0 Loss:2.5816 Cls Loss:2.2607 Cls Loss Theta:13.5386 Pair Loss:0.3209 KL Loss:12.9455 KLD Theta:12.9455 Recon Loss:0.0001 Acc:0.4267 Theta Acc:0.0064 
+=> Test at epoch 35
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 6s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.7% top5:1.3% top10:1.4% top20:1.9% mAP:0.8%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0289, -0.0258,  0.0414,  ..., -0.0018,  0.0190,  0.0068],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.3135,  0.2145,  0.4133,  0.1069,  0.4369,  0.3380,  0.2119,  0.1934,
+         0.4812, -0.0072,  0.2068,  0.1068], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.3135],
+        [ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.2145]], device='cuda:0')
+Epoch:36 Time:39.6 Data:0.0 Loss:2.5792 Cls Loss:2.2583 Cls Loss Theta:13.5345 Pair Loss:0.3209 KL Loss:12.9456 KLD Theta:12.9456 Recon Loss:0.0001 Acc:0.4169 Theta Acc:0.0053 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0047,  0.0165,  0.0419,  ..., -0.0084,  0.0268,  0.0028],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.3549, 0.1945, 0.1637, 0.1956, 0.2816, 0.1260, 0.3994, 0.5678, 0.2391,
+        0.3581, 0.0534, 0.0745], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0977,  0.0966, -0.0137, -0.0698,  0.0405,  0.0682, -0.1408,  0.1125,
+         -0.0056,  0.3549],
+        [ 0.0977,  0.0966, -0.0137, -0.0698,  0.0405,  0.0682, -0.1408,  0.1125,
+         -0.0056,  0.1945]], device='cuda:0')
+Epoch:37 Time:42.6 Data:0.0 Loss:2.5331 Cls Loss:2.2147 Cls Loss Theta:13.4819 Pair Loss:0.3184 KL Loss:12.9459 KLD Theta:12.9459 Recon Loss:0.0001 Acc:0.4256 Theta Acc:0.0053 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0349, -0.0018,  0.0195,  ...,  0.0071,  0.0196,  0.0005],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.3407, 0.3787, 0.2504, 0.1777, 0.4225, 0.0535, 0.2105, 0.4445, 0.0426,
+        0.3270, 0.2956, 0.1630], device='cuda:0')
+domian_feature+Z: tensor([[ 0.1030,  0.0815, -0.0627, -0.0486,  0.1041,  0.0564, -0.1307,  0.1190,
+          0.0027,  0.3407],
+        [ 0.1030,  0.0815, -0.0627, -0.0486,  0.1041,  0.0564, -0.1307,  0.1190,
+          0.0027,  0.3787]], device='cuda:0')
+Epoch:38 Time:41.3 Data:0.0 Loss:2.5740 Cls Loss:2.2534 Cls Loss Theta:13.5323 Pair Loss:0.3206 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.4199 Theta Acc:0.0066 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0270, -0.0166,  0.0382,  ...,  0.0105,  0.0128,  0.0029],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.2271,  0.0738,  0.2307,  0.4122,  0.1653,  0.1735,  0.5264,  0.3167,
+         0.1818,  0.2146,  0.4533, -0.0148], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0624,  0.0425, -0.0829, -0.0435,  0.1114,  0.1538, -0.1678,  0.1387,
+         -0.0058,  0.2271],
+        [ 0.0624,  0.0425, -0.0829, -0.0435,  0.1114,  0.1538, -0.1678,  0.1387,
+         -0.0058,  0.0738]], device='cuda:0')
+Epoch:39 Time:43.5 Data:0.0 Loss:2.5655 Cls Loss:2.2443 Cls Loss Theta:13.5718 Pair Loss:0.3213 KL Loss:12.9463 KLD Theta:12.9463 Recon Loss:0.0001 Acc:0.4184 Theta Acc:0.0054 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0157,  0.0073,  0.0383,  ...,  0.0077,  0.0078,  0.0132],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.3992, 0.2592, 0.1503, 0.3947, 0.0555, 0.0309, 0.3930, 0.4037, 0.1485,
+        0.4581, 0.2019, 0.0263], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0267,  0.0432, -0.0220, -0.0541,  0.1078,  0.1274, -0.1544,  0.1467,
+          0.0274,  0.3992],
+        [ 0.0267,  0.0432, -0.0220, -0.0541,  0.1078,  0.1274, -0.1544,  0.1467,
+          0.0274,  0.2592]], device='cuda:0')
+Epoch:40 Time:42.0 Data:0.0 Loss:2.5588 Cls Loss:2.2380 Cls Loss Theta:13.5576 Pair Loss:0.3208 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.4225 Theta Acc:0.0050 
+=> Test at epoch 40
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 6s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.6% top5:1.3% top10:1.3% top20:1.7% mAP:0.7%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0180, -0.0061,  0.0290,  ..., -0.0039,  0.0179, -0.0028],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.3405,  0.2470,  0.1589,  0.0853,  0.3041,  0.2819,  0.3828,  0.5173,
+         0.3398,  0.1029,  0.2792, -0.0127], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.3405],
+        [ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.2470]], device='cuda:0')
+Epoch:41 Time:41.0 Data:0.0 Loss:2.5307 Cls Loss:2.2104 Cls Loss Theta:13.5978 Pair Loss:0.3203 KL Loss:12.9454 KLD Theta:12.9454 Recon Loss:0.0001 Acc:0.4260 Theta Acc:0.0067 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0106, -0.0195,  0.0544,  ...,  0.0013,  0.0107, -0.0033],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2976, 0.2566, 0.2703, 0.1509, 0.2514, 0.1568, 0.3563, 0.5298, 0.3403,
+        0.3072, 0.2095, 0.0092], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.2976],
+        [ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.2566]], device='cuda:0')
+Epoch:42 Time:43.3 Data:0.0 Loss:2.5364 Cls Loss:2.2155 Cls Loss Theta:13.6011 Pair Loss:0.3209 KL Loss:12.9458 KLD Theta:12.9458 Recon Loss:0.0001 Acc:0.4269 Theta Acc:0.0070 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0052, -0.0028,  0.0501,  ...,  0.0023,  0.0083, -0.0059],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.3293,  0.2451,  0.0444,  0.2526,  0.2126,  0.1152,  0.5345,  0.4988,
+         0.0127,  0.1591,  0.3829, -0.0211], device='cuda:0')
+domian_feature+Z: tensor([[ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.3293],
+        [ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.2451]], device='cuda:0')
+Epoch:43 Time:44.7 Data:0.0 Loss:2.5392 Cls Loss:2.2186 Cls Loss Theta:13.5358 Pair Loss:0.3206 KL Loss:12.9459 KLD Theta:12.9459 Recon Loss:0.0001 Acc:0.4239 Theta Acc:0.0071 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0421, -0.0443, -0.0105,  ...,  0.0004,  0.0040,  0.0065],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2845, 0.3423, 0.3612, 0.2913, 0.2439, 0.2076, 0.1263, 0.5457, 0.2660,
+        0.3013, 0.0269, 0.0883], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.2845],
+        [ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.3423]], device='cuda:0')
+Epoch:44 Time:53.0 Data:0.0 Loss:2.5367 Cls Loss:2.2157 Cls Loss Theta:13.6161 Pair Loss:0.3210 KL Loss:12.9449 KLD Theta:12.9449 Recon Loss:0.0001 Acc:0.4280 Theta Acc:0.0062 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0050, -0.0323,  0.0471,  ...,  0.0079,  0.0111,  0.0047],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.2788,  0.2869,  0.1745,  0.6646,  0.2882,  0.1168,  0.3283,  0.1518,
+         0.2966,  0.1360, -0.0027,  0.1831], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0618,  0.0299, -0.0939, -0.0582,  0.0723,  0.1485, -0.1288,  0.1970,
+         -0.0284,  0.2788],
+        [ 0.0618,  0.0299, -0.0939, -0.0582,  0.0723,  0.1485, -0.1288,  0.1970,
+         -0.0284,  0.2869]], device='cuda:0')
+Epoch:45 Time:50.3 Data:0.0 Loss:2.5144 Cls Loss:2.1951 Cls Loss Theta:13.5582 Pair Loss:0.3193 KL Loss:12.9460 KLD Theta:12.9460 Recon Loss:0.0001 Acc:0.4298 Theta Acc:0.0064 
+=> Test at epoch 45
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 7s
+Distance computing in 0m 1s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.3% top5:1.0% top10:1.3% top20:1.5% mAP:0.7%
+-----------------------------------------------------------
+Using 0m 3s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([ 0.0028, -0.0279,  0.0113,  ..., -0.0044,  0.0030,  0.0053],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.3667, 0.2732, 0.3251, 0.2062, 0.2511, 0.2270, 0.2813, 0.4961, 0.2685,
+        0.3271, 0.1522, 0.0219], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.3667],
+        [ 0.0249,  0.0988, -0.0656, -0.0136,  0.0796,  0.1202, -0.1203,  0.0964,
+          0.0018,  0.2732]], device='cuda:0')
+Epoch:46 Time:53.2 Data:0.0 Loss:2.5447 Cls Loss:2.2239 Cls Loss Theta:13.5824 Pair Loss:0.3208 KL Loss:12.9463 KLD Theta:12.9463 Recon Loss:0.0001 Acc:0.4271 Theta Acc:0.0076 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0205,  0.0010,  0.0603,  ..., -0.0023,  0.0051,  0.0094],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2133, 0.2986, 0.1062, 0.3043, 0.3557, 0.3082, 0.3891, 0.2667, 0.2698,
+        0.3907, 0.2927, 0.0784], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0232,  0.1053, -0.0930, -0.0565,  0.0646,  0.0721, -0.1225,  0.0645,
+          0.0081,  0.2133],
+        [ 0.0232,  0.1053, -0.0930, -0.0565,  0.0646,  0.0721, -0.1225,  0.0645,
+          0.0081,  0.2986]], device='cuda:0')
+Epoch:47 Time:45.2 Data:0.0 Loss:2.5658 Cls Loss:2.2446 Cls Loss Theta:13.6259 Pair Loss:0.3212 KL Loss:12.9456 KLD Theta:12.9456 Recon Loss:0.0001 Acc:0.4234 Theta Acc:0.0066 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0068,  0.0213,  0.0435,  ..., -0.0002,  0.0235,  0.0036],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.4546, 0.1213, 0.0954, 0.3278, 0.4405, 0.0826, 0.5352, 0.2781, 0.1123,
+        0.1455, 0.2374, 0.0842], device='cuda:0')
+domian_feature+Z: tensor([[ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.4546],
+        [ 0.1276,  0.0804, -0.0411, -0.0339,  0.0320,  0.1325, -0.1560,  0.1711,
+          0.0239,  0.1213]], device='cuda:0')
+Epoch:48 Time:54.1 Data:0.0 Loss:2.5556 Cls Loss:2.2351 Cls Loss Theta:13.6152 Pair Loss:0.3205 KL Loss:12.9460 KLD Theta:12.9460 Recon Loss:0.0001 Acc:0.4265 Theta Acc:0.0062 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0102,  0.0105,  0.0142,  ...,  0.0056,  0.0029,  0.0196],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.2179, 0.5247, 0.2266, 0.3846, 0.2042, 0.0797, 0.0328, 0.2771, 0.3589,
+        0.3895, 0.1981, 0.1791], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0483,  0.0602, -0.0365, -0.0464,  0.0597,  0.1153, -0.1251,  0.0942,
+          0.0048,  0.2179],
+        [ 0.0483,  0.0602, -0.0365, -0.0464,  0.0597,  0.1153, -0.1251,  0.0942,
+          0.0048,  0.5247]], device='cuda:0')
+Epoch:49 Time:53.6 Data:0.0 Loss:2.5374 Cls Loss:2.2172 Cls Loss Theta:13.6005 Pair Loss:0.3203 KL Loss:12.9453 KLD Theta:12.9453 Recon Loss:0.0001 Acc:0.4264 Theta Acc:0.0061 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0435, -0.0016,  0.0028,  ...,  0.0005,  0.0066, -0.0055],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.2061,  0.4385,  0.3320,  0.1629,  0.2959,  0.3426,  0.2380,  0.4587,
+         0.2087,  0.1118,  0.3168, -0.0010], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.2061],
+        [ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.4385]], device='cuda:0')
+Epoch:50 Time:48.3 Data:0.0 Loss:2.5537 Cls Loss:2.2332 Cls Loss Theta:13.5538 Pair Loss:0.3205 KL Loss:12.9460 KLD Theta:12.9460 Recon Loss:0.0001 Acc:0.4284 Theta Acc:0.0065 
+=> Test at epoch 50
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 8s
+Distance computing in 0m 1s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.8% top5:1.4% top10:1.6% top20:2.2% mAP:0.8%
+-----------------------------------------------------------
+Using 0m 2s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0191,  0.0065,  0.0266,  ...,  0.0059,  0.0184,  0.0006],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0120, 0.2599, 0.5418, 0.0598, 0.0467, 0.3702, 0.3512, 0.2070, 0.4720,
+        0.0922, 0.3135, 0.0020], device='cuda:0')
+domian_feature+Z: tensor([[-0.0004,  0.1290, -0.0780, -0.0463,  0.1429,  0.1074, -0.1442,  0.1546,
+          0.0079,  0.0120],
+        [-0.0004,  0.1290, -0.0780, -0.0463,  0.1429,  0.1074, -0.1442,  0.1546,
+          0.0079,  0.2599]], device='cuda:0')
+Epoch:51 Time:49.7 Data:0.0 Loss:2.5383 Cls Loss:2.2183 Cls Loss Theta:13.5810 Pair Loss:0.3200 KL Loss:12.9458 KLD Theta:12.9458 Recon Loss:0.0001 Acc:0.4277 Theta Acc:0.0077 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0194,  0.0009,  0.0203,  ...,  0.0093,  0.0008,  0.0111],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1811, 0.4473, 0.1839, 0.1278, 0.3181, 0.2760, 0.2643, 0.1710, 0.4417,
+        0.3892, 0.2517, 0.1742], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0461,  0.0551, -0.0505, -0.0862,  0.1494,  0.0968, -0.1614,  0.0891,
+         -0.0102,  0.1811],
+        [ 0.0461,  0.0551, -0.0505, -0.0862,  0.1494,  0.0968, -0.1614,  0.0891,
+         -0.0102,  0.4473]], device='cuda:0')
+Epoch:52 Time:46.9 Data:0.0 Loss:2.5018 Cls Loss:2.1829 Cls Loss Theta:13.6310 Pair Loss:0.3189 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.4324 Theta Acc:0.0067 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0451, -0.0201,  0.0322,  ...,  0.0043, -0.0041,  0.0075],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.3388, 0.3528, 0.1083, 0.2622, 0.2908, 0.3618, 0.1516, 0.4373, 0.2482,
+        0.3561, 0.2487, 0.0114], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0524,  0.1075, -0.0597, -0.0134,  0.1087,  0.1221, -0.1378,  0.0543,
+          0.0029,  0.3388],
+        [ 0.0524,  0.1075, -0.0597, -0.0134,  0.1087,  0.1221, -0.1378,  0.0543,
+          0.0029,  0.3528]], device='cuda:0')
+Epoch:53 Time:57.6 Data:0.0 Loss:2.5297 Cls Loss:2.2096 Cls Loss Theta:13.6209 Pair Loss:0.3201 KL Loss:12.9461 KLD Theta:12.9461 Recon Loss:0.0001 Acc:0.4265 Theta Acc:0.0063 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0300, -0.0117,  0.0306,  ...,  0.0177,  0.0097,  0.0024],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.2296,  0.0907,  0.3620,  0.3450,  0.1354,  0.1600,  0.4355,  0.4070,
+         0.2172,  0.3026,  0.3881, -0.0121], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0624,  0.0425, -0.0829, -0.0435,  0.1114,  0.1538, -0.1678,  0.1387,
+         -0.0058,  0.2296],
+        [ 0.0624,  0.0425, -0.0829, -0.0435,  0.1114,  0.1538, -0.1678,  0.1387,
+         -0.0058,  0.0907]], device='cuda:0')
+Epoch:54 Time:48.5 Data:0.0 Loss:2.5087 Cls Loss:2.1891 Cls Loss Theta:13.6294 Pair Loss:0.3196 KL Loss:12.9454 KLD Theta:12.9454 Recon Loss:0.0001 Acc:0.4335 Theta Acc:0.0064 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0051, -0.0466,  0.0103,  ..., -0.0170,  0.0077,  0.0096],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0700, 0.3520, 0.0801, 0.3747, 0.3796, 0.2651, 0.3520, 0.0477, 0.4974,
+        0.2204, 0.2541, 0.1520], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0560,  0.1015, -0.0969, -0.1105,  0.0783,  0.1198, -0.2006,  0.1165,
+         -0.0083,  0.0700],
+        [ 0.0560,  0.1015, -0.0969, -0.1105,  0.0783,  0.1198, -0.2006,  0.1165,
+         -0.0083,  0.3520]], device='cuda:0')
+Epoch:55 Time:50.0 Data:0.0 Loss:2.5009 Cls Loss:2.1817 Cls Loss Theta:13.6110 Pair Loss:0.3191 KL Loss:12.9455 KLD Theta:12.9455 Recon Loss:0.0001 Acc:0.4337 Theta Acc:0.0063 
+=> Test at epoch 55
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 8s
+Distance computing in 0m 0s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.2% top5:1.1% top10:1.3% top20:1.7% mAP:0.7%
+-----------------------------------------------------------
+Using 0m 3s
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0109, -0.0111,  0.0263,  ...,  0.0042,  0.0040, -0.0075],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.0608, 0.3711, 0.3031, 0.1653, 0.2487, 0.4075, 0.3718, 0.3752, 0.2431,
+        0.2572, 0.3260, 0.0274], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.0608],
+        [ 0.0332,  0.1296, -0.0882, -0.0597,  0.0929,  0.1035, -0.1304,  0.1042,
+         -0.0137,  0.3711]], device='cuda:0')
+Epoch:56 Time:49.0 Data:0.0 Loss:2.5431 Cls Loss:2.2233 Cls Loss Theta:13.5799 Pair Loss:0.3198 KL Loss:12.9459 KLD Theta:12.9459 Recon Loss:0.0001 Acc:0.4228 Theta Acc:0.0071 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0530, -0.0245,  0.0203,  ...,  0.0109,  0.0050, -0.0036],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([0.1064, 0.2025, 0.1057, 0.1201, 0.3375, 0.0864, 0.1311, 0.3446, 0.7002,
+        0.3085, 0.1346, 0.2467], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0461,  0.0551, -0.0505, -0.0862,  0.1494,  0.0968, -0.1614,  0.0891,
+         -0.0102,  0.1064],
+        [ 0.0461,  0.0551, -0.0505, -0.0862,  0.1494,  0.0968, -0.1614,  0.0891,
+         -0.0102,  0.2025]], device='cuda:0')
+Epoch:57 Time:51.8 Data:0.0 Loss:2.5710 Cls Loss:2.2492 Cls Loss Theta:13.6338 Pair Loss:0.3217 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.4212 Theta Acc:0.0065 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0263, -0.0353,  0.0240,  ...,  0.0039,  0.0176,  0.0018],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.2104,  0.0747,  0.6090,  0.2905,  0.2267, -0.0041,  0.3628,  0.0363,
+         0.3316,  0.3117,  0.0592,  0.3155], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0602,  0.0880, -0.0962,  0.0436,  0.1868,  0.1781, -0.1643,  0.1373,
+         -0.0680,  0.2104],
+        [ 0.0602,  0.0880, -0.0962,  0.0436,  0.1868,  0.1781, -0.1643,  0.1373,
+         -0.0680,  0.0747]], device='cuda:0')
+Epoch:58 Time:57.7 Data:0.0 Loss:2.5447 Cls Loss:2.2239 Cls Loss Theta:13.6348 Pair Loss:0.3208 KL Loss:12.9459 KLD Theta:12.9459 Recon Loss:0.0001 Acc:0.4252 Theta Acc:0.0056 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([-0.0175, -0.0074,  0.0226,  ...,  0.0083,  0.0199,  0.0110],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.5223,  0.0777,  0.2955,  0.2913,  0.0619,  0.2752,  0.3680,  0.2600,
+         0.4649,  0.2211,  0.0333, -0.0071], device='cuda:0')
+domian_feature+Z: tensor([[ 0.1296,  0.0993, -0.0885, -0.0887,  0.1054,  0.1656, -0.1720,  0.1868,
+         -0.0173,  0.5223],
+        [ 0.1296,  0.0993, -0.0885, -0.0887,  0.1054,  0.1656, -0.1720,  0.1868,
+         -0.0173,  0.0777]], device='cuda:0')
+Epoch:59 Time:44.8 Data:0.0 Loss:2.5416 Cls Loss:2.2222 Cls Loss Theta:13.6082 Pair Loss:0.3194 KL Loss:12.9462 KLD Theta:12.9462 Recon Loss:0.0001 Acc:0.4249 Theta Acc:0.0056 
+=> centroids.dtype: torch.float32
+=> Only CVAE KL
+=> Use Multivariate Gaussian As the Prior
+image_tensor: tensor([ 0.0063, -0.0171,  0.0441,  ..., -0.0096,  0.0101,  0.0117],
+       device='cuda:0')
+x_proj_norm.shape:torch.Size([64, 12]), tensor([ 0.2605,  0.2750,  0.3722,  0.1325,  0.1670,  0.2667,  0.3241,  0.2881,
+         0.4199,  0.2672,  0.4065, -0.0073], device='cuda:0')
+domian_feature+Z: tensor([[ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.2605],
+        [ 0.0278,  0.1197, -0.0800, -0.0585,  0.0757,  0.1153, -0.0963,  0.0684,
+          0.0192,  0.2750]], device='cuda:0')
+Epoch:60 Time:51.2 Data:0.0 Loss:2.5272 Cls Loss:2.2085 Cls Loss Theta:13.6129 Pair Loss:0.3187 KL Loss:12.9455 KLD Theta:12.9455 Recon Loss:0.0001 Acc:0.4278 Theta Acc:0.0065 
+=> Test at epoch 60
+Extracted features for query set, obtained torch.Size([2228, 702]) matrix
+Extracted features for gallery set, obtained torch.Size([17661, 702]) matrix
+Extracting features complete in 0m 7s
+Distance computing in 0m 1s
+Computing CMC and mAP through Classifier
+Results ---------------------------------------------------
+top1:0.7% top5:1.2% top10:1.4% top20:2.0% mAP:0.8%
+-----------------------------------------------------------
+Using 0m 3s
+=> Best Rank-1 0.8% achieved at epoch 25
+Finished. Total elapsed time (h:m:s): 0:47:10. Training time (h:m:s): 0:45:13.
+Shutting down background jobs, please wait a moment...
+Done!
+Waiting for the remaining 19 operations to synchronize with Neptune. Do not kill this process.
+All 19 operations synced, thanks for waiting!
+Explore the metadata in the Neptune app:
+https://app.neptune.ai/Zhengwei-Lab/NIPSTransferReID/e/NIPS-500/metadata

@@ -1,0 +1,860 @@
+https://app.neptune.ai/Zhengwei-Lab/MayCVAE/e/MAY-590
+=> merge config from ./configs/clipreid_cvae_stage2.yaml
+/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/main.py:91: NeptuneUnsupportedType: You're attempting to log a type that is not directly supported by Neptune (<class 'list'>).
+        Convert the value to a supported type, such as a string or float, or use stringify_unsupported(obj)
+        for dictionaries or collections that contain unsupported values.
+        For more, see https://docs.neptune.ai/help/value_of_unsupported_type
+  run["parameters"] = param
+=> Configurations:
+-------------------------
+AMP: True
+AUG:
+  RC_PROB: 0.5
+  RE_PROB: 0.5
+DATA:
+  CUHK03_CLASSIC_SPLIT: False
+  CUHK03_LABELED: False
+  DATASET: market1k
+  FORMAT_TAG: tensor
+  HEIGHT: 256
+  NUM_INSTANCES: 4
+  NUM_WORKERS: 4
+  ROOT: /home/zhengwei/Desktop/Zhengwei/Projects/datasets
+  SPLIT_ID: 0
+  TEST_BATCH: 512
+  TRAIN_BATCH: 64
+  TRAIN_FORMAT: novel
+  WIDTH: 128
+EVAL_MODE: False
+GPU: 0
+LOSS:
+  CLA_LOSS: crossentropylabelsmooth
+  CLA_M: 0.0
+  CLA_S: 16.0
+  PAIR_LOSS: triplet
+  PAIR_M: 0.3
+  PAIR_S: 16.0
+  RECON_LOSS: mse
+  USE_NCE: False
+MODEL:
+  CONDITIONAL: False
+  FEATURE_DIM: 1280
+  FEAT_FUSION: True
+  FLOW_TYPE: 
+  GAUSSIAN: MultivariateNormal
+  HIDDEN_DIM: 256
+  LATENT_SIZE: 64
+  NAME: CVAE
+  ONLY_CVAE_KL: False
+  ONLY_X_INPUT: False
+  PRETRAIN: CLIPreidFinetune
+  RES4_STRIDE: 1
+  RESUME: /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_tune_wReID/novel/2024-07-18/tune_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_bL1280_noCLS
+  STYLE_NUM: 0
+  TRAIN_STAGE: reidstage
+  USE_CENTROID: False
+  USE_TWO_ENCODER: True
+  VAE_TYPE: SinpleVAE
+  ZC_DIM: 128
+  ZS_DIM: 64
+OUTPUT: ./outputs/market1k/clipreid_tune_wReID/novel/2024-07-19/2ndstage_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_bL1280_s2_L1280_softce+trip+center
+SAVED_NAME: 2ndstage_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_bL1280_s2_L1280_softce+trip+center
+SEED: 0
+TAG: clipreid_tune_wReID
+TEST:
+  DISTANCE: cosine
+  EVAL_STEP: 5
+  START_EVAL: -1
+TRAIN:
+  AMP: False
+  LR_SCHEDULER:
+    DECAY_RATE: 0.1
+    NAME: MultiStepLR
+    STEPSIZE: [60]
+  MAX_EPOCH: 120
+  OPTIMIZER:
+    LR: 0.001
+    NAME: adam
+    SGDLR: 0.01
+    SGD_MOMENTUM: 0.9
+    SGD_WEIGHT_DECAY: 0.0005
+    WEIGHT_DECAY: 0.0001
+  START_EPOCH: 0
+----------------------
+Initializing dataset market1k
+Warning: string series 'monitoring/364ec11e/stdout' value was longer than 1000 characters and was truncated. This warning is printed only once per series.
+=> Market-Sketch-1K tensor loaded
+Dataset statistics:
+  ------------------------------
+  subset   | # ids | # images
+  ------------------------------
+  train    |   996 |     3992
+  query    |   996 |     2709
+  gallery  |   996 |     2000
+  ------------------------------
+  total    |  1992 |     8701
+  ------------------------------
+Initializing SinpleVAE model with 2 encoders
+Model size: 12.62035M
+[INFO] Register count_relu() for <class 'torch.nn.modules.activation.LeakyReLU'>.
+[INFO] Register count_linear() for <class 'torch.nn.modules.linear.Linear'>.
+[INFO] Register count_normalization() for <class 'torch.nn.modules.batchnorm.BatchNorm1d'>.
+[INFO] Register zero_ops() for <class 'torch.nn.modules.activation.ReLU'>.
+[INFO] Register zero_ops() for <class 'torch.nn.modules.dropout.Dropout'>.
+[INFO] Register zero_ops() for <class 'torch.nn.modules.container.Sequential'>.
+FLOPs: 0.75465G
+Params: 11.78419M
+Initialized classifier with feature_dim: 1280, num_classes: 996
+Classifier size: 1.27488M
+reid_projector.weight is tuneable
+=> Start Training ReID projector and Classifier
+Loading checkpoint from '/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_tune_wReID/novel/2024-07-18/tune_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_bL1280_noCLS/best_model.pth.tar'
+Loading parameter:  reid_projector.weight
+orginal best rank1 = 0.20155038759689922
+=> Start evaluation on Novel data without finetuning
+=> Test pretarined feature form VLP model
+Normalizing features
+Normalizing features
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Computing CMC and mAP
+Results ---------------------------------------------------
+top1:35.2% top5:60.5% top10:71.2% top20:80.7% mAP:39.8%
+-----------------------------------------------------------
+Using 0m 0s
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 0.1% Gallery acc: 0.1% Total acc: 0.1%
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 5s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.9% top5:43.0% top10:54.5% top20:66.1% mAP:25.2%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 0.1% Gallery acc: 0.1% Total acc: 0.1%
+Jump TSNE in test
+=> Start training
+/home/zhengwei/Desktop/Zhengwei/Projects/CVAE/losses/center_loss.py:40: UserWarning: This overload of addmm_ is deprecated:
+	addmm_(Number beta, Number alpha, Tensor mat1, Tensor mat2)
+Consider using one of the following signatures instead:
+	addmm_(Tensor mat1, Tensor mat2, *, Number beta, Number alpha) (Triggered internally at /opt/conda/conda-bld/pytorch_1670525539683/work/torch/csrc/utils/python_arg_parser.cpp:1420.)
+  distmat.addmm_(1, -2, x, self.centers.t())
+Epoch:1 Time:8.2 Data:0.0 Loss:1449.7823 Cls Loss:6.9685 Pair Loss:0.1905 Center Loss:1442.6234 KL Loss:180.8348 Recon Loss:0.1821 Acc:0.0010 
+Epoch:2 Time:8.3 Data:0.0 Loss:1190.8747 Cls Loss:6.6653 Pair Loss:0.1565 Center Loss:1184.0529 KL Loss:180.5310 Recon Loss:0.1821 Acc:0.1179 
+Epoch:3 Time:8.1 Data:0.0 Loss:1027.4853 Cls Loss:6.3890 Pair Loss:0.1638 Center Loss:1020.9325 KL Loss:180.3412 Recon Loss:0.1821 Acc:0.3362 
+Epoch:4 Time:7.9 Data:0.0 Loss:895.8819 Cls Loss:6.0455 Pair Loss:0.1633 Center Loss:889.6732 KL Loss:179.7509 Recon Loss:0.1821 Acc:0.5479 
+Epoch:5 Time:5.8 Data:0.0 Loss:785.4913 Cls Loss:5.6105 Pair Loss:0.1633 Center Loss:779.7175 KL Loss:179.6298 Recon Loss:0.1821 Acc:0.6792 
+=> Test at epoch 5
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:24.7% top5:47.4% top10:59.0% top20:70.8% mAP:28.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 22.1% Gallery acc: 96.4% Total acc: 53.7%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 22.1% Gallery acc: 96.4% Total acc: 53.7%
+Epoch:6 Time:8.7 Data:0.0 Loss:687.7635 Cls Loss:5.1114 Pair Loss:0.1633 Center Loss:682.4888 KL Loss:179.3475 Recon Loss:0.1821 Acc:0.8112 
+Epoch:7 Time:8.4 Data:0.0 Loss:602.7921 Cls Loss:4.6155 Pair Loss:0.1555 Center Loss:598.0210 KL Loss:179.2469 Recon Loss:0.1821 Acc:0.8770 
+Epoch:8 Time:8.6 Data:0.0 Loss:529.7727 Cls Loss:4.1712 Pair Loss:0.1521 Center Loss:525.4494 KL Loss:179.0217 Recon Loss:0.1822 Acc:0.9221 
+Epoch:9 Time:8.2 Data:0.0 Loss:465.6553 Cls Loss:3.7333 Pair Loss:0.1563 Center Loss:461.7657 KL Loss:178.6548 Recon Loss:0.1821 Acc:0.9519 
+Epoch:10 Time:7.0 Data:0.0 Loss:410.1016 Cls Loss:3.3597 Pair Loss:0.1496 Center Loss:406.5923 KL Loss:178.5988 Recon Loss:0.1822 Acc:0.9637 
+=> Test at epoch 10
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:25.1% top5:48.7% top10:60.4% top20:72.1% mAP:29.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 26.6% Gallery acc: 99.7% Total acc: 57.6%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 26.6% Gallery acc: 99.7% Total acc: 57.6%
+Epoch:11 Time:8.7 Data:0.0 Loss:361.1691 Cls Loss:3.0146 Pair Loss:0.1501 Center Loss:358.0044 KL Loss:178.2412 Recon Loss:0.1821 Acc:0.9695 
+Epoch:12 Time:8.4 Data:0.0 Loss:318.7158 Cls Loss:2.7378 Pair Loss:0.1452 Center Loss:315.8328 KL Loss:178.2487 Recon Loss:0.1822 Acc:0.9768 
+Epoch:13 Time:7.7 Data:0.0 Loss:281.0287 Cls Loss:2.4885 Pair Loss:0.1423 Center Loss:278.3979 KL Loss:177.9660 Recon Loss:0.1821 Acc:0.9851 
+Epoch:14 Time:6.6 Data:0.0 Loss:248.3726 Cls Loss:2.2917 Pair Loss:0.1419 Center Loss:245.9391 KL Loss:177.3470 Recon Loss:0.1821 Acc:0.9884 
+Epoch:15 Time:8.2 Data:0.0 Loss:219.3040 Cls Loss:2.1311 Pair Loss:0.1409 Center Loss:217.0321 KL Loss:177.4386 Recon Loss:0.1822 Acc:0.9942 
+=> Test at epoch 15
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:25.7% top5:49.4% top10:61.0% top20:72.2% mAP:30.3%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.6% Gallery acc: 100.0% Total acc: 58.9%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.6% Gallery acc: 100.0% Total acc: 58.9%
+Epoch:16 Time:9.4 Data:0.0 Loss:194.3285 Cls Loss:1.9986 Pair Loss:0.1385 Center Loss:192.1913 KL Loss:176.8927 Recon Loss:0.1821 Acc:0.9924 
+Epoch:17 Time:8.5 Data:0.0 Loss:171.8211 Cls Loss:1.8920 Pair Loss:0.1385 Center Loss:169.7906 KL Loss:176.7915 Recon Loss:0.1821 Acc:0.9942 
+Epoch:18 Time:6.8 Data:0.0 Loss:152.6135 Cls Loss:1.8052 Pair Loss:0.1361 Center Loss:150.6723 KL Loss:176.5673 Recon Loss:0.1821 Acc:0.9965 
+Epoch:19 Time:8.4 Data:0.0 Loss:135.4314 Cls Loss:1.7374 Pair Loss:0.1332 Center Loss:133.5607 KL Loss:176.1626 Recon Loss:0.1821 Acc:0.9965 
+Epoch:20 Time:8.5 Data:0.0 Loss:120.2945 Cls Loss:1.6793 Pair Loss:0.1357 Center Loss:118.4795 KL Loss:176.0601 Recon Loss:0.1821 Acc:0.9957 
+=> Test at epoch 20
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:26.6% top5:50.3% top10:61.6% top20:73.3% mAP:31.1%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.6% Gallery acc: 100.0% Total acc: 58.9%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.6% Gallery acc: 100.0% Total acc: 58.9%
+Epoch:21 Time:8.8 Data:0.0 Loss:107.0010 Cls Loss:1.6376 Pair Loss:0.1287 Center Loss:105.2347 KL Loss:175.7115 Recon Loss:0.1821 Acc:0.9972 
+Epoch:22 Time:6.6 Data:0.0 Loss:95.2442 Cls Loss:1.6019 Pair Loss:0.1311 Center Loss:93.5113 KL Loss:175.4145 Recon Loss:0.1821 Acc:0.9980 
+Epoch:23 Time:8.7 Data:0.0 Loss:85.0608 Cls Loss:1.5741 Pair Loss:0.1336 Center Loss:83.3531 KL Loss:175.2876 Recon Loss:0.1821 Acc:0.9982 
+Epoch:24 Time:8.5 Data:0.0 Loss:75.9789 Cls Loss:1.5462 Pair Loss:0.1292 Center Loss:74.3036 KL Loss:175.0489 Recon Loss:0.1821 Acc:0.9977 
+Epoch:25 Time:8.0 Data:0.0 Loss:67.8811 Cls Loss:1.5269 Pair Loss:0.1303 Center Loss:66.2238 KL Loss:175.0494 Recon Loss:0.1821 Acc:0.9987 
+=> Test at epoch 25
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:26.5% top5:50.9% top10:62.5% top20:73.7% mAP:31.4%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.8% Gallery acc: 100.0% Total acc: 59.0%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.8% Gallery acc: 100.0% Total acc: 59.0%
+Epoch:26 Time:7.9 Data:0.0 Loss:60.7772 Cls Loss:1.5126 Pair Loss:0.1290 Center Loss:59.1356 KL Loss:174.5541 Recon Loss:0.1822 Acc:0.9982 
+Epoch:27 Time:8.7 Data:0.0 Loss:54.5082 Cls Loss:1.4978 Pair Loss:0.1288 Center Loss:52.8817 KL Loss:174.4748 Recon Loss:0.1821 Acc:0.9987 
+Epoch:28 Time:8.7 Data:0.0 Loss:49.0017 Cls Loss:1.4893 Pair Loss:0.1260 Center Loss:47.3864 KL Loss:174.1577 Recon Loss:0.1822 Acc:0.9990 
+Epoch:29 Time:7.6 Data:0.0 Loss:44.0730 Cls Loss:1.4773 Pair Loss:0.1258 Center Loss:42.4699 KL Loss:173.8120 Recon Loss:0.1821 Acc:0.9982 
+Epoch:30 Time:8.3 Data:0.0 Loss:39.7354 Cls Loss:1.4701 Pair Loss:0.1217 Center Loss:38.1435 KL Loss:173.5939 Recon Loss:0.1821 Acc:0.9987 
+=> Test at epoch 30
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:26.7% top5:51.0% top10:63.0% top20:73.8% mAP:31.6%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 27.8% Gallery acc: 100.0% Total acc: 58.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 27.8% Gallery acc: 100.0% Total acc: 58.5%
+Epoch:31 Time:9.4 Data:0.0 Loss:35.9208 Cls Loss:1.4683 Pair Loss:0.1256 Center Loss:34.3269 KL Loss:173.4531 Recon Loss:0.1822 Acc:0.9985 
+Epoch:32 Time:8.3 Data:0.0 Loss:32.5704 Cls Loss:1.4613 Pair Loss:0.1245 Center Loss:30.9847 KL Loss:172.9553 Recon Loss:0.1821 Acc:0.9990 
+Epoch:33 Time:8.0 Data:0.0 Loss:29.5172 Cls Loss:1.4580 Pair Loss:0.1245 Center Loss:27.9346 KL Loss:172.9365 Recon Loss:0.1821 Acc:0.9980 
+Epoch:34 Time:8.1 Data:0.0 Loss:26.8729 Cls Loss:1.4548 Pair Loss:0.1179 Center Loss:25.3002 KL Loss:172.5189 Recon Loss:0.1821 Acc:0.9985 
+Epoch:35 Time:6.3 Data:0.0 Loss:24.4966 Cls Loss:1.4561 Pair Loss:0.1239 Center Loss:22.9166 KL Loss:172.3552 Recon Loss:0.1821 Acc:0.9987 
+=> Test at epoch 35
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:26.9% top5:51.0% top10:63.4% top20:73.7% mAP:32.0%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.5% Gallery acc: 100.0% Total acc: 58.9%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.5% Gallery acc: 100.0% Total acc: 58.9%
+Epoch:36 Time:9.1 Data:0.0 Loss:22.3595 Cls Loss:1.4574 Pair Loss:0.1181 Center Loss:20.7840 KL Loss:172.1365 Recon Loss:0.1822 Acc:0.9995 
+Epoch:37 Time:7.2 Data:0.0 Loss:20.5023 Cls Loss:1.4522 Pair Loss:0.1233 Center Loss:18.9267 KL Loss:171.8740 Recon Loss:0.1822 Acc:0.9982 
+Epoch:38 Time:10.4 Data:0.0 Loss:18.8154 Cls Loss:1.4551 Pair Loss:0.1179 Center Loss:17.2423 KL Loss:171.7334 Recon Loss:0.1822 Acc:0.9985 
+Epoch:39 Time:5.8 Data:0.0 Loss:17.3144 Cls Loss:1.4551 Pair Loss:0.1157 Center Loss:15.7437 KL Loss:171.3088 Recon Loss:0.1821 Acc:0.9980 
+Epoch:40 Time:6.7 Data:0.0 Loss:16.0661 Cls Loss:1.4552 Pair Loss:0.1165 Center Loss:14.4943 KL Loss:171.1805 Recon Loss:0.1821 Acc:0.9985 
+=> Test at epoch 40
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.2% top5:52.2% top10:63.5% top20:73.9% mAP:32.3%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.0% Gallery acc: 100.0% Total acc: 59.2%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.0% Gallery acc: 100.0% Total acc: 59.2%
+Epoch:41 Time:9.4 Data:0.0 Loss:14.8843 Cls Loss:1.4568 Pair Loss:0.1196 Center Loss:13.3079 KL Loss:170.6397 Recon Loss:0.1822 Acc:0.9987 
+Epoch:42 Time:8.2 Data:0.0 Loss:13.8030 Cls Loss:1.4573 Pair Loss:0.1209 Center Loss:12.2248 KL Loss:170.5236 Recon Loss:0.1821 Acc:0.9992 
+Epoch:43 Time:5.8 Data:0.0 Loss:12.8544 Cls Loss:1.4577 Pair Loss:0.1164 Center Loss:11.2803 KL Loss:170.3899 Recon Loss:0.1822 Acc:0.9982 
+Epoch:44 Time:6.6 Data:0.0 Loss:11.9895 Cls Loss:1.4626 Pair Loss:0.1174 Center Loss:10.4095 KL Loss:170.1347 Recon Loss:0.1822 Acc:0.9992 
+Epoch:45 Time:7.9 Data:0.0 Loss:11.2566 Cls Loss:1.4664 Pair Loss:0.1158 Center Loss:9.6744 KL Loss:169.8329 Recon Loss:0.1821 Acc:0.9985 
+=> Test at epoch 45
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:26.8% top5:51.7% top10:63.6% top20:73.9% mAP:32.3%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.8% Gallery acc: 100.0% Total acc: 59.0%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 28.8% Gallery acc: 100.0% Total acc: 59.0%
+Epoch:46 Time:9.6 Data:0.0 Loss:10.6340 Cls Loss:1.4645 Pair Loss:0.1176 Center Loss:9.0520 KL Loss:169.5718 Recon Loss:0.1822 Acc:0.9987 
+Epoch:47 Time:6.5 Data:0.0 Loss:9.9638 Cls Loss:1.4692 Pair Loss:0.1191 Center Loss:8.3754 KL Loss:169.4139 Recon Loss:0.1821 Acc:0.9985 
+Epoch:48 Time:6.6 Data:0.0 Loss:9.3972 Cls Loss:1.4730 Pair Loss:0.1157 Center Loss:7.8085 KL Loss:168.9923 Recon Loss:0.1821 Acc:0.9982 
+Epoch:49 Time:7.6 Data:0.0 Loss:8.9647 Cls Loss:1.4758 Pair Loss:0.1165 Center Loss:7.3724 KL Loss:168.8267 Recon Loss:0.1821 Acc:0.9982 
+Epoch:50 Time:8.4 Data:0.0 Loss:8.4923 Cls Loss:1.4815 Pair Loss:0.1183 Center Loss:6.8924 KL Loss:168.6535 Recon Loss:0.1821 Acc:0.9990 
+=> Test at epoch 50
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.5% top5:51.4% top10:63.5% top20:73.7% mAP:32.4%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Epoch:51 Time:7.2 Data:0.0 Loss:8.0799 Cls Loss:1.4806 Pair Loss:0.1158 Center Loss:6.4835 KL Loss:168.2028 Recon Loss:0.1821 Acc:0.9992 
+Epoch:52 Time:7.1 Data:0.0 Loss:7.6998 Cls Loss:1.4835 Pair Loss:0.1116 Center Loss:6.1047 KL Loss:168.1969 Recon Loss:0.1821 Acc:0.9982 
+Epoch:53 Time:7.9 Data:0.0 Loss:7.4080 Cls Loss:1.4871 Pair Loss:0.1171 Center Loss:5.8038 KL Loss:167.8694 Recon Loss:0.1822 Acc:0.9987 
+Epoch:54 Time:8.4 Data:0.0 Loss:7.1112 Cls Loss:1.4919 Pair Loss:0.1214 Center Loss:5.4978 KL Loss:167.5078 Recon Loss:0.1821 Acc:0.9990 
+Epoch:55 Time:8.2 Data:0.0 Loss:6.8273 Cls Loss:1.4899 Pair Loss:0.1148 Center Loss:5.2227 KL Loss:167.3934 Recon Loss:0.1822 Acc:0.9985 
+=> Test at epoch 55
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.1% top5:51.2% top10:63.1% top20:74.0% mAP:32.3%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 27.9% Gallery acc: 100.0% Total acc: 58.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 27.9% Gallery acc: 100.0% Total acc: 58.5%
+Epoch:56 Time:8.2 Data:0.0 Loss:6.6095 Cls Loss:1.4983 Pair Loss:0.1152 Center Loss:4.9960 KL Loss:167.1614 Recon Loss:0.1821 Acc:0.9992 
+Epoch:57 Time:8.0 Data:0.0 Loss:6.3557 Cls Loss:1.4991 Pair Loss:0.1151 Center Loss:4.7415 KL Loss:167.1282 Recon Loss:0.1822 Acc:0.9992 
+Epoch:58 Time:8.4 Data:0.0 Loss:6.2035 Cls Loss:1.5036 Pair Loss:0.1169 Center Loss:4.5831 KL Loss:166.6861 Recon Loss:0.1821 Acc:0.9990 
+Epoch:59 Time:8.5 Data:0.0 Loss:5.9593 Cls Loss:1.5033 Pair Loss:0.1197 Center Loss:4.3363 KL Loss:166.3619 Recon Loss:0.1822 Acc:0.9982 
+Epoch:60 Time:8.4 Data:0.0 Loss:5.7961 Cls Loss:1.5114 Pair Loss:0.1165 Center Loss:4.1682 KL Loss:166.2745 Recon Loss:0.1822 Acc:0.9982 
+=> Test at epoch 60
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:26.6% top5:51.3% top10:62.9% top20:73.6% mAP:32.3%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.1% Gallery acc: 100.0% Total acc: 59.2%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.1% Gallery acc: 100.0% Total acc: 59.2%
+Epoch:61 Time:8.9 Data:0.0 Loss:4.9968 Cls Loss:1.4311 Pair Loss:0.1151 Center Loss:3.4506 KL Loss:165.8262 Recon Loss:0.1822 Acc:0.9992 
+Epoch:62 Time:7.6 Data:0.0 Loss:4.8560 Cls Loss:1.4362 Pair Loss:0.1114 Center Loss:3.3083 KL Loss:165.3506 Recon Loss:0.1822 Acc:0.9992 
+Epoch:63 Time:8.2 Data:0.0 Loss:4.8341 Cls Loss:1.4384 Pair Loss:0.1130 Center Loss:3.2826 KL Loss:165.4604 Recon Loss:0.1821 Acc:0.9997 
+Epoch:64 Time:8.4 Data:0.0 Loss:4.8247 Cls Loss:1.4417 Pair Loss:0.1168 Center Loss:3.2663 KL Loss:165.0023 Recon Loss:0.1821 Acc:0.9995 
+Epoch:65 Time:6.6 Data:0.0 Loss:4.8022 Cls Loss:1.4420 Pair Loss:0.1113 Center Loss:3.2489 KL Loss:164.7410 Recon Loss:0.1821 Acc:0.9992 
+=> Test at epoch 65
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.3% top5:51.3% top10:63.8% top20:74.0% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Epoch:66 Time:9.4 Data:0.0 Loss:4.7890 Cls Loss:1.4457 Pair Loss:0.1096 Center Loss:3.2337 KL Loss:164.6533 Recon Loss:0.1821 Acc:0.9992 
+Epoch:67 Time:8.3 Data:0.0 Loss:4.7788 Cls Loss:1.4465 Pair Loss:0.1112 Center Loss:3.2210 KL Loss:164.3568 Recon Loss:0.1821 Acc:0.9995 
+Epoch:68 Time:7.8 Data:0.0 Loss:4.7605 Cls Loss:1.4467 Pair Loss:0.1070 Center Loss:3.2069 KL Loss:163.9941 Recon Loss:0.1821 Acc:0.9995 
+Epoch:69 Time:6.8 Data:0.0 Loss:4.7542 Cls Loss:1.4482 Pair Loss:0.1136 Center Loss:3.1924 KL Loss:163.7853 Recon Loss:0.1821 Acc:0.9987 
+Epoch:70 Time:8.9 Data:0.0 Loss:4.7323 Cls Loss:1.4491 Pair Loss:0.1090 Center Loss:3.1742 KL Loss:163.7553 Recon Loss:0.1821 Acc:0.9987 
+=> Test at epoch 70
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.4% top5:51.5% top10:63.5% top20:74.1% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.8% Gallery acc: 100.0% Total acc: 59.6%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.8% Gallery acc: 100.0% Total acc: 59.6%
+Epoch:71 Time:8.6 Data:0.0 Loss:4.7259 Cls Loss:1.4508 Pair Loss:0.1096 Center Loss:3.1656 KL Loss:163.3495 Recon Loss:0.1821 Acc:0.9995 
+Epoch:72 Time:6.3 Data:0.0 Loss:4.7124 Cls Loss:1.4502 Pair Loss:0.1114 Center Loss:3.1508 KL Loss:163.1888 Recon Loss:0.1821 Acc:0.9990 
+Epoch:73 Time:6.5 Data:0.0 Loss:4.6995 Cls Loss:1.4528 Pair Loss:0.1076 Center Loss:3.1391 KL Loss:162.9151 Recon Loss:0.1822 Acc:0.9990 
+Epoch:74 Time:8.3 Data:0.0 Loss:4.6868 Cls Loss:1.4521 Pair Loss:0.1102 Center Loss:3.1245 KL Loss:162.6588 Recon Loss:0.1821 Acc:0.9995 
+Epoch:75 Time:7.9 Data:0.0 Loss:4.6793 Cls Loss:1.4545 Pair Loss:0.1111 Center Loss:3.1137 KL Loss:162.3288 Recon Loss:0.1821 Acc:0.9990 
+=> Test at epoch 75
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.6% top5:51.5% top10:63.5% top20:74.0% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.8% Gallery acc: 100.0% Total acc: 59.6%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.8% Gallery acc: 100.0% Total acc: 59.6%
+Epoch:76 Time:7.6 Data:0.0 Loss:4.6591 Cls Loss:1.4544 Pair Loss:0.1053 Center Loss:3.0994 KL Loss:162.1656 Recon Loss:0.1821 Acc:0.9995 
+Epoch:77 Time:6.1 Data:0.0 Loss:4.6504 Cls Loss:1.4534 Pair Loss:0.1080 Center Loss:3.0890 KL Loss:161.9591 Recon Loss:0.1822 Acc:0.9990 
+Epoch:78 Time:8.8 Data:0.0 Loss:4.6437 Cls Loss:1.4556 Pair Loss:0.1128 Center Loss:3.0753 KL Loss:161.6816 Recon Loss:0.1822 Acc:0.9990 
+Epoch:79 Time:7.2 Data:0.0 Loss:4.6392 Cls Loss:1.4559 Pair Loss:0.1183 Center Loss:3.0650 KL Loss:161.3384 Recon Loss:0.1821 Acc:0.9992 
+Epoch:80 Time:8.3 Data:0.0 Loss:4.6194 Cls Loss:1.4564 Pair Loss:0.1119 Center Loss:3.0511 KL Loss:161.2688 Recon Loss:0.1822 Acc:0.9990 
+=> Test at epoch 80
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.5% top5:51.3% top10:63.1% top20:73.9% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Epoch:81 Time:7.0 Data:0.0 Loss:4.6047 Cls Loss:1.4559 Pair Loss:0.1107 Center Loss:3.0381 KL Loss:160.8972 Recon Loss:0.1821 Acc:0.9990 
+Epoch:82 Time:8.2 Data:0.0 Loss:4.5974 Cls Loss:1.4573 Pair Loss:0.1104 Center Loss:3.0297 KL Loss:160.8987 Recon Loss:0.1821 Acc:0.9995 
+Epoch:83 Time:7.5 Data:0.0 Loss:4.5870 Cls Loss:1.4580 Pair Loss:0.1089 Center Loss:3.0201 KL Loss:160.8805 Recon Loss:0.1821 Acc:0.9992 
+Epoch:84 Time:8.5 Data:0.0 Loss:4.5745 Cls Loss:1.4579 Pair Loss:0.1148 Center Loss:3.0017 KL Loss:160.9476 Recon Loss:0.1821 Acc:0.9992 
+Epoch:85 Time:8.3 Data:0.0 Loss:4.5607 Cls Loss:1.4580 Pair Loss:0.1089 Center Loss:2.9938 KL Loss:160.9651 Recon Loss:0.1822 Acc:0.9992 
+=> Test at epoch 85
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.6% top5:51.1% top10:63.1% top20:73.9% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.9% Gallery acc: 100.0% Total acc: 59.7%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.9% Gallery acc: 100.0% Total acc: 59.7%
+Epoch:86 Time:8.8 Data:0.0 Loss:4.5554 Cls Loss:1.4582 Pair Loss:0.1124 Center Loss:2.9848 KL Loss:160.8144 Recon Loss:0.1821 Acc:0.9992 
+Epoch:87 Time:7.7 Data:0.0 Loss:4.5433 Cls Loss:1.4591 Pair Loss:0.1159 Center Loss:2.9684 KL Loss:160.8420 Recon Loss:0.1821 Acc:0.9990 
+Epoch:88 Time:7.6 Data:0.0 Loss:4.5284 Cls Loss:1.4578 Pair Loss:0.1089 Center Loss:2.9617 KL Loss:160.5654 Recon Loss:0.1821 Acc:0.9990 
+Epoch:89 Time:8.4 Data:0.0 Loss:4.5245 Cls Loss:1.4595 Pair Loss:0.1127 Center Loss:2.9523 KL Loss:160.7996 Recon Loss:0.1822 Acc:0.9990 
+Epoch:90 Time:7.0 Data:0.0 Loss:4.5138 Cls Loss:1.4604 Pair Loss:0.1123 Center Loss:2.9410 KL Loss:161.0623 Recon Loss:0.1822 Acc:0.9992 
+=> Test at epoch 90
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.5% top5:51.3% top10:63.3% top20:74.0% mAP:32.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.4% Gallery acc: 100.0% Total acc: 59.4%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.4% Gallery acc: 100.0% Total acc: 59.4%
+Epoch:91 Time:8.5 Data:0.0 Loss:4.5020 Cls Loss:1.4597 Pair Loss:0.1145 Center Loss:2.9278 KL Loss:160.8375 Recon Loss:0.1821 Acc:0.9992 
+Epoch:92 Time:7.5 Data:0.0 Loss:4.4924 Cls Loss:1.4604 Pair Loss:0.1134 Center Loss:2.9186 KL Loss:160.8935 Recon Loss:0.1822 Acc:0.9987 
+Epoch:93 Time:8.3 Data:0.0 Loss:4.4736 Cls Loss:1.4605 Pair Loss:0.1077 Center Loss:2.9054 KL Loss:160.8394 Recon Loss:0.1822 Acc:0.9990 
+Epoch:94 Time:6.4 Data:0.0 Loss:4.4680 Cls Loss:1.4614 Pair Loss:0.1092 Center Loss:2.8975 KL Loss:160.8069 Recon Loss:0.1821 Acc:0.9990 
+Epoch:95 Time:6.1 Data:0.0 Loss:4.4549 Cls Loss:1.4602 Pair Loss:0.1121 Center Loss:2.8825 KL Loss:160.6047 Recon Loss:0.1821 Acc:0.9992 
+=> Test at epoch 95
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.3% top5:51.5% top10:63.6% top20:73.7% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Epoch:96 Time:8.5 Data:0.0 Loss:4.4437 Cls Loss:1.4619 Pair Loss:0.1069 Center Loss:2.8749 KL Loss:160.7885 Recon Loss:0.1821 Acc:0.9995 
+Epoch:97 Time:8.1 Data:0.0 Loss:4.4388 Cls Loss:1.4620 Pair Loss:0.1113 Center Loss:2.8655 KL Loss:160.9222 Recon Loss:0.1821 Acc:0.9990 
+Epoch:98 Time:6.5 Data:0.0 Loss:4.4282 Cls Loss:1.4622 Pair Loss:0.1099 Center Loss:2.8561 KL Loss:160.7871 Recon Loss:0.1820 Acc:0.9992 
+Epoch:99 Time:6.0 Data:0.0 Loss:4.4151 Cls Loss:1.4614 Pair Loss:0.1090 Center Loss:2.8447 KL Loss:160.9344 Recon Loss:0.1821 Acc:0.9992 
+Epoch:100 Time:5.2 Data:0.0 Loss:4.4103 Cls Loss:1.4630 Pair Loss:0.1109 Center Loss:2.8363 KL Loss:160.8869 Recon Loss:0.1822 Acc:0.9990 
+=> Test at epoch 100
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.5% top5:51.4% top10:63.1% top20:73.9% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.6% Gallery acc: 100.0% Total acc: 59.5%
+Epoch:101 Time:6.2 Data:0.0 Loss:4.4004 Cls Loss:1.4628 Pair Loss:0.1098 Center Loss:2.8278 KL Loss:160.8991 Recon Loss:0.1822 Acc:0.9990 
+Epoch:102 Time:5.4 Data:0.0 Loss:4.3919 Cls Loss:1.4631 Pair Loss:0.1122 Center Loss:2.8166 KL Loss:160.8813 Recon Loss:0.1821 Acc:0.9992 
+Epoch:103 Time:5.6 Data:0.0 Loss:4.3852 Cls Loss:1.4636 Pair Loss:0.1140 Center Loss:2.8075 KL Loss:160.7145 Recon Loss:0.1822 Acc:0.9990 
+Epoch:104 Time:5.5 Data:0.0 Loss:4.3672 Cls Loss:1.4614 Pair Loss:0.1107 Center Loss:2.7950 KL Loss:160.9410 Recon Loss:0.1822 Acc:0.9995 
+Epoch:105 Time:5.7 Data:0.0 Loss:4.3604 Cls Loss:1.4642 Pair Loss:0.1093 Center Loss:2.7869 KL Loss:160.9446 Recon Loss:0.1821 Acc:0.9987 
+=> Test at epoch 105
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.5% top5:51.4% top10:63.3% top20:73.9% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.7% Gallery acc: 100.0% Total acc: 59.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.7% Gallery acc: 100.0% Total acc: 59.5%
+Epoch:106 Time:6.1 Data:0.0 Loss:4.3586 Cls Loss:1.4641 Pair Loss:0.1157 Center Loss:2.7788 KL Loss:160.8784 Recon Loss:0.1821 Acc:0.9987 
+Epoch:107 Time:5.8 Data:0.0 Loss:4.3450 Cls Loss:1.4646 Pair Loss:0.1122 Center Loss:2.7681 KL Loss:160.7993 Recon Loss:0.1821 Acc:0.9992 
+Epoch:108 Time:5.5 Data:0.0 Loss:4.3322 Cls Loss:1.4638 Pair Loss:0.1110 Center Loss:2.7575 KL Loss:160.9046 Recon Loss:0.1821 Acc:0.9992 
+Epoch:109 Time:5.6 Data:0.0 Loss:4.3299 Cls Loss:1.4654 Pair Loss:0.1138 Center Loss:2.7507 KL Loss:160.8099 Recon Loss:0.1821 Acc:0.9992 
+Epoch:110 Time:5.2 Data:0.0 Loss:4.3187 Cls Loss:1.4651 Pair Loss:0.1112 Center Loss:2.7424 KL Loss:160.9075 Recon Loss:0.1821 Acc:0.9995 
+=> Test at epoch 110
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.4% top5:51.2% top10:63.2% top20:73.9% mAP:32.6%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.7% Gallery acc: 100.0% Total acc: 59.5%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.7% Gallery acc: 100.0% Total acc: 59.5%
+Epoch:111 Time:5.7 Data:0.0 Loss:4.3016 Cls Loss:1.4654 Pair Loss:0.1069 Center Loss:2.7294 KL Loss:160.8071 Recon Loss:0.1822 Acc:0.9992 
+Epoch:112 Time:5.7 Data:0.0 Loss:4.2943 Cls Loss:1.4660 Pair Loss:0.1102 Center Loss:2.7180 KL Loss:160.7676 Recon Loss:0.1822 Acc:0.9992 
+Epoch:113 Time:5.5 Data:0.0 Loss:4.2874 Cls Loss:1.4655 Pair Loss:0.1100 Center Loss:2.7119 KL Loss:160.8361 Recon Loss:0.1822 Acc:0.9995 
+Epoch:114 Time:5.6 Data:0.0 Loss:4.2811 Cls Loss:1.4649 Pair Loss:0.1129 Center Loss:2.7033 KL Loss:160.8428 Recon Loss:0.1821 Acc:0.9990 
+Epoch:115 Time:5.2 Data:0.0 Loss:4.2731 Cls Loss:1.4658 Pair Loss:0.1116 Center Loss:2.6956 KL Loss:160.8407 Recon Loss:0.1821 Acc:0.9995 
+=> Test at epoch 115
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.1% top5:51.3% top10:63.2% top20:73.8% mAP:32.6%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.7% Gallery acc: 100.0% Total acc: 59.6%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 29.7% Gallery acc: 100.0% Total acc: 59.6%
+Epoch:116 Time:6.2 Data:0.0 Loss:4.2624 Cls Loss:1.4655 Pair Loss:0.1116 Center Loss:2.6853 KL Loss:160.8939 Recon Loss:0.1821 Acc:0.9990 
+Epoch:117 Time:5.7 Data:0.0 Loss:4.2627 Cls Loss:1.4659 Pair Loss:0.1157 Center Loss:2.6811 KL Loss:160.9624 Recon Loss:0.1821 Acc:0.9990 
+Epoch:118 Time:5.5 Data:0.0 Loss:4.2485 Cls Loss:1.4660 Pair Loss:0.1119 Center Loss:2.6706 KL Loss:160.8402 Recon Loss:0.1822 Acc:0.9992 
+Epoch:119 Time:5.7 Data:0.0 Loss:4.2352 Cls Loss:1.4673 Pair Loss:0.1094 Center Loss:2.6585 KL Loss:160.9808 Recon Loss:0.1822 Acc:0.9990 
+Epoch:120 Time:5.4 Data:0.0 Loss:4.2297 Cls Loss:1.4679 Pair Loss:0.1102 Center Loss:2.6517 KL Loss:160.7486 Recon Loss:0.1821 Acc:0.9995 
+=> Test at epoch 120
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:27.2% top5:51.5% top10:63.0% top20:73.8% mAP:32.7%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 30.0% Gallery acc: 100.0% Total acc: 59.7%
+Jump TSNE in test
+==========Test with latent_z: new_z =========
+Extracted features for query set, obtained torch.Size([2709, 192]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Results ---------------------------------------------------
+top1:20.6% top5:43.9% top10:56.0% top20:67.8% mAP:25.8%
+-----------------------------------------------------------
+Using 0m 0s
+Classifier results ---------------------------------------------------
+Query acc: 30.0% Gallery acc: 100.0% Total acc: 59.7%
+Keep checkpoint file: checkpoint_ep120.pth.tar
+=> Best Rank-1 27.6%, mAP 32.7% achieved at epoch 85
+Finished. Total elapsed time (h:m:s): 0:18:43. Training time (h:m:s): 0:15:14.
+Shutting down background jobs, please wait a moment...
+Done!
+Waiting for the remaining 35 operations to synchronize with Neptune. Do not kill this process.
+All 35 operations synced, thanks for waiting!
+Explore the metadata in the Neptune app:
+https://app.neptune.ai/Zhengwei-Lab/MayCVAE/e/MAY-590/metadata
