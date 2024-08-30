@@ -151,8 +151,10 @@ def main(config):
                 parameters.append(param)
         
 
-
-    cla_parameters = list(classifier.parameters()) + list(classifier_reID.parameters())
+    if classifier_reID is not None:
+        cla_parameters = list(classifier.parameters()) + list(classifier_reID.parameters())
+    else:
+        cla_parameters = list(classifier.parameters())
 
     if config.DATA.TRAIN_FORMAT == 'novel':
         alpha_lr = 1.0   # base lr 1e-4, classifier lr 1e-3
@@ -419,19 +421,32 @@ def main(config):
             else:
                 final_epoch = False
             
-            save_checkpoint({
-                'epoch': epoch,
-                'model': model.state_dict(),
-                'classifier': classifier.state_dict(),
-                'classifier_reID': classifier_reID.state_dict(),
-                'cmc': best_cmc,
-                'acc': best_acc,
-                'mAP': best_mAP,
-                'rank1': rank1,
-                'best_epoch': best_epoch,
-                'optimizer': optimizer.state_dict(),
-            }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
-        
+            if classifier_reID is not None:
+                save_checkpoint({
+                    'epoch': epoch,
+                    'model': model.state_dict(),
+                    'classifier': classifier.state_dict(),
+                    'classifier_reID': classifier_reID.state_dict(),
+                    'cmc': best_cmc,
+                    'acc': best_acc,
+                    'mAP': best_mAP,
+                    'rank1': rank1,
+                    'best_epoch': best_epoch,
+                    'optimizer': optimizer.state_dict(),
+                }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
+            else:
+                save_checkpoint({
+                    'epoch': epoch,
+                    'model': model.state_dict(),
+                    'classifier': classifier.state_dict(),
+                    'cmc': best_cmc,
+                    'acc': best_acc,
+                    'mAP': best_mAP,
+                    'rank1': rank1,
+                    'best_epoch': best_epoch,
+                    'optimizer': optimizer.state_dict(),
+                }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
+            
         
         # Function to get the current learning rate
         def get_current_lr(optimizer):
