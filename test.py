@@ -295,9 +295,9 @@ def evaluate_classification_accuracy(distmat, qf, gf, classifer, qids, gids):
         # Compare the predicted labels
         if query_label_pred.item() == gallery_label_pred.item():
             correct_classification_count += 1
-            if query_label_pred.item() != qids[i]:
-                print("Query prediction: {}, Gallery prediction: {}".format(query_label_pred.item(), gallery_label_pred.item()))
-                print("Query label: {}, Gallery label: {}".format(qids[i], gids[top1_index]))
+            # if query_label_pred.item() != qids[i]:
+            #     print("Query prediction: {}, Gallery prediction: {}".format(query_label_pred.item(), gallery_label_pred.item()))
+            #     print("Query label: {}, Gallery label: {}".format(qids[i], gids[top1_index]))
 
         if query_label_pred.item() == qids[i]:
             query_cls_count += 1
@@ -367,7 +367,9 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
 
     former_merge_acc, former_q_pred, former_g_pred = evaluate_classification_accuracy(distmat, qf, gf, classifer, q_pids, g_pids)
     since = time.time()
-    if config.DATA.DATASET != 'duke':
+    if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
+        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path)
+    else:
         if cls_rerank:
             if final_epoch:
                 cmc, mAP, class_rank1_map_dict, all_results = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True, final_epoch=final_epoch, cls_rerank=cls_rerank, q_10_scores=q_10_scores, q_10_labels=q_10_labels)
@@ -378,9 +380,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
                 cmc, mAP, class_rank1_map_dict, all_results = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True, final_epoch=final_epoch)
             else:
                 cmc, mAP, updatemat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True)
-            
-    else:
-        cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path)
+
     
     later_merge_acc, later_q_pred, later_g_pred = evaluate_classification_accuracy(updatemat, qf, gf, classifer, q_pids, g_pids)
     
