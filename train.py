@@ -125,9 +125,10 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         _, preds = torch.max(outputs.data, 1)
         cls_loss = criterion_cla(outputs, pids)
 
-        outputs_reid = classifer_reid(z_reid)
-        _, preds_reid = torch.max(outputs_reid.data, 1)
-        cls_loss_reid = criterion_cla(outputs_reid, pids)
+        if classifer_reid is not None:
+            outputs_reid = classifer_reid(z_reid)
+            _, preds_reid = torch.max(outputs_reid.data, 1)
+            cls_loss_reid = criterion_cla(outputs_reid, pids)
 
         base_dist = MultivariateNormal(torch.zeros_like(mean).cuda(), torch.eye(mean.size(1)).cuda())
         prior_p = base_dist.log_prob(z)
@@ -214,9 +215,9 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
 
  
         batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))
-        batch_reid_acc.update((torch.sum(preds_reid == pids.data)).float()/pids.size(0), pids.size(0))
+        # batch_reid_acc.update((torch.sum(preds_reid == pids.data)).float()/pids.size(0), pids.size(0))
         batch_cls_loss.update(cls_loss.item(), pids.size(0))
-        batch_cls_reid_loss.update(cls_loss_reid.item(), pids.size(0))
+        # batch_cls_reid_loss.update(cls_loss_reid.item(), pids.size(0))
         batch_pair_loss.update(pair_loss.item(), pids.size(0))
         batch_center_loss.update(center_loss.item(), pids.size(0))
         batch_kl_loss.update(kl_loss.item(), pids.size(0))
@@ -245,17 +246,15 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
           'Data:{data_time.sum:.1f} '
           'Loss:{loss.avg:.4f} '
           'Cls Loss:{cls_loss.avg:.4f} '
-          'Cls reid Loss:{cls_loss_reid.avg:.4f} '
           'Pair Loss:{pair_loss.avg:.4f} '
           'Center Loss:{center_loss.avg:.4f} '
           'KL Loss:{kl_loss.avg:.4f} '
           'Recon Loss:{bce_loss.avg:.4f} '
-          'Acc:{acc.avg:.4f} '
-          'Acc ReID:{acc_reid.avg:.4f} '.format(
+          'Acc:{acc.avg:.4f} '.format(
             epoch+1, batch_time=batch_time, data_time=data_time, 
-            loss=batch_loss, cls_loss=batch_cls_loss, cls_loss_reid=batch_cls_reid_loss,
+            loss=batch_loss, cls_loss=batch_cls_loss, 
             pair_loss=batch_pair_loss, center_loss=batch_center_loss, 
-            kl_loss=batch_kl_loss, bce_loss=batch_recon_loss, acc=batch_acc, acc_reid=batch_reid_acc)
+            kl_loss=batch_kl_loss, bce_loss=batch_recon_loss, acc=batch_acc)
           )
     if 'reid' not in config.MODEL.TRAIN_STAGE:
         if 'kl' in config.MODEL.TRAIN_STAGE:
