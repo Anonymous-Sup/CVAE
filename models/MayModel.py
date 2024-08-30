@@ -337,6 +337,9 @@ class SinpleVAE_2Encoder(nn.Module):
             self.reid_projector = TransformerReIDProjection(self.z_dim, self.reid_output_dim)
         elif self.projection_type == None:
             print("============Warning! No projection layer is used in Training!=================")
+            print("============Warning! Using Defalt Linear 1280 to intialize!=================")
+            self.reid_output_dim = 1280
+            self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
