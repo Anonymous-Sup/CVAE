@@ -36,7 +36,7 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
         pretrained_features = pretrained_features.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
         
-        if config.DATA.DATASET == 'duke':
+        if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
             # expand 0 with the same shpe of batch_styleids
             used_styles = torch.zeros_like(batch_styleids)
         else:
@@ -185,7 +185,7 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
         pretrained_features = pretrained_features.cuda()
         # recon_x, means, log_var, z, theta, logjcobin
         
-        if config.DATA.DATASET == 'duke':
+        if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
             # expand 0 with the same shpe of batch_styleids
             used_styles = torch.zeros_like(batch_styleids)
         else:
@@ -541,10 +541,11 @@ def test_clip_feature(queryloader, galleryloader, dataset, final_epoch=False):
 
     since = time.time()
     print("Computing CMC and mAP")
-    if dataset != 'duke':
-        cmc, mAP, _ = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
-    else:
+    if dataset == 'duke' or dataset == 'msmt17':
         cmc, mAP, _ = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
+    else:
+        cmc, mAP, _ = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
+        
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
     print("-----------------------------------------------------------")
@@ -563,7 +564,7 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser(description="Test feature")
     parser.add_argument("--data_root", type=str, default="/home/zhengwei/Desktop/Zhengwei/Projects/datasets/")
-    parser.add_argument("--dataset", type=str, default="duke")
+    parser.add_argument("--dataset", type=str, default="msmt17")
     parser.add_argument("--pretrained", type=str, default="AGWRes50", choices=["CLIPreid", "Transreid", "CLIPreidNew", 'AGWRes50'])
 
     args = parser.parse_args()

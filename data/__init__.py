@@ -6,6 +6,9 @@ from data.datasets.duke import DukeMTMCreID
 # from data.datasets.msmt17 import MSMT17
 from data.datasets.market1k import MarketSketch
 from data.datasets.sysu_mm01 import SYSU_MM01
+from data.datasets.msmt17 import MSMT17
+from data.datasets.celebHQ import CelebHQ
+from data.datasets.sksf_a import SKSF_A
 
 from data.dataset_loader import ImageDataset
 from data.samplers import RandomIdentitySampler
@@ -15,9 +18,11 @@ __factory = {
     # 'market1501': Market1501,
     # 'cuhk03': CUHK03,
     'duke': DukeMTMCreID,
-    # 'msmt17': MSMT17,
+    'msmt17': MSMT17,
     'market1k': MarketSketch,
     'sysu_mm01': SYSU_MM01,
+    'celebHQ': CelebHQ,
+    'sksf_a': SKSF_A,
 }
 
 
@@ -33,7 +38,7 @@ def build_dataset(config):
     # dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, split_id=config.DATA.SPLIT_ID,
     #                                          cuhk03_labeled=config.DATA.CUHK03_LABELED, 
     #                                          cuhk03_classic_split=config.DATA.CUHK03_CLASSIC_SPLIT)
-    dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, format_tag=config.DATA.FORMAT_TAG, pretrained=config.MODEL.PRETRAIN, latent_size=config.MODEL.LATENT_SIZE)
+    dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, format_tag=config.DATA.FORMAT_TAG, pretrained=config.MODEL.PRETRAIN)
     return dataset
 
 # not used when using tensor format

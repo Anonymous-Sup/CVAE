@@ -87,7 +87,7 @@ _C.MODEL.USE_CENTROID = False
 _C.MODEL.CONDITIONAL = False
 _C.MODEL.GAUSSIAN = 'MultivariateNormal'  # 'Normal', 'MultivariateNormal'
 _C.MODEL.USE_TWO_ENCODER = False
-
+_C.MODEL.PROJECTION_TYPE = None
 # -----------------------------------------------------------------------------
 # Losses for training 
 # -----------------------------------------------------------------------------
@@ -219,6 +219,10 @@ def update_config(config, args):
     if args.use_centroid:
         print("Use centroid as domain embedding")
         config.MODEL.USE_CENTROID = True
+
+    if args.projection_type:
+        print("Use projection type: {}".format(args.projection_type))
+        config.MODEL.PROJECTION_TYPE = args.projection_type
     # if args.conditionalvae:
     #     print("Use conditional vae, instead of additional domain embedding")
     #     config.MODEL.CONDITIONAL = True

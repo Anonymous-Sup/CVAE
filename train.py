@@ -102,7 +102,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
         # x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
 
-        if config.DATA.DATASET == 'duke':
+        if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
             style_ids = torch.zeros_like(style_ids)
             style_ids = style_ids.cuda()
 
@@ -335,7 +335,7 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         # recon_x, mean, log_var, z, x_pre, x_proj_norm, z_1, theta, logjacobin, domian_feature, flow_input= model.encode(imgs_tensor)   
         # x_pre, z, z_c, z_s, fusez_s, domian_feature, mean, log_var = model.encode(imgs_tensor)
 
-        if config.DATA.DATASET == 'duke':
+        if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
             style_ids = torch.zeros_like(style_ids)
             style_ids = style_ids.cuda()
         # styles_onehot = idx2onehot(style_ids, config.MODEL.STYLE_NUM)

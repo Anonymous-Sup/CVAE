@@ -54,6 +54,8 @@ def parse_option():
     parser.add_argument('--gaussian', type=str, choices=['Normal', 'MultivariateNormal'], help="Type of gaussion distribution")
     parser.add_argument('--use_NCE', action='store_true', help="Use NCE loss for training")
     parser.add_argument('--use_two_encoder', action='store_true', help="Use 2 encoders models for training")
+    # config.MODEL.PROJECTION_TYPE
+    parser.add_argument('--projection_type', type=str, required=True, choices=['Linear+CLS', 'MLP+CLS', 'Linear1280+CLS', 'MLP1280+CLS', 'MLP768+CLS', 'Transforer1280+CLS'], help="Type of projection head")
     # debug
     parser.add_argument('--only_x_input', action='store_true', help="Use only x as input for flow model")
     parser.add_argument('--only_cvae_kl', action='store_true', help="Use orginal kl loss for cvae model")
@@ -106,13 +108,6 @@ def main(config):
     # Build optimizer
     # select parameters beside the FLOWs parameters in the model
     parameters = []
-
-    # for name, param in model.named_parameters():
-    #     if config.DATA.TRAIN_FORMAT == 'novel' and 'decoder' in name:
-    #         param.requires_grad = False
-    #     else:
-    #         parameters.append(param)
-
 
     for name, param in model.named_parameters():
         if config.DATA.TRAIN_FORMAT == 'novel':

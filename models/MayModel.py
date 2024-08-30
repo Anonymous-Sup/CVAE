@@ -74,7 +74,7 @@ class TransformerReIDProjection(nn.Module):
             return x
 
 class SinpleVAE(nn.Module):
-    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, style_num=0, n_layers=0, leak_relu_slope=0.2, bn=False):
+    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, style_num=0, n_layers=0, leak_relu_slope=0.2, bn=False, projection_type=None):
         super().__init__()
 
         self.ac_fn = 'leaky_relu'
@@ -115,8 +115,8 @@ class SinpleVAE(nn.Module):
         else:
             self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
         
-        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
-
+        self.projection_type = projection_type #  'Linear1280+CLS' 
+        
         if self.projection_type == 'Linear+CLS':
             self.reid_output_dim = self.z_dim
             self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
@@ -257,7 +257,7 @@ class SinpleVAE(nn.Module):
                 print("Missing and Initializing parameter: ", i)
 
 class SinpleVAE_2Encoder(nn.Module):
-    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, style_num=0, n_layers=0, leak_relu_slope=0.0, bn=False):
+    def __init__(self, input_dim, hidden_dim, zc_dim, zs_dim, style_num=0, n_layers=0, leak_relu_slope=0.0, bn=False, projection_type=None):
         super().__init__()
 
         self.ac_fn = 'leaky_relu'
@@ -307,7 +307,7 @@ class SinpleVAE_2Encoder(nn.Module):
         else:
             self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 2, zs_dim))
 
-        self.projection_type = 'Linear1280+CLS' # ori: 'Linear+CLS'
+        self.projection_type =  projection_type #  'Linear1280+CLS'
 
         if self.projection_type == 'Linear+CLS':
             self.reid_output_dim = self.z_dim
