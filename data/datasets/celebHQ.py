@@ -12,7 +12,7 @@ import os.path as osp
 from .bases import BaseImageDataset
 from collections import defaultdict
 import pickle
-class CELAB_HQ(BaseImageDataset):
+class CelebHQ(BaseImageDataset):
     """
     CELAB-HQ-R
     Reference:
@@ -25,7 +25,7 @@ class CELAB_HQ(BaseImageDataset):
     dataset_dir = 'CelebHQ'
 
     def __init__(self, root='', verbose=True, pid_begin = 0, **kwargs):
-        super(CELAB_HQ, self).__init__()
+        super(CelebHQ, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir, 'rename')
         self.train_dir = osp.join(self.dataset_dir, 'train')
         self.query_dir = osp.join(self.dataset_dir, 'test')
