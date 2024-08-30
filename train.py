@@ -93,9 +93,6 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
 
         imgs_tensor, pids, style_ids = imgs_tensor.cuda(), pids.cuda(), style_ids.cuda()
 
-        # run["train/batch/load_time"].append(time.time() - end)
-        print("load time: {}".format(time.time() - end))
-
         '''
         0422 norm or no norm for testing BatchNorm
         '''
