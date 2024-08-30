@@ -331,7 +331,8 @@ def main(config):
     model = model.cuda()
     # flows_model = flows_model.cuda()
     classifier = classifier.cuda()
-    classifier_reID = classifier_reID.cuda()
+    if classifier_reID is not None:
+        classifier_reID = classifier_reID.cuda()
 
     if config.LOSS.USE_NCE:
         
