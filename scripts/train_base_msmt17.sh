@@ -1,4 +1,6 @@
 
+cd /home/zhengwei/github/CVAE
+CUDA_VISIBLE_DEVICES=3
 # # ===========Stage 1 traning================
 nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/my_data/datasets \
@@ -13,7 +15,7 @@ nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
 --use_two_encoder \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> train_baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS.log 2>&1 &
+> nohup_logs/train_baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS.log 2>&1 &
 
 
 # ===========Base ReID Stage traning================

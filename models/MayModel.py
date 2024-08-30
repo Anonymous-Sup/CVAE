@@ -137,6 +137,8 @@ class SinpleVAE(nn.Module):
         elif self.projection_type == 'Transforer1280+CLS':
             self.reid_output_dim = 1280
             self.reid_projector = TransformerReIDProjection(self.z_dim, self.reid_output_dim)
+        elif self.projection_type == None:
+            print("============Warning! No projection layer is used in Training!=================")
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
@@ -330,6 +332,8 @@ class SinpleVAE_2Encoder(nn.Module):
         elif self.projection_type == 'Transforer1280+CLS':
             self.reid_output_dim = 1280
             self.reid_projector = TransformerReIDProjection(self.z_dim, self.reid_output_dim)
+        elif self.projection_type == None:
+            print("============Warning! No projection layer is used in Training!=================")
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
