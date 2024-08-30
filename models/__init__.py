@@ -1,7 +1,7 @@
 from models.CVAE import VAE
 from models.MayModel import SinpleVAE, SinpleVAE_2Encoder
 from models.Classifier import Classifier, NormalizedClassifier, MLPClassBlock, distLinear
-from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ, YuKeMLPFLOW_onlyX_seperateZ_init
+# from models.Flows import Flows, InvertibleMLPFlow, YuKeMLPFLOW, YuKeMLPFLOW_onlyX, YuKeMLPFLOW_onlyX_seperateZ, YuKeMLPFLOW_onlyX_seperateZ_init
 from models.NIPS import NIPS
 import torch
 
