@@ -93,7 +93,8 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
 
         imgs_tensor, pids, style_ids = imgs_tensor.cuda(), pids.cuda(), style_ids.cuda()
 
-        run["train/batch/load_time"].append(time.time() - end)
+        # run["train/batch/load_time"].append(time.time() - end)
+        print("load time: {}".format(time.time() - end))
 
         '''
         0422 norm or no norm for testing BatchNorm
@@ -171,7 +172,9 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
-        if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1: 
+        # if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1:   
+        # only for the last epoch
+        if epoch+1 == config.TRAIN.MAX_EPOCH and batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
                 if 'kl' in config.MODEL.TRAIN_STAGE:
                     number_sample = 16
@@ -222,18 +225,18 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         batch_loss.update(loss.item(), pids.size(0))
         batch_time.update(time.time() - end)
 
-        run['train/batch/1_prior'].append(prior.mean().item())
-        run['train/batch/1_posterior'].append(posterior.mean().item())
-        run["train/batch/cls_loss"].append(cls_loss.item())
-        run["train/batch/cls_loss_reid"].append(cls_loss_reid.item())
-        run["train/batch/pair_loss"].append(pair_loss.item())
-        run["train/batch/center_loss"].append(center_loss.item())
-        run["train/batch/0_kl_loss"].append(kl_loss.item())
-        run["train/batch/0_recon_loss"].append(recon_loss.item())
-        # run["train/batch/0_regular_loss"].append(regular_loss.item())
-        run["train/batch/loss"].append(loss.item())
-        run["train/batch/acc"].append((torch.sum(preds == pids.data)).float()/pids.size(0))
-        run["train/batch/reid_acc"].append((torch.sum(preds_reid == pids.data)).float()/pids.size(0))
+        # run['train/batch/1_prior'].append(prior.mean().item())
+        # run['train/batch/1_posterior'].append(posterior.mean().item())
+        # run["train/batch/cls_loss"].append(cls_loss.item())
+        # run["train/batch/cls_loss_reid"].append(cls_loss_reid.item())
+        # run["train/batch/pair_loss"].append(pair_loss.item())
+        # run["train/batch/center_loss"].append(center_loss.item())
+        # run["train/batch/0_kl_loss"].append(kl_loss.item())
+        # run["train/batch/0_recon_loss"].append(recon_loss.item())
+        # # run["train/batch/0_regular_loss"].append(regular_loss.item())
+        # run["train/batch/loss"].append(loss.item())
+        # run["train/batch/acc"].append((torch.sum(preds == pids.data)).float()/pids.size(0))
+        # run["train/batch/reid_acc"].append((torch.sum(preds_reid == pids.data)).float()/pids.size(0))
         # run["train/batch/batch_time"].append(time.time() - end)
         end = time.time()
 
@@ -265,9 +268,9 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
     # run["train/epoch/cls_loss"].append(batch_cls_loss)
     # run["train/epoch/cls_loss_theta"].append(batch_cls_loss_theta)
     # run["train/epoch/pair_loss"].append(batch_pair_loss)
-    run["train/epoch/kl_loss"].append(batch_kl_loss.avg)
-    # run["train/epoch/kld_theta"].append(batch_kld_theta)
-    run["train/epoch/recon_loss"].append(batch_recon_loss.avg)
+    # run["train/epoch/kl_loss"].append(batch_kl_loss.avg)
+    # # run["train/epoch/kld_theta"].append(batch_kld_theta)
+    # run["train/epoch/recon_loss"].append(batch_recon_loss.avg)
     return iteration_num
 
 
@@ -326,7 +329,8 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
 
         imgs_tensor, pids, style_ids = imgs_tensor.cuda(), pids.cuda(), style_ids.cuda()
 
-        run["train/batch/load_time"].append(time.time() - end)
+        # run["train/batch/load_time"].append(time.time() - end)
+        print("load time: {}".format(time.time() - end))
 
         '''
         0422 norm or no norm for testing BatchNorm
@@ -492,17 +496,17 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
         batch_loss.update(loss.item(), pids.size(0))
         batch_time.update(time.time() - end)
 
-        run['train/batch/1_prior'].append(prior.mean().item())
-        run['train/batch/1_posterior'].append(posterior.mean().item())
-        run["train/batch/cls_loss"].append(cls_loss.item())
-        run["train/batch/pair_loss"].append(pair_loss.item())
-        run['train/batch/center_loss'].append(center_loss.item())
-        run["train/batch/0_kl_loss"].append(kl_loss.item())
-        run["train/batch/0_recon_loss"].append(recon_loss.item())
-        # run["train/batch/0_regular_loss"].append(regular_loss.item())
-        run["train/batch/loss"].append(loss.item())
-        run["train/batch/acc"].append((torch.sum(preds == pids.data)).float()/pids.size(0))
-        run["train/batch/acc_NCE"].append(acc)
+        # run['train/batch/1_prior'].append(prior.mean().item())
+        # run['train/batch/1_posterior'].append(posterior.mean().item())
+        # run["train/batch/cls_loss"].append(cls_loss.item())
+        # run["train/batch/pair_loss"].append(pair_loss.item())
+        # run['train/batch/center_loss'].append(center_loss.item())
+        # run["train/batch/0_kl_loss"].append(kl_loss.item())
+        # run["train/batch/0_recon_loss"].append(recon_loss.item())
+        # # run["train/batch/0_regular_loss"].append(regular_loss.item())
+        # run["train/batch/loss"].append(loss.item())
+        # run["train/batch/acc"].append((torch.sum(preds == pids.data)).float()/pids.size(0))
+        # run["train/batch/acc_NCE"].append(acc)
         # run["train/batch/batch_time"].append(time.time() - end)
         end = time.time()
 
@@ -526,15 +530,16 @@ def train_cvae_nce(run, config, model, classifier, criterion_cla, criterion_pair
     if 'reid' not in config.MODEL.TRAIN_STAGE:
         if 'novel' in config.DATA.TRAIN_FORMAT:
             if (epoch+1) % 10 == 0:
-                drawer.compute(run)
+                print("Jump TSNE")
+                # drawer.compute(run)
     # run["train/epoch/loss"].append(batch_loss)
     # run["train/epoch/acc"].append(batch_acc)
     # run["train/epoch/theta_acc"].append(batch_theta_acc)
     # run["train/epoch/cls_loss"].append(batch_cls_loss)
     # run["train/epoch/cls_loss_theta"].append(batch_cls_loss_theta)
     # run["train/epoch/pair_loss"].append(batch_pair_loss)
-    run["train/epoch/kl_loss"].append(batch_kl_loss.avg)
-    # run["train/epoch/kld_theta"].append(batch_kld_theta)
-    run["train/epoch/recon_loss"].append(batch_recon_loss.avg)
+    # run["train/epoch/kl_loss"].append(batch_kl_loss.avg)
+    # # run["train/epoch/kld_theta"].append(batch_kld_theta)
+    # run["train/epoch/recon_loss"].append(batch_recon_loss.avg)
     return iteration_num
 

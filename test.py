@@ -471,25 +471,26 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
             del result
             del data_to_save            
 
-        if latent_z == 'new_z':
-            q_g_imgs = torch.cat((q_all_imgs, g_all_imgs), 0)
-            q_g_recons = torch.cat((q_all_recons, g_all_recons), 0)
-            q_g_features = torch.cat((qf, gf), 0)
-            
-            pair_plots(run, q_g_imgs, q_g_features, "Q+G X-Z plots")
-            pair_plots(run, q_g_recons, q_g_features, "Q+G Recons Rx-Z plots")
 
-            # # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
-            # q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
-            # save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, q_g_domains_y, config.MODEL.RESUME)
         # else:
-            run["test/mAP"].append(mAP)
-            run["test/top1"].append(cmc[0])
-            run["test/top5"].append(cmc[4])
-            run["test/top10"].append(cmc[9])
+            # run["test/mAP"].append(mAP)
+            # run["test/top1"].append(cmc[0])
+            # run["test/top5"].append(cmc[4])
+            # run["test/top10"].append(cmc[9])
             if config.DATA.DATASET == 'market1k':
                 print("Jump TSNE in test")
                 # drawer.compute(run)
+    if latent_z == 'new_z':
+        q_g_imgs = torch.cat((q_all_imgs, g_all_imgs), 0)
+        q_g_recons = torch.cat((q_all_recons, g_all_recons), 0)
+        q_g_features = torch.cat((qf, gf), 0)
+        
+        pair_plots(run, q_g_imgs, q_g_features, "Q+G X-Z plots")
+        pair_plots(run, q_g_recons, q_g_features, "Q+G Recons Rx-Z plots")
+
+        # # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
+        # q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
+        # save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, q_g_domains_y, config.MODEL.RESUME)
     return cmc, mAP, [q_acc, g_acc, q_g_acc]
 
 

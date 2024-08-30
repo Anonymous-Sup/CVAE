@@ -28,10 +28,10 @@ from scipy.io import loadmat
 
 # torch.autograd.set_detect_anomaly(True)
 
-run = neptune.init_run(
-    project="Zhengwei-Lab/MayCVAE",
-    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2ODIwNTQ4Yy0xZDA3LTRhNDctOTRmMy02ZjRlMmMzYmYwZjUifQ==",
-)
+# run = neptune.init_run(
+#     project="Zhengwei-Lab/MayCVAE",
+#     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2ODIwNTQ4Yy0xZDA3LTRhNDctOTRmMy02ZjRlMmMzYmYwZjUifQ==",
+# )
 
 def parse_option():
     parser = argparse.ArgumentParser(description='Train CVAE model for transfer learning')
@@ -90,7 +90,7 @@ def parse_option():
         "epoch": config.TRAIN.MAX_EPOCH,
         "seed": config.SEED,
     }
-    run["parameters"] = param
+    # run["parameters"] = param
     return config
 
 def main(config):
@@ -361,12 +361,12 @@ def main(config):
         with torch.no_grad():
             print("=> Test pretarined feature form VLP model")
             test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
+            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
             if config.EVAL_MODE:
                 final_epoch = True
             else:
                 final_epoch = False
-            test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, None, text_embeddings, latent_z='z_c', final_epoch=False)
+            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, None, text_embeddings, latent_z='z_c', final_epoch=False)
 
         if config.EVAL_MODE:
             return
@@ -379,14 +379,14 @@ def main(config):
     for epoch in range(start_epoch, config.TRAIN.MAX_EPOCH):
         start_train_time = time.time()
         if config.TRAIN.AMP:
-            iteration_num = train_cvae(run, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
+            iteration_num = train_cvae(None, config, model, classifier, criterion_cla, criterion_pair, criterion_kl, criterion_recon, criterion_regular,
               optimizer, trainloader, epoch, dataset.train_centroids, early_stopping, scaler)
         else:
             if config.LOSS.USE_NCE:
-                iteration_num = train_cvae_nce(run, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
+                iteration_num = train_cvae_nce(None, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
                 optimizer, optimizer_center, trainloader, epoch, iteration_num, text_embeddings)
             else:
-                iteration_num = train_cvae(run, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
+                iteration_num = train_cvae(None, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
                 optimizer, optimizer_center, trainloader, epoch, iteration_num)
             # for name, param in classifier.named_parameters():
             #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
@@ -397,15 +397,15 @@ def main(config):
             
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
-                rank, mAP, acc_total = test_cvae(run, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                rank, mAP, acc_total = test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
                 # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
                 # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='mu')
                 
                 # run["eval/rank1"].append(rank1)
                 rank1 = rank[0]
 
-            is_best = (rank1 + mAP + acc_total[2]) > (best_rank1 + best_mAP + best_acc[2])
+            is_best = (rank1 + mAP + 5.0*acc_total[2]) > (best_rank1 + best_mAP + 5.0*best_acc[2])
             
             if is_best: 
                 best_rank1 = rank1
@@ -439,7 +439,7 @@ def main(config):
                 return param_group['lr']
         
         if config.TRAIN.LR_SCHEDULER.NAME != 'None':
-            run['train/lr'].append(get_current_lr(optimizer))
+            print("=> Current learning rate: {:.6f}".format(get_current_lr(optimizer)))
             main_scheduler.step()
             scheduler.step()
             if optimizer_center is not None:
@@ -447,9 +447,10 @@ def main(config):
             
             
     print("=> Best Rank-1 {:.1%}, mAP {:.1%} achieved at epoch {}".format(best_rank1, best_mAP, best_epoch))
-    run["best_rank1"] = best_rank1
-    run['best_mAP'] = best_mAP
-    run["best_epoch"] = best_epoch
+    print("=> Best Acc: Query {:.1%}, Gallery {:.1%}, Total {:.1%}".format(best_acc[0], best_acc[1], best_acc[2]))
+    # run["best_rank1"] = best_rank1
+    # run['best_mAP'] = best_mAP
+    # run["best_epoch"] = best_epoch
     elapsed = round(time.time() - start_time)
     elapsed = str(datetime.timedelta(seconds=elapsed))
     train_time = str(datetime.timedelta(seconds=train_time))
@@ -473,6 +474,5 @@ if __name__ == '__main__':
     print("=> Configurations:\n-------------------------")
     print(config)
     print("----------------------")
-    # run['parameters'] = config
     main(config)
-    run.stop()
+    # run.stop()

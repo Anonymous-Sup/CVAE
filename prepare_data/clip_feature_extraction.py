@@ -7,10 +7,10 @@ import neptune
 import numpy as np
 import tqdm
 
-run = neptune.init_run(
-    project="Zhengwei-Lab/NIPSTransferReID",
-    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2ODIwNTQ4Yy0xZDA3LTRhNDctOTRmMy02ZjRlMmMzYmYwZjUifQ==",
-)  # your credentials
+# run = neptune.init_run(
+#     project="Zhengwei-Lab/NIPSTransferReID",
+#     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI2ODIwNTQ4Yy0xZDA3LTRhNDctOTRmMy02ZjRlMmMzYmYwZjUifQ==",
+# )  # your credentials
 
 # set only using GPU 1
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
@@ -66,19 +66,19 @@ def extract_features(model, preprocess, base_path, feature_path, suffix='.jpg'):
 print("==========Extracting feature form query ==========")
 query_path = os.path.join(args.data_root, args.dataset, 'pytorch/query')
 feature_path = os.path.join(args.data_root, args.dataset, 'tensor', args.pre_model, 'query')
-run["data/query_path"] = query_path
+# run["data/query_path"] = query_path
 extract_features(model, preprocess, query_path, feature_path, suffix)
 
 print("==========Extracting feature form gallery ==========")
 gallery_path = os.path.join(args.data_root, args.dataset, 'pytorch/gallery')
 feature_path = os.path.join(args.data_root, args.dataset, 'tensor', args.pre_model, 'gallery')
-run["data/gallery_path"] = gallery_path
+# run["data/gallery_path"] = gallery_path
 extract_features(model, preprocess, gallery_path, feature_path, suffix)
 
 print("==========Extracting feature form train_all ==========")
 train_path = os.path.join(args.data_root, args.dataset, 'pytorch/train_all')
 feature_path = os.path.join(args.data_root, args.dataset, 'tensor', args.pre_model, 'train_all' )
-run["data/train_path"] = train_path
+# run["data/train_path"] = train_path
 extract_features(model, preprocess, train_path, feature_path, suffix)
 
-run.stop()
+# run.stop()
