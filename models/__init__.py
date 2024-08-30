@@ -124,7 +124,7 @@ def build_model(config, num_classes):
         # classifier = distLinear(feature_dim, num_classes)
 
 
-        print("Initialized classifier with feature_dim: {}, num_classes: {}".format(model.reid_output_dim, num_classes))
+        print("Initialized classifier with feature_dim: {}, num_classes: {}".format(feature_dim, num_classes))
         # classifier = MLPClassBlock(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
         # classifier = NormalizedClassifier(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
     else:
@@ -132,7 +132,8 @@ def build_model(config, num_classes):
     
     print("Classifier size: {:.5f}M".format(sum(p.numel() for p in classifier.parameters())/1000000.0))
 
-    classifier_reID = Classifier(feature_dim=model.reid_output_dim, num_classes=num_classes)
+    # classifier_reID = Classifier(feature_dim=model.reid_output_dim, num_classes=num_classes)
+    classifier_reID = None
     # classifier_reID = distLinear(model.reid_output_dim, num_classes)
     return model, classifier, classifier_reID
 
