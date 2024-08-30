@@ -22,7 +22,7 @@ from test import test_cvae, test_clip_feature
 from tools.eval_metrics import evaluate
 from tools.utils import AverageMeter, save_checkpoint, set_seed, mkdir_if_missing
 from torch.cuda.amp import GradScaler, autocast
-import neptune
+# import neptune
 from utils import EarlyStopping
 from scipy.io import loadmat
 
