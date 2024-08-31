@@ -308,9 +308,11 @@ def main(config):
             print("=> Start training the model on Novel data from scratch")
         else: # base data
             if 'kl' not in config.MODEL.TRAIN_STAGE:
+                # weight_pth = 'best_model.pth.tar'
+                weight_pth = 'checkpoint_ep120.pth.tar'
                 print("=> Start Training second stage model")
-                print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
-                checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
+                print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, weight_pth))
+                checkpoint = torch.load(config.MODEL.RESUME + '/' + weight_pth)
                 model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
                 classifier.load_state_dict(checkpoint['classifier'])
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
@@ -318,8 +320,10 @@ def main(config):
                 # flows_model.load_state_dict(checkpoint['flows_model'])
             else:
                 if config.MODEL.RESUME:
-                    print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
-                    checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
+                    weight_pth = 'best_model.pth.tar'
+                    # weight_pth = 'checkpoint_ep120.pth.tar'
+                    print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, weight_pth))
+                    checkpoint = torch.load(config.MODEL.RESUME + '/' + weight_pth)
                     model.load_param(checkpoint['model'])
                     # flows_model.load_state_dict(checkpoint['flows_model'])
                     classifier.load_state_dict(checkpoint['classifier'])
