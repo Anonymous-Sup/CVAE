@@ -372,7 +372,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     former_merge_acc, former_q_pred, former_g_pred = evaluate_classification_accuracy(distmat, qf_cls, gf_cls, classifer, q_pids, g_pids)
     since = time.time()
     if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
-        cmc, mAP, _ = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path)
+        cmc, mAP, updatemat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path)
     else:
         if cls_rerank:
             if final_epoch:
