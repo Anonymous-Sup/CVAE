@@ -16,7 +16,7 @@ import os
 @torch.no_grad()
 def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dataloader, classifier=None, classifier_reID=None, latent_z='z_c', final_epoch=False):
     
-    features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels = [], torch.tensor([]), torch.tensor([]), [], [], [], [], [], [], []
+    features, feature_cls, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels = [], [], torch.tensor([]), torch.tensor([]), [], [], [], [], [], [], []
     
     if final_epoch:
         # Initialize dictionaries to store class accuracy and image paths with classification status
@@ -121,6 +121,8 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
         
         features.append(batach_features_norm.cpu())
         # features.append(retrieval_feature.cpu())
+        feature_cls.append(z_c_proj.cpu())
+
 
         all_top10_scores.append(batch_top10_scores.cpu())
         all_top10_labels.append(batch_top10_labels.cpu())
@@ -140,6 +142,7 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
     all_top10_scores = torch.cat(all_top10_scores, 0)
     all_top10_labels = torch.cat(all_top10_labels, 0)
     features = torch.cat(features, 0)
+    feature_cls = torch.cat(feature_cls, 0)
     all_imgs = torch.cat(all_imgs, 0)
     all_recons = torch.cat(all_recons, 0)
     all_domains_y = torch.cat(all_domains_y, 0)
@@ -155,12 +158,12 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
             }
         del class_acc_dict
         # class_accuracy = {class_idx: acc['correct'] / acc['total'] for class_idx, acc in class_acc_dict.items()}
-        return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels, class_accuracy, class_img_paths
+        return features, feature_cls, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels, class_accuracy, class_img_paths
 
     # Assuming `classifier` is your model
     # for name, param in classifier.named_parameters():
     #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
-    return features, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels
+    return features, feature_cls, pids, styleids, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels
 
 
 """
@@ -328,14 +331,14 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     g_reid_batch_acc = AverageMeter()
     if config.LOSS.USE_NCE:
         print("==========Test with NCE LOSS=========")
-        qf, qf_cat, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
-        gf, gf_cat, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
+        qf, qf_cls, qf_cat, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
+        gf, gf_cls, gf_cat, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
     elif final_epoch:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z, final_epoch)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, q_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z, final_epoch)
+        qf, qf_cls, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z, final_epoch)
+        gf, gf_cls, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, q_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z, final_epoch)
     else:
-        qf, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
-        gf, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
+        qf, qf_cls, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
+        gf, qf_cls, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
 
     qf_norm = F.normalize(qf, p=2, dim=1)
     gf_norm = F.normalize(gf, p=2, dim=1)
@@ -354,6 +357,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     m, n = qf.size(0), gf.size(0)
     distmat = torch.zeros((m,n))
     qf, gf = qf.cuda(), gf.cuda()
+    qf_cls, gf_cls = qf_cls.cuda(), gf_cls.cuda()
     qf_norm, gf_norm = qf_norm.cuda(), gf_norm.cuda()
     # Cosine similarity
     for i in range(m):
@@ -365,7 +369,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     time_elapsed = time.time() - since
     print('Distance computing in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
-    former_merge_acc, former_q_pred, former_g_pred = evaluate_classification_accuracy(distmat, qf, gf, classifer, q_pids, g_pids)
+    former_merge_acc, former_q_pred, former_g_pred = evaluate_classification_accuracy(distmat, qf_cls, gf_cls, classifer, q_pids, g_pids)
     since = time.time()
     if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path)
@@ -382,7 +386,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
                 cmc, mAP, updatemat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True)
 
     
-    later_merge_acc, later_q_pred, later_g_pred = evaluate_classification_accuracy(updatemat, qf, gf, classifer, q_pids, g_pids)
+    later_merge_acc, later_q_pred, later_g_pred = evaluate_classification_accuracy(updatemat, qf_cls, gf_cls, classifer, q_pids, g_pids)
     
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))

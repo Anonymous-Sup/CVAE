@@ -1,6 +1,7 @@
 
 cd /home/zhengwei/github/CVAE
 CUDA_VISIBLE_DEVICES=3
+
 # # ===========Stage 1 traning================
 nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/my_data/datasets \
