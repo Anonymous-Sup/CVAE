@@ -314,7 +314,7 @@ def main(config):
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, weight_pth))
                 checkpoint = torch.load(config.MODEL.RESUME + '/' + weight_pth)
                 model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
-                classifier.load_state_dict(checkpoint['classifier'])
+                # classifier.load_state_dict(checkpoint['classifier'])
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 del checkpoint
                 # flows_model.load_state_dict(checkpoint['flows_model'])
