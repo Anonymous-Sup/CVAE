@@ -9,6 +9,9 @@ import torch.nn as nn
 import torch.nn.init as init
 from scipy.io import savemat
 
+
+base_path = '/home/zhengwei/github/CVAE'
+
 def plot_histogram(run, tensor, title):
     
     # 创建一个图像对象
@@ -22,7 +25,9 @@ def plot_histogram(run, tensor, title):
     ax.grid(True)
 
     # 保存图像到一个缓冲区
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # run["train/histograms/{}".format(title)].append(fig)
     # 关闭plt，避免重复显示图像
     plt.close(fig)
@@ -57,7 +62,9 @@ def plot_histogram_seperate(run, tensor, title):
     # plt.show()
 
     # run["train/histograms/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # Save the figure to a file
     # fig.savefig("plot.png", format='png')
 
@@ -83,7 +90,9 @@ def plot_pair(run, tensor, title):
     # 保存图像到一个缓冲区
     # plt.savefig("temp_plot.png", format='png')
     # run["train/histograms/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # 关闭plt，避免重复显示图像
     plt.close(fig)
 
@@ -118,7 +127,9 @@ def plot_pair_seperate(run, tensor, title):
     # plt.show()
 
     # run["train/histograms/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # Save the figure to a file
     # fig.savefig("plot.png", format='png')
 
@@ -147,7 +158,9 @@ def plot_correlation_matrix(run, tensor, title):
     # Save the figure to a file
     # fig.savefig("correlation_matrix.png", format='png')
     # run["train/histograms/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
 
     # Close the figure to free up memory
     plt.close(fig)
@@ -168,7 +181,9 @@ def plot_scatter_2D(run, tensor, title):
     # Save the figure to a file
     # fig.savefig("scatter_plot.png", format='png')
     # run["train/histograms/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
 
     # Close the figure to free up memory
     plt.close(fig)
@@ -188,7 +203,9 @@ def plot_scatter_1D(run, tensor, title):
     # Show the plot
     # plt.show()
     # run["train/histograms/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # Save the figure to a file
     # fig.savefig("scatter_plot.png", format='png')
 
@@ -214,7 +231,9 @@ def plot_scatter_2D(run, tensor, title):
     ax.set_xlabel('Feature Index')
     ax.set_ylabel('Feature Value')
     plt.tight_layout()
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # run["train/histograms/{}".format(title)].append(fig)
     plt.close(fig)
 
@@ -243,7 +262,9 @@ def plot_scatterNN(run, tensor, title):
     plt.tight_layout()
     # Save the figure to a file
     # fig.savefig("scatter_plot.png", format='png')
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # run["train/histograms/{}".format(title)].append(fig)
     # Close the figure to free up memory
     plt.close(fig)
@@ -278,7 +299,9 @@ def plot_epoch_Zdim_old(run, tensor, title):
     # Adjust the spacing between subfigures
     plt.tight_layout()
     # run["train/histograms/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     plt.close(fig)
 
 def plot_epoch_Zdim(run, tensor, title, num_samples=64, last=False):
@@ -321,7 +344,9 @@ def plot_epoch_Zdim(run, tensor, title, num_samples=64, last=False):
     # 调整图形布局
     plt.tight_layout()
     # run["train/histograms/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # 显示图形
     plt.close(fig)
 
@@ -354,7 +379,9 @@ def pair_plot_pca(run, X_input, Z_mid, title):
 
     # Save the figure to a file
     # fig.savefig("pair_plot.png", format='png')
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     # run["test/0-pairplot/{}".format(title)].append(fig)
     # Close the figure to free up memory
     plt.close(fig)
@@ -407,7 +434,10 @@ def pair_plots(run, feature_x, feature_z, title):
 
     # Log the figure into the run object (assuming run is a logging object)
     # run["train/0-pairplots/{}".format(title)].append(fig)
-    plt.savefig("nohup_logs/histograms/{}.png".format(title), format='png')
+
+    png_save_path = os.path.join(base_path, "nohup_logs", "histograms", run.SAVED_NAME)
+    os.makedirs(png_save_path, exist_ok=True)
+    plt.savefig(png_save_path+"/{}.png".format(title), format='png')
     plt.close(fig)
 
 

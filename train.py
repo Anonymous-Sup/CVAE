@@ -179,26 +179,26 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
                 else:
                     number_sample = 64
                 
-                plot_epoch_Zdim(run, z_collect, "0-Seperate dim of final cat z", number_sample)
-                # plot_epoch_Zdim(run, z_collect, "0-Seperate dim of reparemeterized last z", last=True)
-                plot_epoch_Zdim(run, x_collect, "0-Seperate dim of x_pre", number_sample)
-                # plot_epoch_Zdim(run, x_collect, "0-Seperate dim of last x_pre", last=True)
-                plot_epoch_Zdim(run, zs_collect, "0-Seperate dim of fusez_s", number_sample)
+                plot_epoch_Zdim(config, z_collect, "0_Seperate_dim_of_final_cat_z", number_sample)
+                # plot_epoch_Zdim(config, z_collect, "0-Seperate dim of reparemeterized last z", last=True)
+                plot_epoch_Zdim(config, x_collect, "0_Seperate_dim_of_x_pre", number_sample)
+                # plot_epoch_Zdim(config, x_collect, "0-Seperate dim of last x_pre", last=True)
+                plot_epoch_Zdim(config, zs_collect, "0_Seperate_dim_of_fusez_s", number_sample)
                 
-                plot_scatter_1D(run, prior_p, "1-prior_sample")
-                plot_scatter_2D(run, posterior_p, "1-posterior_sample")
+                plot_scatter_1D(config, prior_p, "1_prior_sample")
+                plot_scatter_2D(config, posterior_p, "1_posterior_sample")
 
-                plot_correlation_matrix(run, z, "1-correlation final cat z")
-                plot_correlation_matrix(run, x_pre, "1-correlation x_pre")
+                plot_correlation_matrix(config, z, "1_correlation_final_cat_z")
+                plot_correlation_matrix(config, x_pre, "1_correlation_x_pre")
 
-                plot_histogram(run, mean, "2-mean")
-                plot_histogram(run, log_var, "2-log_var")
-                plot_histogram(run, z, "2-final cat z")
-                plot_histogram(run, domian_feature, "3-domian_feature")
-                plot_scatter_2D(run, domian_feature, "3-domian_feature scatter")
-                plot_histogram(run, z_s, "4-Z_S")
-                plot_histogram(run, z_c, "4-Z_C")
-                plot_histogram(run, fusez_s, "4-fusez_s")
+                plot_histogram(config, mean, "2_mean")
+                plot_histogram(config, log_var, "2_log_var")
+                plot_histogram(config, z, "2_final_cat_z")
+                plot_histogram(config, domian_feature, "3_domian_feature")
+                plot_scatter_2D(config, domian_feature, "3_domian_feature_scatter")
+                plot_histogram(config, z_s, "4_Z_S")
+                plot_histogram(config, z_c, "4_Z_C")
+                plot_histogram(config, fusez_s, "4_fusez_s")
 
         optimizer.zero_grad()
         if optimizer_center is not None:
