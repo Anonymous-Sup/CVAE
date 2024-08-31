@@ -16,7 +16,7 @@ import os
 @torch.no_grad()
 def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dataloader, classifier=None, classifier_reID=None, latent_z='z_c', final_epoch=False):
     
-    features, pids, styleids, cls_result, all_imgs10, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels = [], torch.tensor([]), torch.tensor([]), [], [], [], [], [], [], []
+    features, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels = [], torch.tensor([]), torch.tensor([]), [], [], [], [], [], [], []
     
     if final_epoch:
         # Initialize dictionaries to store class accuracy and image paths with classification status
