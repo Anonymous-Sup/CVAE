@@ -19,7 +19,7 @@ cd /home/zhengwei/github/CVAE
 # > nohup_logs/train_baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS.log 2>&1 &
 
 
-CUDA_VISIBLE_DEVICES=2
+CUDA_VISIBLE_DEVICES=3
 # ===========Base ReID+CLS Stage traning================
 nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/my_data/datasets \
@@ -29,14 +29,31 @@ nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
 --train_format base \
 --train_stage reid+cls_stage \
 --resume  /data/zhengwei/CVAE/outputs/msmt17/clipreid_simplevae_base/2024-08-31/baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS \
---gpu 2 \
---saved_name baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+CLS_Trip+Center+Ce \
+--gpu 3 \
+--saved_name baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+distCLS_Trip+Center+Ce \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/train_2nd_baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+CLS_Trip+Center+Ce.log 2>&1 &
+> nohup_logs/train_2nd_baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+distCLS_Trip+Center+Ce.log 2>&1 &
 
+
+nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
+--root /home/zhengwei/my_data/datasets \
+--output /data/zhengwei/CVAE/outputs \
+--dataset msmt17 \
+--format_tag tensor \
+--train_format base \
+--train_stage reid+cls_stage \
+--resume  /data/zhengwei/CVAE/outputs/msmt17/clipreid_simplevae_base/2024-08-31/baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS \
+--gpu 3 \
+--saved_name baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+distCLS_Trip+Center+Ce \
+--vae_type SinpleVAE \
+--recon_loss mse \
+--use_two_encoder \
+--reid_loss crossentropy \
+--gaussian MultivariateNormal \
+> nohup_logs/train_2nd_baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+distCLS_Trip+Center+Ce.log 2>&1 &
 
 # # ===========Base CLS Stage traning================
 # nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
