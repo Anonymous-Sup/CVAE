@@ -386,9 +386,9 @@ def main(config):
         else:
             print("=> Start evaluation only ")
         with torch.no_grad():
-            print("=> Test pretarined feature form VLP model")
-            test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
-            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
+            # print("=> Test pretarined feature form VLP model")
+            # test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
+            # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
             if config.EVAL_MODE:
                 final_epoch = True
             else:
