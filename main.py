@@ -44,7 +44,7 @@ def parse_option():
     
     # Training
     parser.add_argument('--train_format', type=str, required= True, choices=['base', 'novel', 'novel_train_from_scratch'], help="Select the datatype for training or finetuning")
-    parser.add_argument('--train_stage', type=str, choices=['klstage', 'klNocls_stage', 'kl_cls_stage', 'kl_reid_stage', 'CLSstage', 'reidstage'], required=True, help="Select the stage for training")
+    parser.add_argument('--train_stage', type=str, choices=['klstage', 'klNocls_stage', 'reid+cls_stage', 'kl_cls_stage', 'kl_reid_stage', 'CLSstage', 'reidstage'], required=True, help="Select the stage for training")
 
     # Parameters 
     parser.add_argument('--vae_type', type=str, choices=['cvae','SinpleVAE'], help="Type of VAE model")

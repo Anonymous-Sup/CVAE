@@ -27,7 +27,7 @@ nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
 --dataset msmt17 \
 --format_tag tensor \
 --train_format base \
---train_stage CLSstage \
+--train_stage reid+cls_stage \
 --resume  /data/zhengwei/CVAE/outputs/msmt17/clipreid_simplevae_base/2024-08-31/baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS \
 --gpu 2 \
 --saved_name baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+CLS_Trip+Center+Ce \
