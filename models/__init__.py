@@ -119,9 +119,9 @@ def build_model(config, num_classes):
         feature_dim = model.cls_input_dim
         # feature_dim = config.MODEL.ZC_DIM
 
-        # classifier = Classifier(feature_dim=feature_dim, num_classes=num_classes)
+        classifier = Classifier(feature_dim=feature_dim, num_classes=num_classes)
 
-        classifier = distLinear(feature_dim, num_classes)
+        # classifier = distLinear(feature_dim, num_classes)
 
 
         print("Initialized classifier with feature_dim: {}, num_classes: {}".format(feature_dim, num_classes))
