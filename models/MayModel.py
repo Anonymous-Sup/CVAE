@@ -118,34 +118,35 @@ class SinpleVAE(nn.Module):
         self.projection_type = projection_type #  'Linear1280+CLS' 
         
         if self.projection_type == 'Linear+CLS':
-            self.reid_output_dim = self.z_dim
-            self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
+            self.reid_output_dim = self.zc_dim
+            self.reid_projector = nn.Linear(self.zc_dim, self.reid_output_dim, bias=False)
         elif self.projection_type == 'MLP+CLS':
-            self.reid_output_dim = self.z_dim
-            self.reid_projector = MLP(self.z_dim, 256, self.reid_output_dim)  # no bias term
+            self.reid_output_dim = self.zc_dim
+            self.reid_projector = MLP(self.zc_dim, 256, self.reid_output_dim)  # no bias term
         
         elif self.projection_type == 'Linear1280+CLS':
             self.reid_output_dim = 1280
-            self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
+            self.reid_projector = nn.Linear(self.zc_dim, self.reid_output_dim, bias=False)
         elif self.projection_type == 'MLP1280+CLS':
             self.reid_output_dim = 1280
-            self.reid_projector = MLP(self.z_dim, 256, self.reid_output_dim) # no bias term
+            self.reid_projector = MLP(self.zc_dim, 256, self.reid_output_dim) # no bias term
         
         elif self.projection_type == 'MLP768+CLS':
             self.reid_output_dim = 768
-            self.reid_projector = MLP(self.z_dim, 256, self.reid_output_dim) # no bias term
+            self.reid_projector = MLP(self.zc_dim, 256, self.reid_output_dim) # no bias term
         elif self.projection_type == 'Transforer1280+CLS':
             self.reid_output_dim = 1280
-            self.reid_projector = TransformerReIDProjection(self.z_dim, self.reid_output_dim)
+            self.reid_projector = TransformerReIDProjection(self.zc_dim, self.reid_output_dim)
         elif self.projection_type == None:
             print("============Warning! No projection layer is used in Training!=================")
             print("============Warning! Using Defalt Linear 1280 to intialize!=================")
             self.reid_output_dim = 1280
-            self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
+            self.reid_projector = nn.Linear(self.zc_dim, self.reid_output_dim, bias=False)
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
-        i2t_input_dim = zc_dim
+        # i2t_input_dim = zc_dim
+        i2t_input_dim = self.reid_output_dim
         self.cls_input_dim = 1280
         self.i2t_projector = nn.Linear(i2t_input_dim, self.cls_input_dim)
 
@@ -315,36 +316,35 @@ class SinpleVAE_2Encoder(nn.Module):
         self.projection_type =  projection_type #  'Linear1280+CLS'
 
         if self.projection_type == 'Linear+CLS':
-            self.reid_output_dim = self.z_dim
-            self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
+            self.reid_output_dim = self.zc_dim
+            self.reid_projector = nn.Linear(self.zc_dim, self.reid_output_dim, bias=False)
         elif self.projection_type == 'MLP+CLS':
-            self.reid_output_dim = self.z_dim
-            self.reid_projector = MLP(self.z_dim, 256, self.reid_output_dim)  # no bias term
-        
+            self.reid_output_dim = self.zc_dim
+            self.reid_projector = MLP(self.zc_dim, 256, self.reid_output_dim)  # no bias term
+
         elif self.projection_type == 'Linear1280+CLS':
             self.reid_output_dim = 1280
-            self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
-            # self.reid_projector = nn.Linear(self.zc_dim, self.reid_output_dim, bias=False)
+            self.reid_projector = nn.Linear(self.zc_dim, self.reid_output_dim, bias=False)
         elif self.projection_type == 'MLP1280+CLS':
             self.reid_output_dim = 1280
-            self.reid_projector = MLP(self.z_dim, 256, self.reid_output_dim) # no bias term
-        
+            self.reid_projector = MLP(self.zc_dim, 256, self.reid_output_dim) # no bias term
+
         elif self.projection_type == 'MLP768+CLS':
             self.reid_output_dim = 768
-            self.reid_projector = MLP(self.z_dim, 256, self.reid_output_dim) # no bias term
+            self.reid_projector = MLP(self.zc_dim, 256, self.reid_output_dim) # no bias term
         elif self.projection_type == 'Transforer1280+CLS':
             self.reid_output_dim = 1280
-            self.reid_projector = TransformerReIDProjection(self.z_dim, self.reid_output_dim)
+            self.reid_projector = TransformerReIDProjection(self.zc_dim, self.reid_output_dim)
         elif self.projection_type == None:
             print("============Warning! No projection layer is used in Training!=================")
             print("============Warning! Using Defalt Linear 1280 to intialize!=================")
             self.reid_output_dim = 1280
-            self.reid_projector = nn.Linear(self.z_dim, self.reid_output_dim, bias=False)
+            self.reid_projector = nn.Linear(self.zc_dim, self.reid_output_dim, bias=False)
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
-        i2t_input_dim = zc_dim
-        # i2t_input_dim = 1280 # test for old methods
+        # i2t_input_dim = zc_dim
+        i2t_input_dim = self.reid_output_dim
         self.cls_input_dim = 1280
         self.i2t_projector = nn.Linear(i2t_input_dim, self.cls_input_dim)
 

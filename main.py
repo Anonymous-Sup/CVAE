@@ -165,7 +165,27 @@ def main(config):
     reid_parameters = []
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
-        if config.MODEL.TRAIN_STAGE == 'reidstage':
+        if config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
+            for name, param in model.named_parameters():
+                if 'i2t_projector' in name:
+                    param.requires_grad = True
+                    print("{} is tuneable".format(name))
+                    i2t_parameters.append(param)
+                elif 'reid_projector' in name:
+                    param.requires_grad = True
+                    print("{} is tuneable".format(name))
+                    reid_parameters.append(param)
+                else:
+                    param.requires_grad = False
+            all_model_parameters = i2t_parameters + reid_parameters
+            optimizer = optim.Adam([
+                {'params': filter(lambda p: p.requires_grad ,all_model_parameters)},
+                {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
+                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+            # maybe with center loss
+            optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
+
+        elif config.MODEL.TRAIN_STAGE == 'reidstage':
             if config.LOSS.USE_NCE:
                 for name, param in model.named_parameters():
                     if 'i2t_projector' in name:
@@ -203,7 +223,7 @@ def main(config):
                 else:
                     param.requires_grad = False
             optimizer = optim.Adam([ 
-                {'params': filter(lambda p: p.requires_grad ,parameters)},
+                {'params': filter(lambda p: p.requires_grad ,i2t_parameters)},
                 {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
                 lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
             optimizer_center = None
@@ -313,7 +333,7 @@ def main(config):
                 print("=> Start Training second stage model")
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, weight_pth))
                 checkpoint = torch.load(config.MODEL.RESUME + '/' + weight_pth)
-                model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
+                model.load_param(checkpoint['model'], ignore_i2t=True, ignore_reid=True)
                 # classifier.load_state_dict(checkpoint['classifier'])
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 del checkpoint
@@ -404,8 +424,8 @@ def main(config):
             
             print("=> Test at epoch {}".format(epoch+1))
             with torch.no_grad():
-                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
-                rank, mAP, acc_total = test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
+                rank, mAP, acc_total = test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
                 # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
                 # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='mu')
                 

@@ -20,7 +20,11 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         if 'kl' not in config.MODEL.TRAIN_STAGE:
             model.eval()
             classifier.eval()
-            if config.MODEL.TRAIN_STAGE == 'reidstage':
+            if config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
+                model.reid_projector.train()
+                model.i2t_projector.train()
+                classifier.train()
+            elif config.MODEL.TRAIN_STAGE == 'reidstage':
                 model.reid_projector.train()
             elif config.MODEL.TRAIN_STAGE == 'CLSstage':
                 model.i2t_projector.train()
@@ -62,6 +66,10 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         else:
             model.eval()
             classifier.eval()
+            if config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
+                model.reid_projector.train()
+                model.i2t_projector.train()
+                classifier.train()
             if config.MODEL.TRAIN_STAGE == 'reidstage':
                 model.reid_projector.train()
             elif config.MODEL.TRAIN_STAGE == 'CLSstage':
@@ -111,14 +119,23 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
             drawer.update((z_c, pids, data_tag))
             drawer.update_U(domian_feature)
 
-        z_reid = model.reid_projector(z)
+        """
+        Here should be noticed using which z for reid
+        optional: z, z_c
+        z for final, z_c for only content
+        """
+        z_reid = model.reid_projector(z_c)
         pair_loss = criterion_pair(z_reid, pids)
         center_loss = criterion_center(z_reid, pids)
 
-        z_c_proj = model.i2t_projector(z_c)
-        # z_c_proj = z_c
+        """
+        Here should be noticed using which z for cls
+        optional: z_c, z_reid
+        z_c for direct, z_reid for linear structure
+        """
+        z_c_proj = model.i2t_projector(z_reid)
         outputs = classifier(z_c_proj)
-        # outputs = classifier(z_c)
+        
         _, preds = torch.max(outputs.data, 1)
         cls_loss = criterion_cla(outputs, pids)
 
@@ -160,6 +177,10 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
                 loss += cls_loss
                 loss += pair_loss
                 # loss += center_loss
+        elif config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
+            loss = cls_loss
+            loss += pair_loss
+            loss += center_loss
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
             loss = pair_loss 
             loss += center_loss
@@ -222,6 +243,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         # batch_regular_loss.update(regular_loss.item(), pids.size(0))
         batch_loss.update(loss.item(), pids.size(0))
         batch_time.update(time.time() - end)
+        
 
         # run['train/batch/1_prior'].append(prior.mean().item())
         # run['train/batch/1_posterior'].append(posterior.mean().item())

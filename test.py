@@ -53,11 +53,14 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
             retrieval_feature = z_c
             # # for old testing
             # retrieval_feature = model.reid_projector(retrieval_feature)
-        elif latent_z == 'new_z':
-            retrieval_feature = new_z
             if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
                 if config.MODEL.TRAIN_STAGE != 'klNocls_stage' and config.MODEL.TRAIN_STAGE != 'kl_cls_stage':
-                    retrieval_feature = model.reid_projector(retrieval_feature)
+                    retrieval_feature = model.reid_projector(retrieval_feature)          
+        elif latent_z == 'new_z':
+            retrieval_feature = new_z
+            # if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
+            #     if config.MODEL.TRAIN_STAGE != 'klNocls_stage' and config.MODEL.TRAIN_STAGE != 'kl_cls_stage':
+            #         retrieval_feature = model.reid_projector(retrieval_feature)
         elif latent_z == 'reconx':
             retrieval_feature = reconx
         elif latent_z == 'mu':
@@ -65,8 +68,8 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
 
         if classifier != None:
             if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
-                # z_c_proj = model.reid_projector(z_c)
-                z_c_proj = model.i2t_projector(z_c)
+                z_c_reid = model.reid_projector(z_c)
+                z_c_proj = model.i2t_projector(z_c_reid)
                 # z_c_proj = z_c
             else:
                 z_c_proj = z_c
@@ -484,7 +487,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
             if config.DATA.DATASET == 'market1k':
                 print("Jump TSNE in test")
                 # drawer.compute(run)
-    if latent_z == 'new_z':
+    if latent_z == 'z_c':
         q_g_imgs = torch.cat((q_all_imgs, g_all_imgs), 0)
         q_g_recons = torch.cat((q_all_recons, g_all_recons), 0)
         q_g_features = torch.cat((qf, gf), 0)
