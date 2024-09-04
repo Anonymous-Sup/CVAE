@@ -319,7 +319,7 @@ def main(config):
                 print("=> Start Training ReID projector and Classifier")
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
-                model.load_param(checkpoint['model'], ignore_i2t=True, ignore_reid=True)
+                model.load_param(checkpoint['model'], ignore_i2t=True, ignore_reid=False)
                 # No need to load Classifier weight, since it's not same category
                 # classifier.load_state_dict(checkpoint['classifier'])
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
