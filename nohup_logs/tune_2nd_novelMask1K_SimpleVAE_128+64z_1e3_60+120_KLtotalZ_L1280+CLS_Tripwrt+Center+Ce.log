@@ -1,4 +1,4 @@
-=> merge config from ./configs/clipreid_cvae_stage2.yaml
+=> merge config from ./configs/clipreid_cvae_stage2_wrt.yaml
 => Configurations:
 -------------------------
 AMP: True
@@ -20,12 +20,12 @@ DATA:
   TRAIN_FORMAT: novel
   WIDTH: 128
 EVAL_MODE: False
-GPU: 2
+GPU: 1
 LOSS:
   CLA_LOSS: crossentropy
   CLA_M: 0.0
   CLA_S: 16.0
-  PAIR_LOSS: triplet
+  PAIR_LOSS: triplet_wrt
   PAIR_M: 0.3
   PAIR_S: 16.0
   RECON_LOSS: mse
@@ -44,16 +44,16 @@ MODEL:
   PRETRAIN: CLIPreID_Tune_MSMT17
   PROJECTION_TYPE: None
   RES4_STRIDE: 1
-  RESUME: /data/zhengwei/CVAE/outputs/market1k/clipreid_tuned_person/novel/2024-09-04/novelMask1K_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS
+  RESUME: /data/zhengwei/CVAE/outputs/market1k/clipreid_tuned_person/novel/2024-09-04/novelMask1K_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS
   STYLE_NUM: 0
   TRAIN_STAGE: reid+cls_stage
   USE_CENTROID: False
-  USE_TWO_ENCODER: True
+  USE_TWO_ENCODER: False
   VAE_TYPE: SinpleVAE
   ZC_DIM: 128
   ZS_DIM: 64
-OUTPUT: /data/zhengwei/CVAE/outputs/market1k/clipreid_tuned_person/novel/2024-09-04/novelMask1K_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+CLS_Trip+Center+Ce
-SAVED_NAME: novelMask1K_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+CLS_Trip+Center+Ce
+OUTPUT: /data/zhengwei/CVAE/outputs/market1k/clipreid_tuned_person/novel/2024-09-04/novelMask1K_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+CLS_Tripwrt+Center+Ce
+SAVED_NAME: novelMask1K_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+CLS_Tripwrt+Center+Ce
 SEED: 0
 TAG: clipreid_tuned_person
 TEST:
@@ -65,7 +65,7 @@ TRAIN:
   LR_SCHEDULER:
     DECAY_RATE: 0.1
     NAME: MultiStepLR
-    STEPSIZE: [60]
+    STEPSIZE: [30]
   MAX_EPOCH: 120
   OPTIMIZER:
     LR: 0.001
@@ -88,10 +88,10 @@ Dataset statistics:
   ------------------------------
   total    |  1992 |     8701
   ------------------------------
-Initializing SinpleVAE model with 2 encoders
+Initializing SinpleVAE model
 ============Warning! No projection layer is used in Training!=================
 ============Warning! Using Defalt Linear 1280 to intialize!=================
-Model size: 13.60416M
+Model size: 13.27571M
 Using Linear classifier
 Initialized classifier with feature_dim: 1280, num_classes: 996
 Classifier size: 1.27488M
@@ -99,29 +99,18 @@ reid_projector.weight is tuneable
 i2t_projector.weight is tuneable
 i2t_projector.bias is tuneable
 => Start Training ReID projector and Classifier
-Loading checkpoint from '/data/zhengwei/CVAE/outputs/market1k/clipreid_tuned_person/novel/2024-09-04/novelMask1K_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS/best_model.pth.tar'
-Loading all parameter:  encoder_zc.0.weight
-Loading all parameter:  encoder_zc.0.bias
-Loading all parameter:  encoder_zc.1.weight
-Loading all parameter:  encoder_zc.1.bias
-Loading all parameter:  encoder_zc.1.running_mean
-Loading all parameter:  encoder_zc.1.running_var
-Loading all parameter:  encoder_zc.1.num_batches_tracked
-Loading all parameter:  fc_mu_zc.0.weight
-Loading all parameter:  fc_mu_zc.0.bias
-Loading all parameter:  fc_logvar_zc.0.weight
-Loading all parameter:  fc_logvar_zc.0.bias
-Loading all parameter:  encoder_zs.0.weight
-Loading all parameter:  encoder_zs.0.bias
-Loading all parameter:  encoder_zs.1.weight
-Loading all parameter:  encoder_zs.1.bias
-Loading all parameter:  encoder_zs.1.running_mean
-Loading all parameter:  encoder_zs.1.running_var
-Loading all parameter:  encoder_zs.1.num_batches_tracked
-Loading all parameter:  fc_mu_zs.0.weight
-Loading all parameter:  fc_mu_zs.0.bias
-Loading all parameter:  fc_logvar_zs.0.weight
-Loading all parameter:  fc_logvar_zs.0.bias
+Loading checkpoint from '/data/zhengwei/CVAE/outputs/market1k/clipreid_tuned_person/novel/2024-09-04/novelMask1K_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS/best_model.pth.tar'
+Loading all parameter:  encoder.0.weight
+Loading all parameter:  encoder.0.bias
+Loading all parameter:  encoder.1.weight
+Loading all parameter:  encoder.1.bias
+Loading all parameter:  encoder.1.running_mean
+Loading all parameter:  encoder.1.running_var
+Loading all parameter:  encoder.1.num_batches_tracked
+Loading all parameter:  fc_mu.0.weight
+Loading all parameter:  fc_mu.0.bias
+Loading all parameter:  fc_logvar.0.weight
+Loading all parameter:  fc_logvar.0.bias
 Loading all parameter:  decoder.0.weight
 Loading all parameter:  decoder.0.bias
 Loading all parameter:  decoder.1.weight
@@ -397,14 +386,14 @@ Loading all parameter:  i2t_projector.weight
 Ignores parameter:  i2t_projector.weight
 Loading all parameter:  i2t_projector.bias
 Ignores parameter:  i2t_projector.bias
-orginal best rank1 = 0.18309339239571798
+orginal best rank1 = 0.1461794019933555
 => Start evaluation on Novel data without finetuning
 => Test pretarined feature form VLP model
 Normalizing features
 Normalizing features
 Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
 Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
-Extracting features complete in 0m 2s
+Extracting features complete in 0m 3s
 Distance computing in 0m 1s
 Computing CMC and mAP
 Positive values in distance matrix: 0
@@ -413,204 +402,207 @@ Adjusted 0 distances
 Results ---------------------------------------------------
 top1:34.1% top5:58.6% top10:69.7% top20:79.9% mAP:38.7%
 -----------------------------------------------------------
-Using 0m 0s
+Using 0m 3s
 ==========Test with latent_z: new_z =========
 Extracted features for query set, obtained torch.Size([2709, 192]) matrix
 Extracted features for gallery set, obtained torch.Size([2000, 192]) matrix
-Extracting features complete in 0m 2s
+Extracting features complete in 0m 4s
+Distance computing in 0m 0s
+Positive values in distance matrix: 0
+Negative values in distance matrix: 5418000
+Adjusted 0 distances
+Results ---------------------------------------------------
+top1:16.3% top5:33.9% top10:44.0% top20:56.2% mAP:20.1%
+-----------------------------------------------------------
+Classification accuracy before cls-ranking: 42.0%
+query accuracy after cls-ranking: 0.1%
+gallery accuracy after cls-ranking: 0.1%
+Classification accuracy after cls-ranking: 42.0%
+query accuracy after cls-ranking: 0.1%
+gallery accuracy after cls-ranking: 0.1%
+Using 0m 3s
+Classifier results ---------------------------------------------------
+Query acc: 0.1% Gallery acc: 0.1% Total acc: 0.1%
+==========Test with latent_z: z_c =========
+Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
+Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
+Extracting features complete in 0m 3s
 Distance computing in 0m 1s
 Positive values in distance matrix: 0
 Negative values in distance matrix: 5418000
 Adjusted 0 distances
 Results ---------------------------------------------------
-top1:18.4% top5:40.2% top10:51.5% top20:63.5% mAP:23.7%
+top1:13.4% top5:28.9% top10:39.9% top20:52.0% mAP:16.9%
 -----------------------------------------------------------
-Classification accuracy before cls-ranking: 67.5%
-query accuracy after cls-ranking: 0.0%
+Classification accuracy before cls-ranking: 44.9%
+query accuracy after cls-ranking: 0.1%
 gallery accuracy after cls-ranking: 0.1%
-Classification accuracy after cls-ranking: 67.5%
-query accuracy after cls-ranking: 0.0%
+Classification accuracy after cls-ranking: 44.9%
+query accuracy after cls-ranking: 0.1%
 gallery accuracy after cls-ranking: 0.1%
-Using 0m 1s
+Using 0m 3s
 Classifier results ---------------------------------------------------
-Query acc: 0.0% Gallery acc: 0.1% Total acc: 0.1%
-==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
-Extracting features complete in 0m 2s
-Distance computing in 0m 1s
-Positive values in distance matrix: 150
-Negative values in distance matrix: 5417850
-Adjusted 0 distances
-Results ---------------------------------------------------
-top1:15.1% top5:34.0% top10:44.6% top20:56.7% mAP:19.6%
------------------------------------------------------------
-Classification accuracy before cls-ranking: 70.2%
-query accuracy after cls-ranking: 0.0%
-gallery accuracy after cls-ranking: 0.2%
-Classification accuracy after cls-ranking: 70.2%
-query accuracy after cls-ranking: 0.0%
-gallery accuracy after cls-ranking: 0.2%
-Using 0m 1s
-Classifier results ---------------------------------------------------
-Query acc: 0.0% Gallery acc: 0.1% Total acc: 0.1%
+Query acc: 0.1% Gallery acc: 0.1% Total acc: 0.1%
 => Start training
-Epoch:1 Time:10.4 Data:0.0 Loss:1291.1461 Cls Loss:6.9388 Pair Loss:0.2449 Center Loss:1283.9624 KL Loss:174.3418 Recon Loss:0.1540 Acc:0.0008 
+/home/zhengwei/github/CVAE/losses/triplet_loss.py:122: UserWarning: This overload of addmm_ is deprecated:
+	addmm_(Number beta, Number alpha, Tensor mat1, Tensor mat2)
+Consider using one of the following signatures instead:
+	addmm_(Tensor mat1, Tensor mat2, *, Number beta, Number alpha) (Triggered internally at /opt/conda/conda-bld/pytorch_1670525539683/work/torch/csrc/utils/python_arg_parser.cpp:1420.)
+  dist_mtx = dist_mtx.addmm_(1, -2, emb1, emb2.t())
+Epoch:1 Time:7.6 Data:0.0 Loss:1287.4250 Cls Loss:6.9498 Pair Loss:0.3284 Center Loss:1280.1468 KL Loss:37.0254 Recon Loss:0.1562 Acc:0.0010 
 => Current learning rate: 0.000200
-Epoch:2 Time:10.8 Data:0.0 Loss:1130.5077 Cls Loss:6.8537 Pair Loss:0.2351 Center Loss:1123.4189 KL Loss:173.9014 Recon Loss:0.1540 Acc:0.0144 
+Epoch:2 Time:7.9 Data:0.0 Loss:1129.2894 Cls Loss:6.8797 Pair Loss:0.3240 Center Loss:1122.0858 KL Loss:36.7685 Recon Loss:0.1561 Acc:0.0108 
 => Current learning rate: 0.000400
-Epoch:3 Time:12.5 Data:0.0 Loss:993.0743 Cls Loss:6.7068 Pair Loss:0.2378 Center Loss:986.1297 KL Loss:173.9052 Recon Loss:0.1540 Acc:0.0252 
+Epoch:3 Time:8.8 Data:0.0 Loss:991.5912 Cls Loss:6.7668 Pair Loss:0.2964 Center Loss:984.5280 KL Loss:36.5221 Recon Loss:0.1562 Acc:0.0164 
 => Current learning rate: 0.000600
-Epoch:4 Time:11.5 Data:0.0 Loss:873.3942 Cls Loss:6.4327 Pair Loss:0.2281 Center Loss:866.7334 KL Loss:173.5085 Recon Loss:0.1539 Acc:0.0650 
+Epoch:4 Time:8.2 Data:0.0 Loss:870.9877 Cls Loss:6.5683 Pair Loss:0.2628 Center Loss:864.1567 KL Loss:36.2479 Recon Loss:0.1561 Acc:0.0229 
 => Current learning rate: 0.000800
-Epoch:5 Time:11.7 Data:0.0 Loss:768.3982 Cls Loss:6.0288 Pair Loss:0.2157 Center Loss:762.1538 KL Loss:173.3373 Recon Loss:0.1539 Acc:0.1144 
+Epoch:5 Time:8.4 Data:0.0 Loss:765.2380 Cls Loss:6.2428 Pair Loss:0.2347 Center Loss:758.7605 KL Loss:36.0033 Recon Loss:0.1561 Acc:0.0496 
 => Test at epoch 5
 ==========Test with latent_z: z_c =========
 Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
 Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
-Extracting features complete in 0m 2s
-Distance computing in 0m 1s
-Positive values in distance matrix: 446
-Negative values in distance matrix: 5417554
+Extracting features complete in 0m 3s
+Distance computing in 0m 0s
+Positive values in distance matrix: 13301
+Negative values in distance matrix: 5404699
 Adjusted 0 distances
 Results ---------------------------------------------------
-top1:18.3% top5:40.3% top10:51.8% top20:63.9% mAP:24.0%
+top1:14.0% top5:30.9% top10:40.5% top20:53.4% mAP:17.7%
 -----------------------------------------------------------
-Classification accuracy before cls-ranking: 43.5%
-query accuracy after cls-ranking: 10.6%
-gallery accuracy after cls-ranking: 51.6%
-Classification accuracy after cls-ranking: 43.5%
-query accuracy after cls-ranking: 10.6%
-gallery accuracy after cls-ranking: 51.6%
-Using 0m 2s
+Classification accuracy before cls-ranking: 48.1%
+query accuracy after cls-ranking: 7.5%
+gallery accuracy after cls-ranking: 44.4%
+Classification accuracy after cls-ranking: 48.1%
+query accuracy after cls-ranking: 7.5%
+gallery accuracy after cls-ranking: 44.4%
+Using 0m 3s
 Classifier results ---------------------------------------------------
-Query acc: 10.6% Gallery acc: 52.9% Total acc: 28.5%
+Query acc: 7.5% Gallery acc: 45.4% Total acc: 23.6%
 => Current learning rate: 0.001000
-Epoch:6 Time:10.3 Data:0.0 Loss:674.5285 Cls Loss:5.5211 Pair Loss:0.2081 Center Loss:668.7993 KL Loss:173.0633 Recon Loss:0.1539 Acc:0.2251 
+Epoch:6 Time:6.2 Data:0.0 Loss:671.8157 Cls Loss:5.8245 Pair Loss:0.2215 Center Loss:665.7697 KL Loss:35.7474 Recon Loss:0.1561 Acc:0.1190 
 => Current learning rate: 0.001000
-Epoch:7 Time:12.8 Data:0.0 Loss:592.2567 Cls Loss:5.0021 Pair Loss:0.1940 Center Loss:587.0607 KL Loss:172.8295 Recon Loss:0.1539 Acc:0.3778 
+Epoch:7 Time:9.1 Data:0.0 Loss:589.8694 Cls Loss:5.3781 Pair Loss:0.2100 Center Loss:584.2812 KL Loss:35.5233 Recon Loss:0.1561 Acc:0.2664 
 => Current learning rate: 0.001000
-Epoch:8 Time:14.3 Data:0.0 Loss:520.6714 Cls Loss:4.5031 Pair Loss:0.1866 Center Loss:515.9817 KL Loss:172.4929 Recon Loss:0.1541 Acc:0.5441 
+Epoch:8 Time:9.4 Data:0.0 Loss:518.2989 Cls Loss:4.9404 Pair Loss:0.1994 Center Loss:513.1592 KL Loss:35.2704 Recon Loss:0.1562 Acc:0.4088 
 => Current learning rate: 0.001000
-Epoch:9 Time:14.1 Data:0.0 Loss:457.8399 Cls Loss:4.0205 Pair Loss:0.1840 Center Loss:453.6355 KL Loss:172.3487 Recon Loss:0.1539 Acc:0.6656 
+Epoch:9 Time:8.6 Data:0.0 Loss:455.7420 Cls Loss:4.5187 Pair Loss:0.1962 Center Loss:451.0271 KL Loss:35.0095 Recon Loss:0.1561 Acc:0.5340 
 => Current learning rate: 0.001000
-Epoch:10 Time:15.5 Data:0.0 Loss:402.9701 Cls Loss:3.5928 Pair Loss:0.1717 Center Loss:399.2057 KL Loss:172.2019 Recon Loss:0.1540 Acc:0.7646 
+Epoch:10 Time:8.3 Data:0.0 Loss:400.8196 Cls Loss:4.1261 Pair Loss:0.1882 Center Loss:396.5053 KL Loss:34.7750 Recon Loss:0.1562 Acc:0.6275 
 => Test at epoch 10
 ==========Test with latent_z: z_c =========
 Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
 Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
-Extracting features complete in 0m 3s
+Extracting features complete in 0m 4s
 Distance computing in 0m 1s
-Positive values in distance matrix: 48680
-Negative values in distance matrix: 5369320
+Positive values in distance matrix: 353756
+Negative values in distance matrix: 5064244
 Adjusted 0 distances
 Results ---------------------------------------------------
-top1:20.3% top5:43.2% top10:54.4% top20:66.8% mAP:26.0%
+top1:15.3% top5:33.1% top10:44.1% top20:56.5% mAP:19.5%
 -----------------------------------------------------------
-Classification accuracy before cls-ranking: 43.6%
-query accuracy after cls-ranking: 19.4%
-gallery accuracy after cls-ranking: 95.5%
-Classification accuracy after cls-ranking: 43.6%
-query accuracy after cls-ranking: 19.4%
-gallery accuracy after cls-ranking: 95.5%
-Using 0m 2s
+Classification accuracy before cls-ranking: 40.9%
+query accuracy after cls-ranking: 15.6%
+gallery accuracy after cls-ranking: 87.9%
+Classification accuracy after cls-ranking: 40.9%
+query accuracy after cls-ranking: 15.6%
+gallery accuracy after cls-ranking: 87.9%
+Using 0m 4s
 Classifier results ---------------------------------------------------
-Query acc: 19.4% Gallery acc: 94.9% Total acc: 51.5%
+Query acc: 15.6% Gallery acc: 89.8% Total acc: 47.1%
 => Current learning rate: 0.001000
-Epoch:11 Time:12.5 Data:0.0 Loss:354.8071 Cls Loss:3.1887 Pair Loss:0.1696 Center Loss:351.4489 KL Loss:171.8717 Recon Loss:0.1539 Acc:0.8198 
+Epoch:11 Time:6.3 Data:0.0 Loss:352.4941 Cls Loss:3.7558 Pair Loss:0.1851 Center Loss:348.5531 KL Loss:34.5032 Recon Loss:0.1561 Acc:0.7135 
 => Current learning rate: 0.001000
-Epoch:12 Time:16.4 Data:0.0 Loss:312.4288 Cls Loss:2.8380 Pair Loss:0.1621 Center Loss:309.4286 KL Loss:171.6077 Recon Loss:0.1540 Acc:0.8730 
+Epoch:12 Time:6.4 Data:0.0 Loss:310.3317 Cls Loss:3.4166 Pair Loss:0.1813 Center Loss:306.7337 KL Loss:34.2467 Recon Loss:0.1562 Acc:0.7618 
 => Current learning rate: 0.001000
-Epoch:13 Time:17.7 Data:0.0 Loss:275.3010 Cls Loss:2.5092 Pair Loss:0.1607 Center Loss:272.6312 KL Loss:171.3195 Recon Loss:0.1540 Acc:0.9118 
+Epoch:13 Time:8.3 Data:0.0 Loss:273.0706 Cls Loss:3.0957 Pair Loss:0.1786 Center Loss:269.7962 KL Loss:34.0249 Recon Loss:0.1562 Acc:0.8178 
 => Current learning rate: 0.001000
-Epoch:14 Time:18.5 Data:0.0 Loss:242.9573 Cls Loss:2.2270 Pair Loss:0.1559 Center Loss:240.5744 KL Loss:171.0460 Recon Loss:0.1540 Acc:0.9350 
+Epoch:14 Time:8.7 Data:0.0 Loss:240.7013 Cls Loss:2.8187 Pair Loss:0.1762 Center Loss:237.7064 KL Loss:33.7371 Recon Loss:0.1562 Acc:0.8574 
 => Current learning rate: 0.001000
-Epoch:15 Time:16.3 Data:0.0 Loss:214.2377 Cls Loss:1.9755 Pair Loss:0.1581 Center Loss:212.1041 KL Loss:170.8937 Recon Loss:0.1540 Acc:0.9451 
+Epoch:15 Time:8.5 Data:0.0 Loss:212.0406 Cls Loss:2.5513 Pair Loss:0.1729 Center Loss:209.3165 KL Loss:33.5439 Recon Loss:0.1562 Acc:0.8758 
 => Test at epoch 15
 ==========Test with latent_z: z_c =========
 Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
 Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
-Extracting features complete in 0m 3s
+Extracting features complete in 0m 4s
 Distance computing in 0m 1s
-Positive values in distance matrix: 224754
-Negative values in distance matrix: 5193246
+Positive values in distance matrix: 647046
+Negative values in distance matrix: 4770954
 Adjusted 0 distances
 Results ---------------------------------------------------
-top1:21.1% top5:44.7% top10:56.0% top20:67.3% mAP:27.1%
+top1:16.5% top5:34.4% top10:46.0% top20:58.5% mAP:20.8%
 -----------------------------------------------------------
-Classification accuracy before cls-ranking: 46.5%
-query accuracy after cls-ranking: 23.8%
-gallery accuracy after cls-ranking: 99.2%
-Classification accuracy after cls-ranking: 46.5%
-query accuracy after cls-ranking: 23.8%
-gallery accuracy after cls-ranking: 99.2%
-Using 0m 4s
+Classification accuracy before cls-ranking: 42.0%
+query accuracy after cls-ranking: 19.3%
+gallery accuracy after cls-ranking: 96.3%
+Classification accuracy after cls-ranking: 42.0%
+query accuracy after cls-ranking: 19.3%
+gallery accuracy after cls-ranking: 96.3%
+Using 0m 3s
 Classifier results ---------------------------------------------------
-Query acc: 23.8% Gallery acc: 99.4% Total acc: 55.9%
+Query acc: 19.3% Gallery acc: 97.0% Total acc: 52.3%
 => Current learning rate: 0.001000
-Epoch:16 Time:19.5 Data:0.0 Loss:189.2391 Cls Loss:1.7669 Pair Loss:0.1516 Center Loss:187.3206 KL Loss:170.5858 Recon Loss:0.1540 Acc:0.9577 
+Epoch:16 Time:7.2 Data:0.0 Loss:187.1043 Cls Loss:2.3406 Pair Loss:0.1728 Center Loss:184.5910 KL Loss:33.2961 Recon Loss:0.1562 Acc:0.9015 
 => Current learning rate: 0.001000
-Epoch:17 Time:17.4 Data:0.0 Loss:167.0433 Cls Loss:1.5916 Pair Loss:0.1488 Center Loss:165.3028 KL Loss:170.3191 Recon Loss:0.1540 Acc:0.9650 
+Epoch:17 Time:8.2 Data:0.0 Loss:164.9648 Cls Loss:2.1293 Pair Loss:0.1708 Center Loss:162.6648 KL Loss:33.0484 Recon Loss:0.1562 Acc:0.9204 
 => Current learning rate: 0.001000
-Epoch:18 Time:19.8 Data:0.0 Loss:147.8254 Cls Loss:1.4296 Pair Loss:0.1452 Center Loss:146.2506 KL Loss:169.9822 Recon Loss:0.1540 Acc:0.9766 
+Epoch:18 Time:6.5 Data:0.0 Loss:145.7071 Cls Loss:1.9449 Pair Loss:0.1711 Center Loss:143.5911 KL Loss:32.7756 Recon Loss:0.1562 Acc:0.9350 
 => Current learning rate: 0.001000
-Epoch:19 Time:18.0 Data:0.0 Loss:130.6881 Cls Loss:1.2980 Pair Loss:0.1410 Center Loss:129.2491 KL Loss:169.9751 Recon Loss:0.1540 Acc:0.9821 
+Epoch:19 Time:7.9 Data:0.0 Loss:128.5771 Cls Loss:1.7907 Pair Loss:0.1684 Center Loss:126.6180 KL Loss:32.5271 Recon Loss:0.1562 Acc:0.9481 
 => Current learning rate: 0.001000
-Epoch:20 Time:19.0 Data:0.0 Loss:115.7450 Cls Loss:1.1811 Pair Loss:0.1457 Center Loss:114.4181 KL Loss:169.7104 Recon Loss:0.1539 Acc:0.9834 
+Epoch:20 Time:8.9 Data:0.0 Loss:113.5926 Cls Loss:1.6529 Pair Loss:0.1687 Center Loss:111.7709 KL Loss:32.2992 Recon Loss:0.1561 Acc:0.9498 
 => Test at epoch 20
 ==========Test with latent_z: z_c =========
 Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
 Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
 Extracting features complete in 0m 4s
 Distance computing in 0m 1s
-Positive values in distance matrix: 360711
-Negative values in distance matrix: 5057289
+Positive values in distance matrix: 870122
+Negative values in distance matrix: 4547878
 Adjusted 0 distances
 Results ---------------------------------------------------
-top1:21.5% top5:45.8% top10:56.6% top20:68.3% mAP:27.7%
+top1:17.4% top5:35.9% top10:47.4% top20:60.6% mAP:21.9%
 -----------------------------------------------------------
-Classification accuracy before cls-ranking: 45.8%
-query accuracy after cls-ranking: 24.3%
-gallery accuracy after cls-ranking: 99.6%
-Classification accuracy after cls-ranking: 45.8%
-query accuracy after cls-ranking: 24.3%
-gallery accuracy after cls-ranking: 99.6%
-Using 0m 4s
+Classification accuracy before cls-ranking: 42.8%
+query accuracy after cls-ranking: 21.2%
+gallery accuracy after cls-ranking: 99.0%
+Classification accuracy after cls-ranking: 42.8%
+query accuracy after cls-ranking: 21.2%
+gallery accuracy after cls-ranking: 99.0%
+Using 0m 3s
 Classifier results ---------------------------------------------------
-Query acc: 24.3% Gallery acc: 99.8% Total acc: 56.4%
+Query acc: 21.2% Gallery acc: 99.3% Total acc: 54.3%
 => Current learning rate: 0.001000
-Epoch:21 Time:17.0 Data:0.0 Loss:102.4786 Cls Loss:1.0884 Pair Loss:0.1351 Center Loss:101.2551 KL Loss:169.3467 Recon Loss:0.1540 Acc:0.9864 
+Epoch:21 Time:7.9 Data:0.0 Loss:100.4307 Cls Loss:1.5313 Pair Loss:0.1646 Center Loss:98.7348 KL Loss:32.0418 Recon Loss:0.1562 Acc:0.9619 
 => Current learning rate: 0.001000
-Epoch:22 Time:18.9 Data:0.0 Loss:90.9950 Cls Loss:1.0089 Pair Loss:0.1424 Center Loss:89.8438 KL Loss:169.0695 Recon Loss:0.1539 Acc:0.9884 
+Epoch:22 Time:7.1 Data:0.0 Loss:88.8560 Cls Loss:1.4286 Pair Loss:0.1685 Center Loss:87.2589 KL Loss:31.7902 Recon Loss:0.1561 Acc:0.9660 
 => Current learning rate: 0.001000
-Epoch:23 Time:18.9 Data:0.0 Loss:80.8797 Cls Loss:0.9353 Pair Loss:0.1368 Center Loss:79.8077 KL Loss:168.9576 Recon Loss:0.1540 Acc:0.9907 
+Epoch:23 Time:8.9 Data:0.0 Loss:78.7775 Cls Loss:1.3331 Pair Loss:0.1662 Center Loss:77.2782 KL Loss:31.5664 Recon Loss:0.1562 Acc:0.9705 
 => Current learning rate: 0.001000
-Epoch:24 Time:19.3 Data:0.0 Loss:71.8434 Cls Loss:0.8750 Pair Loss:0.1334 Center Loss:70.8350 KL Loss:168.5451 Recon Loss:0.1540 Acc:0.9927 
+Epoch:24 Time:7.2 Data:0.0 Loss:69.7878 Cls Loss:1.2525 Pair Loss:0.1656 Center Loss:68.3696 KL Loss:31.3122 Recon Loss:0.1561 Acc:0.9788 
 => Current learning rate: 0.001000
-Epoch:25 Time:20.2 Data:0.0 Loss:63.9759 Cls Loss:0.8319 Pair Loss:0.1366 Center Loss:63.0074 KL Loss:168.4178 Recon Loss:0.1539 Acc:0.9932 
+Epoch:25 Time:6.3 Data:0.0 Loss:61.9837 Cls Loss:1.1877 Pair Loss:0.1664 Center Loss:60.6296 KL Loss:31.0455 Recon Loss:0.1561 Acc:0.9806 
 => Test at epoch 25
 ==========Test with latent_z: z_c =========
 Extracted features for query set, obtained torch.Size([2709, 1280]) matrix
 Extracted features for gallery set, obtained torch.Size([2000, 1280]) matrix
-Extracting features complete in 0m 4s
+Extracting features complete in 0m 3s
 Distance computing in 0m 1s
-Positive values in distance matrix: 696368
-Negative values in distance matrix: 4721632
+Positive values in distance matrix: 1114249
+Negative values in distance matrix: 4303751
 Adjusted 0 distances
 Results ---------------------------------------------------
-top1:22.0% top5:45.6% top10:57.7% top20:69.1% mAP:28.2%
+top1:17.7% top5:36.7% top10:48.8% top20:62.1% mAP:22.5%
 -----------------------------------------------------------
-Classification accuracy before cls-ranking: 46.7%
-query accuracy after cls-ranking: 25.4%
-gallery accuracy after cls-ranking: 100.0%
-Classification accuracy after cls-ranking: 46.7%
-query accuracy after cls-ranking: 25.4%
-gallery accuracy after cls-ranking: 100.0%
-Using 0m 4s
+Classification accuracy before cls-ranking: 43.3%
+query accuracy after cls-ranking: 21.0%
+gallery accuracy after cls-ranking: 99.6%
+Classification accuracy after cls-ranking: 43.3%
+query accuracy after cls-ranking: 21.0%
+gallery accuracy after cls-ranking: 99.6%
+Using 0m 3s
 Classifier results ---------------------------------------------------
-Query acc: 25.4% Gallery acc: 100.0% Total acc: 57.0%
+Query acc: 21.0% Gallery acc: 99.7% Total acc: 54.4%
 => Current learning rate: 0.001000
-Epoch:26 Time:15.3 Data:0.0 Loss:56.8508 Cls Loss:0.7847 Pair Loss:0.1352 Center Loss:55.9308 KL Loss:168.1983 Recon Loss:0.1540 Acc:0.9940 
-=> Current learning rate: 0.001000
-Epoch:27 Time:18.1 Data:0.0 Loss:50.7745 Cls Loss:0.7462 Pair Loss:0.1365 Center Loss:49.8918 KL Loss:167.8201 Recon Loss:0.1540 Acc:0.9957 
+Epoch:26 Time:8.3 Data:0.0 Loss:54.9781 Cls Loss:1.1240 Pair Loss:0.1680 Center Loss:53.6861 KL Loss:30.8021 Recon Loss:0.1562 Acc:0.9829 
 => Current learning rate: 0.001000
