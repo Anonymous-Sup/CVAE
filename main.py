@@ -320,7 +320,8 @@ def main(config):
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
                 model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
-                classifier.load_state_dict(checkpoint['classifier'])
+                # No need to load Classifier weight, since it's not same category
+                # classifier.load_state_dict(checkpoint['classifier'])
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 del checkpoint
 

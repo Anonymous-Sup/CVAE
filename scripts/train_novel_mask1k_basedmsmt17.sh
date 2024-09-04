@@ -80,5 +80,5 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_stage2.yaml \
 --use_two_encoder \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/train_2nd_novelMask1K_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+distCLS_Trip+Center+Ce.log 2>&1 &
+> nohup_logs/tune_2nd_novelMask1K_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+distCLS_Trip+Center+Ce.log 2>&1 &
 
