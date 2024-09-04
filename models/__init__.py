@@ -119,11 +119,11 @@ def build_model(config, num_classes):
         feature_dim = model.cls_input_dim
         # feature_dim = config.MODEL.ZC_DIM
 
-        classifier = Classifier(feature_dim=feature_dim, num_classes=num_classes)
-        print("Using Linear classifier")
-
-        # classifier = distLinear(feature_dim, num_classes)
-        # print("Using Dist classifier")
+        # classifier = Classifier(feature_dim=feature_dim, num_classes=num_classes)
+        # print("Using Linear classifier")
+        
+        classifier = distLinear(feature_dim, num_classes)
+        print("Using Dist classifier")
 
         print("Initialized classifier with feature_dim: {}, num_classes: {}".format(feature_dim, num_classes))
         # classifier = MLPClassBlock(feature_dim=config.MODEL.ZC_DIM, num_classes=num_classes)
