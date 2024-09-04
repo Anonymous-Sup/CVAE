@@ -21,7 +21,7 @@ cd /home/zhengwei/github/CVAE
 
 CUDA_VISIBLE_DEVICES=1
 # ===========Base ReID+CLS Stage traning================
-nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_stage2.yaml \
+nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/my_data/datasets \
 --output /data/zhengwei/CVAE/outputs \
 --dataset msmt17 \
@@ -38,7 +38,7 @@ nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_stage2.yaml \
 > nohup_logs/train_2nd_baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+bn+CLS_Trip+Center+Ce.log 2>&1 &
 
 
-nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_stage2.yaml \
+nohup python -u main.py --cfg ./configs/base_msmt17/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/my_data/datasets \
 --output /data/zhengwei/CVAE/outputs \
 --dataset msmt17 \
