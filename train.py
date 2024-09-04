@@ -133,8 +133,9 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         optional: z_c, z_reid
         z_c for direct, z_reid for linear structure
         """
-        z_c_proj = model.i2t_projector(z_reid)
-        outputs = classifier(z_c_proj)
+        # z_c_proj = model.i2t_projector(z_reid)
+
+        outputs = classifier(z_reid)
         
         _, preds = torch.max(outputs.data, 1)
         cls_loss = criterion_cla(outputs, pids)

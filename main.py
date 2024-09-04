@@ -305,7 +305,7 @@ def main(config):
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
                 # ignore_i2t means that the i2t_projector is not loaded
-                model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
+                model.load_param(checkpoint['model'], ignore_i2t=True, ignore_reid=False)
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 # flows_model.load_state_dict(checkpoint['flows_model'])
                 del checkpoint
