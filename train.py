@@ -81,6 +81,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
             elif config.MODEL.TRAIN_STAGE == 'CLSstage':
                 model.i2t_projector.train()
                 classifier.train()
+                model.bottlenect.eval()
 
     
     batch_cls_loss = AverageMeter()

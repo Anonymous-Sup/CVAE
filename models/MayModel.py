@@ -145,6 +145,7 @@ class SinpleVAE(nn.Module):
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
+        # add bottlenect can not improve the performance?
         self.bottlenect = nn.BatchNorm1d(self.reid_output_dim)
 
         # i2t_input_dim = zc_dim
@@ -347,6 +348,7 @@ class SinpleVAE_2Encoder(nn.Module):
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
+        # add bottlenect can not improve the performance?
         self.bottlenect = nn.BatchNorm1d(self.reid_output_dim)
         
         # i2t_input_dim = zc_dim
