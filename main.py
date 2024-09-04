@@ -305,7 +305,7 @@ def main(config):
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
                 # ignore_i2t means that the i2t_projector is not loaded
-                model.load_param(checkpoint['model'], ignore_i2t=True, ignore_reid=False)
+                model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
                 # flows_model.load_state_dict(checkpoint['flows_model'])
                 del checkpoint
@@ -319,7 +319,7 @@ def main(config):
                 print("=> Start Training ReID projector and Classifier")
                 print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
                 checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
-                model.load_param(checkpoint['model'], ignore_i2t=False, ignore_reid=False)
+                model.load_param(checkpoint['model'], ignore_i2t=True, ignore_reid=True)
                 # No need to load Classifier weight, since it's not same category
                 # classifier.load_state_dict(checkpoint['classifier'])
                 print("orginal best rank1 = {}".format(checkpoint['rank1']))
@@ -387,9 +387,9 @@ def main(config):
         else:
             print("=> Start evaluation only ")
         with torch.no_grad():
-            # print("=> Test pretarined feature form VLP model")
-            # test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
-            # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
+            print("=> Test pretarined feature form VLP model")
+            test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
+            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
             if config.EVAL_MODE:
                 final_epoch = True
             else:

@@ -78,15 +78,15 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
 
     
     batch_cls_loss = AverageMeter()
-    batch_cls_reid_loss = AverageMeter()
+    # batch_cls_reid_loss = AverageMeter()
     batch_center_loss = AverageMeter()
     batch_pair_loss = AverageMeter()
     batch_kl_loss = AverageMeter()
-    batch_kld_theta = AverageMeter()
+    # batch_kld_theta = AverageMeter()
     batch_recon_loss = AverageMeter()
     batch_loss = AverageMeter()
     batch_acc = AverageMeter()
-    batch_reid_acc = AverageMeter()
+    # batch_reid_acc = AverageMeter()
     batch_time = AverageMeter()
     data_time = AverageMeter()
 
@@ -179,7 +179,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
                 loss += pair_loss
                 # loss += center_loss
         elif config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
-            loss = cls_loss
+            loss += cls_loss
             loss += pair_loss
             loss += center_loss
         elif config.MODEL.TRAIN_STAGE == 'reidstage':
@@ -235,14 +235,17 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
  
         batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))
         # batch_reid_acc.update((torch.sum(preds_reid == pids.data)).float()/pids.size(0), pids.size(0))
+        batch_loss.update(loss.item(), pids.size(0))
         batch_cls_loss.update(cls_loss.item(), pids.size(0))
+        print("all loss: {}".format(loss.item()))
+        print("cls_loss: {}".format(cls_loss.item()))
         # batch_cls_reid_loss.update(cls_loss_reid.item(), pids.size(0))
         batch_pair_loss.update(pair_loss.item(), pids.size(0))
         batch_center_loss.update(center_loss.item(), pids.size(0))
         batch_kl_loss.update(kl_loss.item(), pids.size(0))
         batch_recon_loss.update(recon_loss.item(), pids.size(0))
         # batch_regular_loss.update(regular_loss.item(), pids.size(0))
-        batch_loss.update(loss.item(), pids.size(0))
+        
         batch_time.update(time.time() - end)
         
 
