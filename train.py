@@ -20,6 +20,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         if 'kl' not in config.MODEL.TRAIN_STAGE:
             model.eval()
             classifier.eval()
+            model.bottlenect.train()
             if config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
                 model.reid_projector.train()
                 model.i2t_projector.train()
@@ -33,11 +34,13 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
             model.train()
             classifier.train()
             model.decoder.eval()
+            model.bottlenect.eval()
             if config.MODEL.TRAIN_STAGE == 'kl_reid_stage':
                 model.i2t_projector.eval()
                 classifier.eval()
             elif config.MODEL.TRAIN_STAGE == 'kl_cls_stage':
                 model.reid_projector.eval()
+                model.bottlenect.train()
             elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
                 model.i2t_projector.eval()
                 model.reid_projector.eval()
@@ -54,11 +57,13 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         if 'kl' in config.MODEL.TRAIN_STAGE:
             model.train()
             classifier.train()
+            model.bottlenect.eval()
             if config.MODEL.TRAIN_STAGE == 'kl_reid_stage':
                 model.i2t_projector.eval()
                 classifier.eval()
             elif config.MODEL.TRAIN_STAGE == 'kl_cls_stage':
                 model.reid_projector.eval()
+                model.bottlenect.train()
             elif config.MODEL.TRAIN_STAGE == 'klNocls_stage':
                 model.i2t_projector.eval()
                 model.reid_projector.eval()
@@ -66,6 +71,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         else:
             model.eval()
             classifier.eval()
+            model.bottlenect.train()
             if config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
                 model.reid_projector.train()
                 model.i2t_projector.train()
@@ -135,7 +141,8 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         """
         # z_c_proj = model.i2t_projector(z_reid)
 
-        outputs = classifier(z_reid)
+        z_reid_bn = model.bottlenect(z_reid)
+        outputs = classifier(z_reid_bn)
         
         _, preds = torch.max(outputs.data, 1)
         cls_loss = criterion_cla(outputs, pids)

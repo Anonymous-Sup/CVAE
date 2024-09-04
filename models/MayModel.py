@@ -145,6 +145,8 @@ class SinpleVAE(nn.Module):
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
+        self.bottlenect = nn.BatchNorm1d(self.reid_output_dim)
+
         # i2t_input_dim = zc_dim
         i2t_input_dim = self.reid_output_dim
         self.cls_input_dim = 1280
@@ -152,6 +154,8 @@ class SinpleVAE(nn.Module):
 
         if self.style_num > 0:
             self.style_embedding = nn.Embedding(self.style_num, zs_dim)
+
+        
         
         # self.encoder.apply(weights_init_kaiming)
         # self.decoder.apply(weights_init_kaiming)
@@ -343,6 +347,8 @@ class SinpleVAE_2Encoder(nn.Module):
         else:
             raise ValueError("Invalid projection type {}", self.projection_type)
 
+        self.bottlenect = nn.BatchNorm1d(self.reid_output_dim)
+        
         # i2t_input_dim = zc_dim
         i2t_input_dim = self.reid_output_dim
         self.cls_input_dim = 1280
