@@ -18,7 +18,7 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --dataset market1k \
 --format_tag tensor \
 --train_format novel \
---resume /data/zhengwei/CVAE/outputs/msmt17/clipreid_simplevae_base/2024-08-31/baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-02/baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+distCLS_Trip+Center+Ce \
+--resume /data/zhengwei/CVAE/outputs/msmt17/clipreid_simplevae_base/2024-08-31/baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-05/baseMSMT17_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+distCLS_Trip+Center+Ce \
 --train_stage klNocls_stage \
 --gpu 2 \
 --saved_name novelMask1K_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS \
@@ -35,7 +35,7 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --dataset market1k \
 --format_tag tensor \
 --train_format novel \
---resume /data/zhengwei/CVAE/outputs/msmt17/clipreid_simplevae_base/2024-08-31/baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-02/baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+distCLS_Trip+Center+Ce \
+--resume /data/zhengwei/CVAE/outputs/msmt17/clipreid_simplevae_base/2024-08-31/baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-05/baseMSMT17_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+distCLS_Trip+Center+Ce \
 --train_stage klNocls_stage \
 --gpu 2 \
 --saved_name novelMask1K_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS \
