@@ -163,6 +163,7 @@ def main(config):
     
     i2t_parameters = []
     reid_parameters = []
+    bottleneck_parameters = []
     if config.TRAIN.OPTIMIZER.NAME == 'adam':
         # use adam that set different learning rate for different parameters
         if config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
@@ -175,9 +176,14 @@ def main(config):
                     param.requires_grad = True
                     print("{} is tuneable".format(name))
                     reid_parameters.append(param)
+                elif 'bottlenect' in name:
+                    param.requires_grad = True
+                    print("{} is tuneable".format(name))
+                    bottleneck_parameters.append(param)
                 else:
                     param.requires_grad = False
-            all_model_parameters = i2t_parameters + reid_parameters
+            # all_model_parameters = i2t_parameters + reid_parameters+ bottleneck_parameters
+            all_model_parameters = bottleneck_parameters + reid_parameters
             optimizer = optim.Adam([
                 {'params': filter(lambda p: p.requires_grad ,all_model_parameters)},
                 {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
