@@ -11,12 +11,13 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl.yaml \
 --train_format base \
 --train_stage klNocls_stage \
 --gpu 1 \
---saved_name baseSketchy_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS \
+--saved_name baseSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS \
 --vae_type SinpleVAE \
 --recon_loss mse \
+--use_two_encoder \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/train_baseSketchy_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS.log 2>&1 &
+> nohup_logs/train_baseSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS.log 2>&1 &
 
 
 
