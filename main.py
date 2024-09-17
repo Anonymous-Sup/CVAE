@@ -546,7 +546,7 @@ def main(config):
             
     if not config.FEWSHOT.ENABLE:
         print("=> Best Rank-1 {:.1%}, mAP {:.1%} achieved at epoch {}".format(best_rank1, best_mAP, best_epoch))
-    print("=> Best Acc: Query {:.1%}, Gallery {:.1%}, Total {:.1%}".format(best_acc[0], best_acc[1], best_acc[2]))
+    print("=> Best Val Acc {:.1%} at epoch {}: \n Test Acc: Query {:.1%}, Gallery {:.1%}, Total {:.1%}".format(best_val_acc, best_epoch, best_acc[0], best_acc[1], best_acc[2]))
     # run["best_rank1"] = best_rank1
     # run['best_mAP'] = best_mAP
     # run["best_epoch"] = best_epoch
