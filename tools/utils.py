@@ -67,11 +67,13 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def save_checkpoint(state, is_best, final_epoch, fpath='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, final_epoch, fpath='checkpoint.pth.tar', type='retrieval'):
     mkdir_if_missing(osp.dirname(fpath))
     torch.save(state, fpath)
-    best_rank = state['cmc']
-    best_mAP = state['mAP']
+
+    if type == 'retrieval':
+        best_rank = state['cmc']
+        best_mAP = state['mAP']
     epoch = state['epoch']
     best_accs = state['acc']
 
@@ -93,14 +95,22 @@ def save_checkpoint(state, is_best, final_epoch, fpath='checkpoint.pth.tar'):
                 else:
                     print('Keep checkpoint file: {}'.format(osp.basename(checkpoint_file)))
             
-            # create a file with name bestR@1_{:.1%}.log and save best_rank and best_mAP
-            best_rank_str = 'bestR@1_{:.1%}+ACC_{:.1%}.log'.format(best_rank[0], best_accs[2])
-            with open(osp.join(checkpoint_dir, best_rank_str), 'w') as f:
-                # top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
-                f.write('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(best_rank[0], best_rank[4], best_rank[9], best_rank[19], best_mAP))
-                f.write('\n')
-                # print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, total_acc))
-                f.write('Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}'.format(best_accs[0], best_accs[1], best_accs[2]))
+            if type == 'retrieval':
+                # create a file with name bestR@1_{:.1%}.log and save best_rank and best_mAP
+                best_rank_str = 'bestR@1_{:.1%}+ACC_{:.1%}.log'.format(best_rank[0], best_accs[2])
+                with open(osp.join(checkpoint_dir, best_rank_str), 'w') as f:
+                    # top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
+                    f.write('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(best_rank[0], best_rank[4], best_rank[9], best_rank[19], best_mAP))
+                    f.write('\n')
+                    # print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, total_acc))
+                    f.write('Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}'.format(best_accs[0], best_accs[1], best_accs[2]))
+            else:
+                # create a file with name bestACC_{:.1%}.log and save best_accs
+                best_acc_str = 'bestACC_{:.1%}.log'.format(best_accs[2])
+                with open(osp.join(checkpoint_dir, best_acc_str), 'w') as f:
+                    # print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, total_acc))
+                    f.write('Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}'.format(best_accs[0], best_accs[1], best_accs[2]))
+
     except Exception as e:
         print(e)
         print('Delete middle checkpoints failed!')

@@ -99,3 +99,55 @@ class RandomIdentitySampler(Sampler):
 
     def __len__(self):
         return self.length
+    
+   
+class FewshotSampler(Sampler):
+    """
+    Randomly sample N classes, and for each class, 
+    randomly sample K instances. This process is repeated for `num_episodes` times.
+    Args:
+    - data_source (list): list of (img_path, pid, camid).
+    - num_classes (int): number of classes per episode.
+    - num_instances (int): number of instances per class in an episode.
+    - num_episodes (int): number of episodes to sample.
+    """
+    def __init__(self, data_source, num_classes, num_instances, num_episodes):
+        
+        self.data_source = data_source
+        self.num_classes = num_classes  # N classes
+        self.num_instances = num_instances  # K instances per class
+        self.num_episodes = num_episodes  # Number of episodes
+
+        self.index_dic = defaultdict(list)
+        # Create a dictionary mapping each class (pid) to its image indices
+        for index, (_, pid, _, _) in enumerate(self.data_source):
+            self.index_dic[pid].append(index)
+        self.pids = list(self.index_dic.keys())  # List of unique class IDs (pids)
+
+    def __iter__(self):
+        for _ in range(self.num_episodes):  # Iterate over episodes
+            episode_idxs = []  # Collect indices for this episode
+            
+            # Randomly select `num_classes` (N) from available pids (with replacement allowed)
+            selected_pids = random.sample(self.pids, self.num_classes)
+            
+            for pid in selected_pids:
+                idxs = self.index_dic[pid]
+                
+                # Randomly sample `num_instances` (K) from this class
+                if len(idxs) >= self.num_instances:
+                    selected_idxs = np.random.choice(idxs, size=self.num_instances, replace=False)
+                else:
+                    # If not enough samples, sample with replacement
+                    selected_idxs = np.random.choice(idxs, size=self.num_instances, replace=True)
+                
+                random.shuffle(selected_idxs) 
+                episode_idxs.extend(selected_idxs)
+            
+            # Instead of yielding all indices at once, yield them one by one
+            for idx in episode_idxs:
+                yield idx
+
+    def __len__(self):
+        # estimate number of examples in an epoch
+        return self.num_episodes*self.num_classes*self.num_instances

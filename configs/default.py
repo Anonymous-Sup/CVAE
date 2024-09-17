@@ -49,6 +49,11 @@ _C.AUG.RC_PROB = 0.5
 # Random erase prob
 _C.AUG.RE_PROB = 0.5
 
+_C.FEWSHOT = CN()
+_C.FEWSHOT.ENABLE = False
+_C.FEWSHOT.NWAY = 5
+_C.FEWSHOT.KSHOT = 5
+_C.FEWSHOT.EPISODE = 100
 
 # -----------------------------------------------------------------------------
 # Model settings

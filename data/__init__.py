@@ -9,9 +9,11 @@ from data.datasets.sysu_mm01 import SYSU_MM01
 from data.datasets.msmt17 import MSMT17
 from data.datasets.celebHQ import CelebHQ
 from data.datasets.sksf_a import SKSF_A
+from data.datasets.skechy_fewshot import Sketchy
+from data.datasets.tu_berlin_fewshot import TUBerlin
 
 from data.dataset_loader import ImageDataset
-from data.samplers import RandomIdentitySampler
+from data.samplers import RandomIdentitySampler, FewshotSampler
 
 
 __factory = {
@@ -23,6 +25,8 @@ __factory = {
     'sysu_mm01': SYSU_MM01,
     'celebHQ': CelebHQ,
     'sksf_a': SKSF_A,
+    'sketchy': Sketchy,
+    'tuberlin': TUBerlin,
 }
 
 
@@ -38,7 +42,7 @@ def build_dataset(config):
     # dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, split_id=config.DATA.SPLIT_ID,
     #                                          cuhk03_labeled=config.DATA.CUHK03_LABELED, 
     #                                          cuhk03_classic_split=config.DATA.CUHK03_CLASSIC_SPLIT)
-    dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, format_tag=config.DATA.FORMAT_TAG, pretrained=config.MODEL.PRETRAIN)
+    dataset = __factory[config.DATA.DATASET](root=config.DATA.ROOT, format_tag=config.DATA.FORMAT_TAG, pretrained=config.MODEL.PRETRAIN, NWAY=config.FEWSHOT.NWAY, KSHOT=config.FEWSHOT.KSHOT)
     return dataset
 
 # not used when using tensor format
@@ -71,6 +75,45 @@ def build_dataloader(config):
                              sampler=RandomIdentitySampler(dataset.train, num_instances=config.DATA.NUM_INSTANCES),
                              batch_size=config.DATA.TRAIN_BATCH, num_workers=config.DATA.NUM_WORKERS,
                              pin_memory=True, drop_last=True)
+    
+    queryloader = DataLoader(ImageDataset(dataset.query, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
+                             batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
+                             pin_memory=True, drop_last=False, shuffle=False)
+
+    galleryloader = DataLoader(ImageDataset(dataset.gallery, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
+                               batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
+                               pin_memory=True, drop_last=False, shuffle=False)
+    
+    if config.FEWSHOT.ENABLE:
+        valloader = DataLoader(ImageDataset(dataset.val, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
+                                batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
+                                pin_memory=True, drop_last=False, shuffle=False)
+    else:
+        valloader = DataLoader(ImageDataset(dataset.query+dataset.gallery, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
+                                batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
+                                pin_memory=True, drop_last=False, shuffle=False)
+
+    # return trainloader, queryloader, galleryloader, dataset.num_train_pids, dataset.train_centroids, dataset.query_centroids, dataset.gallery_centroids
+    return trainloader, valloader, queryloader, galleryloader, dataset
+
+
+def build_fewshot_dataloader(config):
+    dataset = build_dataset(config)
+    if config.DATA.FORMAT_TAG != 'tensor':
+        transform_train, transform_test = build_transforms(config)
+    else:
+        transform_train, transform_test = None, None
+    
+    trainloader = DataLoader(ImageDataset(dataset.train, format_tag=config.DATA.FORMAT_TAG, transform=transform_train),
+                             # def __init__(self, data_source, num_classes, num_instances, num_episodes):
+                             sampler=FewshotSampler(dataset.train, config.FEWSHOT.NWAY, config.FEWSHOT.KSHOT, config.FEWSHOT.EPISODE),
+                             batch_size=config.FEWSHOT.NWAY*config.FEWSHOY.KSHOT, num_workers=config.DATA.NUM_WORKERS,
+                             pin_memory=True, drop_last=True)
+    
+    valloader = DataLoader(ImageDataset(dataset.val, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
+                           batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
+                            pin_memory=True, drop_last=False, shuffle=False)
+    
     queryloader = DataLoader(ImageDataset(dataset.query, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
                              batch_size=config.DATA.TEST_BATCH, num_workers=config.DATA.NUM_WORKERS,
                              pin_memory=True, drop_last=False, shuffle=False)
@@ -80,7 +123,9 @@ def build_dataloader(config):
                                pin_memory=True, drop_last=False, shuffle=False)
 
     # return trainloader, queryloader, galleryloader, dataset.num_train_pids, dataset.train_centroids, dataset.query_centroids, dataset.gallery_centroids
-    return trainloader, queryloader, galleryloader, dataset
+    return trainloader, valloader, queryloader, galleryloader, dataset
+
+    
 
 
 def build_singe_test_loader(root_path, dataset_name, pretrained):

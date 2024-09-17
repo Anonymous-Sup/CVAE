@@ -502,6 +502,133 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     return cmc, mAP, [q_acc, g_acc, q_g_acc]
 
 
+
+def test_cvae_for_cls(run, config, model, valloader, queryloader, galleryloader, dataset, classifer=None, classifier_reID=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False, cls_rerank=False):
+    since = time.time()
+    model.eval()
+
+    drawer = tSNE_plot(len(dataset.query), trainplot=False)
+    drawer.reset()
+
+    if classifer != None:
+        classifer.eval()
+    if classifier_reID != None:
+        classifier_reID.eval()
+
+    # Extract features 
+    print("==========Test with latent_z: {} =========".format(latent_z))
+    q_batch_acc = AverageMeter()
+    g_batch_acc = AverageMeter()
+    q_reid_batch_acc = AverageMeter()
+    g_reid_batch_acc = AverageMeter()
+
+    val_batch_acc = AverageMeter()
+
+    if config.LOSS.USE_NCE:
+        print("==========Test with NCE LOSS=========")
+        qf, qf_cls, qf_cat, q_pids, q_camids, q_all_imgs, q_all_recons = extract_midium_feature_withNCE(q_batch_acc, drawer, config, model, queryloader, classifer, text_embeddings, latent_z)
+        gf, gf_cls, gf_cat, g_pids, g_camids, g_all_imgs, g_all_recons = extract_midium_feature_withNCE(g_batch_acc, drawer, config, model, galleryloader, classifer, text_embeddings, latent_z)
+    
+    elif final_epoch:
+        qf, qf_cls, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z, final_epoch)
+        gf, gf_cls, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, q_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z, final_epoch)
+    
+    else:
+        qf, qf_cls, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
+        gf, gf_cls, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
+        vf, _, _, _, _, _, _, _, _, _ = extract_midium_feature(val_batch_acc, None, drawer, config, model, valloader, classifer, None, latent_z)
+    
+    torch.cuda.empty_cache()
+    time_elapsed = time.time() - since
+    print("Extracted features for query set, obtained {} matrix".format(qf.shape))    
+    print("Extracted features for gallery set, obtained {} matrix".format(gf.shape))
+    print("Extracted features for validation set, obtained {} matrix".format(vf.shape))
+    print('Extracting features complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+
+    time_elapsed = time.time() - since
+    print('Using {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+
+    if classifer != None:
+        q_acc = q_batch_acc.avg
+        g_acc = g_batch_acc.avg
+        q_batch_acc.merge(g_batch_acc)
+        q_g_acc = q_batch_acc.avg
+
+        val_acc = val_batch_acc.avg
+        # total_acc = (q_acc + g_acc) / 2
+        print("Val Classifier results ---------------------------------------------------") 
+        print("Total acc: {:.1%}".format(val_acc))
+
+        print("Test Classifier results ---------------------------------------------------") 
+        print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, q_g_acc))
+
+    # if classifier_reID != None:
+    #     q_acc_reid = q_reid_batch_acc.avg
+    #     g_acc_reid = g_reid_batch_acc.avg
+    #     q_reid_batch_acc.merge(g_reid_batch_acc)
+    #     q_g_acc_reid = q_reid_batch_acc.avg
+    #     # total_acc = (q_acc + g_acc) / 2
+    #     print("ReID Classifier results ---------------------------------------------------")
+    #     print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc_reid, g_acc_reid, q_g_acc_reid))
+    # if run != None:
+    #     if final_epoch:
+    #         mat_save_path = os.path.join(config.MODEL.RESUME, 'visual_results')
+    #         if not os.path.exists(mat_save_path):
+    #             os.makedirs(mat_save_path)
+
+    #         # save q_class_acc_dict, q_class_path_dict and g_class_acc_dict, g_class_path_dict in a json file
+    #         data_to_save = {
+    #         "q_class_acc_dict": q_class_acc_dict,
+    #         "q_class_path_dict": q_class_path_dict,
+    #         "g_class_acc_dict": g_class_acc_dict,
+    #         "g_class_path_dict": g_class_path_dict,
+    #         'class_rank1_map_dict': class_rank1_map_dict
+    #         }
+
+    #         data_to_save = convert_keys_to_string(data_to_save)
+    #         # Specify the filename
+    #         filename = os.path.join(mat_save_path, "class_data.json")
+    #         # Open the file and save the combined dictionary
+    #         with open(filename, 'w') as f:
+    #             json.dump(data_to_save, f, indent=4)
+
+            
+    #         # Save to Matlab for check
+    #         gf, qf = gf.cpu().numpy(), qf.cpu().numpy()
+    #         result = {'gallery_f':gf,'gallery_label':g_pids,'gallery_cam':g_camids, 'gallery_name': g_all_img_path ,'query_f':qf,'query_label':q_pids,'query_cam':q_camids, 'query_name': q_all_img_path}
+    #         scipy.io.savemat(mat_save_path + '/pytorch_result.mat', result)
+            
+    #         # save all_results in a json file
+    #         rank_results_path = os.path.join(mat_save_path, "rank_results.json")
+    #         with open(rank_results_path, 'w') as f:
+    #             json.dump(all_results, f, indent=4)
+                
+    #         del result
+    #         del data_to_save            
+
+
+    #     # else:
+    #         # run["test/mAP"].append(mAP)
+    #         # run["test/top1"].append(cmc[0])
+    #         # run["test/top5"].append(cmc[4])
+    #         # run["test/top10"].append(cmc[9])
+    #         if config.DATA.DATASET == 'market1k':
+    #             print("Jump TSNE in test")
+    #             # drawer.compute(run)
+    # if latent_z == 'z_c':
+    #     q_g_imgs = torch.cat((q_all_imgs, g_all_imgs), 0)
+    #     q_g_recons = torch.cat((q_all_recons, g_all_recons), 0)
+    #     q_g_features = torch.cat((qf, gf), 0)
+        
+    #     pair_plots(config, q_g_imgs, q_g_features, "Q+G_X-Z_plots")
+    #     pair_plots(config, q_g_recons, q_g_features, "Q+G_Recons_Rx-Z_plots")
+
+    #     # # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
+    #     # q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
+    #     # save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, q_g_domains_y, config.MODEL.RESUME)
+    return val_acc, [q_acc, g_acc, q_g_acc]
+
+
 @torch.no_grad()
 def extract_test_feature_only(dataloader, final_epoch=False):
     features, pids, camids = [], torch.tensor([]), torch.tensor([])

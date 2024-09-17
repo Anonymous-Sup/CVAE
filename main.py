@@ -14,11 +14,11 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 import shutil
 from configs.default import get_config
-from data import build_dataloader
+from data import build_dataloader, build_fewshot_dataloader
 from models import build_model
 from losses import build_losses
 from train import train_cvae, train_cvae_nce
-from test import test_cvae, test_clip_feature
+from test import test_cvae, test_clip_feature, test_cvae_for_cls
 from tools.eval_metrics import evaluate
 from tools.utils import AverageMeter, save_checkpoint, set_seed, mkdir_if_missing
 from torch.cuda.amp import GradScaler, autocast
@@ -95,7 +95,10 @@ def parse_option():
 
 def main(config):
     # Build dataloader
-    trainloader, queryloader, galleryloader, dataset = build_dataloader(config)
+    if config.DATA.TRAIN_FORMAT == 'novel':
+        trainloader, val_loader, queryloader, galleryloader, dataset = build_fewshot_dataloader(config)
+    else:
+        trainloader, val_loader, queryloader, galleryloader, dataset = build_dataloader(config)
 
     # Build model 
     model, classifier, classifier_reID = build_model(config, dataset.num_train_pids)
@@ -290,6 +293,7 @@ def main(config):
     
     best_rank1 = -np.inf
     best_mAP = -np.inf
+    best_val_acc = -np.inf
     best_acc = [-np.inf, -np.inf, -np.inf]
 
     if config.EVAL_MODE:
@@ -393,14 +397,19 @@ def main(config):
         else:
             print("=> Start evaluation only ")
         with torch.no_grad():
-            print("=> Test pretarined feature form VLP model")
-            test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
-            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
-            if config.EVAL_MODE:
-                final_epoch = True
-            else:
-                final_epoch = False
-            test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, None, text_embeddings, latent_z='z_c', final_epoch=False)
+            if config.FEWSHOT.ENABEL:
+                print("=> Test CLASSIFICATION performance")
+                test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+
+            else: # for regular retrieval
+                print("=> Test pretarined feature form VLP model")
+                test_clip_feature(queryloader, galleryloader, config.DATA.DATASET)
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
+                if config.EVAL_MODE:
+                    final_epoch = True
+                else:
+                    final_epoch = False
+                test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, None, text_embeddings, latent_z='z_c', final_epoch=False)
 
         if config.EVAL_MODE:
             return
@@ -430,55 +439,98 @@ def main(config):
             (epoch+1) % config.TEST.EVAL_STEP == 0 or (epoch+1) == config.TRAIN.MAX_EPOCH:
             
             print("=> Test at epoch {}".format(epoch+1))
-            with torch.no_grad():
-                rank, mAP, acc_total = test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
-                # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
-                # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
-                # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='mu')
-                
-                # run["eval/rank1"].append(rank1)
-                rank1 = rank[0]
+            if not config.FEWSHOT.ENABLE:
+                with torch.no_grad():
+                    rank, mAP, acc_total = test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                    # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='new_z')
+                    # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='x_pre')
+                    # test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, latent_z='mu')
+                    
+                    # run["eval/rank1"].append(rank1)
+                    rank1 = rank[0]
 
-            is_best = (rank1 + mAP + 5.0*acc_total[2]) > (best_rank1 + best_mAP + 5.0*best_acc[2])
-            
-            if is_best: 
-                best_rank1 = rank1
-                best_cmc = rank
-                best_mAP = mAP
-                best_acc = acc_total
-                best_epoch = epoch + 1
-            
-            if (epoch+1) == config.TRAIN.MAX_EPOCH:
-                final_epoch = True
+                is_best = (rank1 + mAP + 5.0*acc_total[2]) > (best_rank1 + best_mAP + 5.0*best_acc[2])
+                
+                if is_best: 
+                    best_rank1 = rank1
+                    best_cmc = rank
+                    best_mAP = mAP
+                    best_acc = acc_total
+                    best_epoch = epoch + 1
+                
+                if (epoch+1) == config.TRAIN.MAX_EPOCH:
+                    final_epoch = True
+                else:
+                    final_epoch = False
+                
+                if classifier_reID is not None:
+                    save_checkpoint({
+                        'epoch': epoch,
+                        'model': model.state_dict(),
+                        'classifier': classifier.state_dict(),
+                        'classifier_reID': classifier_reID.state_dict(),
+                        'cmc': best_cmc,
+                        'acc': best_acc,
+                        'mAP': best_mAP,
+                        'rank1': rank1,
+                        'best_epoch': best_epoch,
+                        'optimizer': optimizer.state_dict(),
+                    }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
+                else:
+                    save_checkpoint({
+                        'epoch': epoch,
+                        'model': model.state_dict(),
+                        'classifier': classifier.state_dict(),
+                        'cmc': best_cmc,
+                        'acc': best_acc,
+                        'mAP': best_mAP,
+                        'rank1': rank1,
+                        'best_epoch': best_epoch,
+                        'optimizer': optimizer.state_dict(),
+                    }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
             else:
-                final_epoch = False
-            
-            if classifier_reID is not None:
-                save_checkpoint({
-                    'epoch': epoch,
-                    'model': model.state_dict(),
-                    'classifier': classifier.state_dict(),
-                    'classifier_reID': classifier_reID.state_dict(),
-                    'cmc': best_cmc,
-                    'acc': best_acc,
-                    'mAP': best_mAP,
-                    'rank1': rank1,
-                    'best_epoch': best_epoch,
-                    'optimizer': optimizer.state_dict(),
-                }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
-            else:
-                save_checkpoint({
-                    'epoch': epoch,
-                    'model': model.state_dict(),
-                    'classifier': classifier.state_dict(),
-                    'cmc': best_cmc,
-                    'acc': best_acc,
-                    'mAP': best_mAP,
-                    'rank1': rank1,
-                    'best_epoch': best_epoch,
-                    'optimizer': optimizer.state_dict(),
-                }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
-            
+                with torch.no_grad():
+                    val_acc, acc_total = test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+
+                is_best = val_acc > best_val_acc
+                
+                if is_best: 
+                    best_val_acc = val_acc
+                    best_acc = acc_total
+                    best_epoch = epoch + 1
+                
+                if (epoch+1) == config.TRAIN.MAX_EPOCH:
+                    final_epoch = True
+                else:
+                    final_epoch = False
+                
+                if classifier_reID is not None:
+                    if is_best or final_epoch:
+                        save_checkpoint({
+                            'epoch': epoch,
+                            'model': model.state_dict(),
+                            'classifier': classifier.state_dict(),
+                            'classifier_reID': classifier_reID.state_dict(),
+                            'cmc': 0,
+                            'acc': best_acc,
+                            'mAP': 0,
+                            'rank1': 0,
+                            'best_epoch': best_epoch,
+                            'optimizer': optimizer.state_dict(),
+                        }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'), type='fewshot')
+                else:
+                    if is_best or final_epoch:
+                        save_checkpoint({
+                            'epoch': epoch,
+                            'model': model.state_dict(),
+                            'classifier': classifier.state_dict(),
+                            'cmc': 0,
+                            'acc': best_acc,
+                            'mAP': 0,
+                            'rank1': 0,
+                            'best_epoch': best_epoch,
+                            'optimizer': optimizer.state_dict(),
+                        }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'), type='fewshot')
         
         # Function to get the current learning rate
         def get_current_lr(optimizer):
@@ -492,8 +544,8 @@ def main(config):
             if optimizer_center is not None:
                 scheduler_center.step()
             
-            
-    print("=> Best Rank-1 {:.1%}, mAP {:.1%} achieved at epoch {}".format(best_rank1, best_mAP, best_epoch))
+    if not config.FEWSHOT.ENABLE:
+        print("=> Best Rank-1 {:.1%}, mAP {:.1%} achieved at epoch {}".format(best_rank1, best_mAP, best_epoch))
     print("=> Best Acc: Query {:.1%}, Gallery {:.1%}, Total {:.1%}".format(best_acc[0], best_acc[1], best_acc[2]))
     # run["best_rank1"] = best_rank1
     # run['best_mAP'] = best_mAP
