@@ -327,8 +327,9 @@ def main(config):
                 shutil.copy(config.MODEL.RESUME + '/best_model.pth.tar', output_file)
             else:
                 print("=> Start Training ReID projector and Classifier")
-                print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'best_model.pth.tar'))
-                checkpoint = torch.load(config.MODEL.RESUME + '/best_model.pth.tar')
+                # privious best_model.pth.tar
+                print("Loading checkpoint from '{}/{}'".format(config.MODEL.RESUME, 'checkpoint_ep60.pth.tar'))
+                checkpoint = torch.load(config.MODEL.RESUME + '/checkpoint_ep60.pth.tar')
                 model.load_param(checkpoint['model'], ignore_i2t=True, ignore_reid=False)
                 # No need to load Classifier weight, since it's not same category
                 # classifier.load_state_dict(checkpoint['classifier'])
