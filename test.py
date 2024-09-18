@@ -69,7 +69,9 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
         if classifier != None:
             if config.DATA.TRAIN_FORMAT != 'novel_train_from_scratch':
                 z_reid = model.reid_projector(z_c)
-                z_c_proj = model.bottlenect(z_reid) 
+                # z_c_proj = model.bottlenect(z_reid) 
+                z_c_proj = z_reid
+
                 # z_c_proj = model.i2t_projector(z_c_reid)
                 # z_c_proj = z_c
             else:
