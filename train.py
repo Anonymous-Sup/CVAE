@@ -142,8 +142,8 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         """
         # z_c_proj = model.i2t_projector(z_reid)
 
-        # z_reid_bn = model.bottlenect(z_reid)
-        z_reid_bn = z_reid
+        z_reid_bn = model.bottlenect(z_reid)
+        # z_reid_bn = z_reid
         outputs = classifier(z_reid_bn)
         
         _, preds = torch.max(outputs.data, 1)
