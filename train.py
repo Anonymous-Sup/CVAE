@@ -162,9 +162,13 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         posterior_p = q_dist.log_prob(z)
         posterior = torch.sum(posterior_p, dim=-1)
 
-        kl_loss = (posterior - prior).mean()          
-        C = torch.clamp(torch.tensor(20.0) /
-                            5000 * iteration_num, 0.0, 20.0)
+        kl_loss = (posterior - prior).mean()   
+        if config.FEWSHOT.ENABEL:
+            C = torch.clamp(torch.tensor(50.0) /
+                            5000 * iteration_num, 0.0, 20.0)   
+        else:    
+            C = torch.clamp(torch.tensor(20.0) /
+                                5000 * iteration_num, 0.0, 20.0)
         kl_loss = (kl_loss - C).abs()
         recon_loss = criterion_recon(recon_x, imgs_tensor)
 

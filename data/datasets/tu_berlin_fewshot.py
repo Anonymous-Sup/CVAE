@@ -119,7 +119,7 @@ class TUBerlin(BaseImageDataset):
         subset   | # ids | # images | # cameras
         ----------------------------------------
         train    |   125 |    61031 |         1
-        query    |   125 |     2000 |         1
+        query    |   125 |    10000 |         1
         gallery  |   125 |    20408 |         1
         val      |   125 |    20353 |         1
         ----------------------------------------
