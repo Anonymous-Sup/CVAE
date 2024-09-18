@@ -107,7 +107,7 @@ def build_fewshot_dataloader(config):
     trainloader = DataLoader(ImageDataset(dataset.train, format_tag=config.DATA.FORMAT_TAG, transform=transform_train),
                              # def __init__(self, data_source, num_classes, num_instances, num_episodes):
                              sampler=FewshotSampler(dataset.train, config.FEWSHOT.NWAY, config.FEWSHOT.KSHOT, config.FEWSHOT.EPISODE),
-                             batch_size=config.FEWSHOT.NWAY*config.FEWSHOY.KSHOT, num_workers=config.DATA.NUM_WORKERS,
+                             batch_size=config.FEWSHOT.NWAY*config.FEWSHOT.KSHOT, num_workers=config.DATA.NUM_WORKERS,
                              pin_memory=True, drop_last=True)
     
     valloader = DataLoader(ImageDataset(dataset.val, format_tag=config.DATA.FORMAT_TAG, transform=transform_test),
