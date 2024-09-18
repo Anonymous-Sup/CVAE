@@ -306,11 +306,17 @@ def plot_epoch_Zdim_old(run, tensor, title):
 
 def plot_epoch_Zdim(run, tensor, title, num_samples=64, last=False):
     data = tensor.detach().cpu().numpy()
-    num_dims = 12    
-    # 对每个维度的数据进行分组和平均
-    grouped_data = data.reshape(-1, num_samples, data.shape[-1])
-    averaged_data = np.mean(grouped_data, axis=1)
     
+    num_dims = 12    
+
+    if run.FEWSHOT.ENABLE:
+        # transfer to numpy
+        averaged_data = data
+    else:
+        # 对每个维度的数据进行分组和平均
+        grouped_data = data.reshape(-1, num_samples, data.shape[-1])
+        averaged_data = np.mean(grouped_data, axis=1)
+        
     # 创建一个图形和轴
     fig, axes = plt.subplots(nrows=num_dims, ncols=num_dims, figsize=(num_dims*2, num_dims*2))
     
