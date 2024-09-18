@@ -45,15 +45,15 @@ nohup python -u main.py --cfg ./configs/tuberlin_categray/clipreid_cvae_kl.yaml 
 --train_format base \
 --train_stage reid+cls_stage \
 --resume /data/zhengwei/CVAE/outputs/tuberlin/clipreid_simplevae_base/2024-09-18/baseTuberlin_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS \
---gpu 2 \
---saved_name baseTUBerlin_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
+--gpu 1 \
+--saved_name baseTUBerlin_SimpleVAE_128+64z_1e4_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/train_2nd_baseTUBerlin_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
+> nohup_logs/train_2nd_baseTUBerlin_SimpleVAE_128+64z_1e4_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
 
-CUDA_VISIBLE_DEVICES=2
+CUDA_VISIBLE_DEVICES=1
 # ===========Base ReID+CLS Stage traning================
 nohup python -u main.py --cfg ./configs/tuberlin_categray/clipreid_cvae_kl.yaml \
 --root /home/zhengwei/my_data/datasets \
@@ -63,14 +63,14 @@ nohup python -u main.py --cfg ./configs/tuberlin_categray/clipreid_cvae_kl.yaml 
 --train_format base \
 --train_stage reid+cls_stage \
 --resume /data/zhengwei/CVAE/outputs/tuberlin/clipreid_simplevae_base/2024-09-18/baseTuberlin_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS \
---gpu 2 \
---saved_name baseTUBerlin_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
+--gpu 1 \
+--saved_name baseTUBerlin_SimpleVAE+2E_128+64z_1e4_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --use_two_encoder \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/train_2nd_baseTUBerlin_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
+> nohup_logs/train_2nd_baseTUBerlin_SimpleVAE+2E_128+64z_1e4_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
 
 
 # # ===========Base CLS Stage traning================
