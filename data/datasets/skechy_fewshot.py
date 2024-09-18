@@ -214,7 +214,7 @@ class Sketchy(BaseImageDataset):
         self.NWAY = NWAY
         self.KSHOT = KSHOT
 
-        self.base_label2index, self.novel_label2index, self.selected_label2inds = buildLabelIndex(Way=self.NWAY, seed=0)
+        self.base_label2index, self.novel_label2index, self.selected_label2inds = buildLabelIndex(Way=self.NWAY, seed=1)
 
         if self.tag == 'tensor':
             self.dataset_dir = osp.join(root, self.root_folder, 'tensor', pretrained)
