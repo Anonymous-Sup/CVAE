@@ -203,7 +203,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         # if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1:   
         # only for the last epoch
         # if epoch+1 == config.TRAIN.MAX_EPOCH and batch_idx == len(trainloader)-1:
-        if batch_idx==0:
+        if batch_idx==len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
                 if 'kl' in config.MODEL.TRAIN_STAGE:
                     number_sample = 16
