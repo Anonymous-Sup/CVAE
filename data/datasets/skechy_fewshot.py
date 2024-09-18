@@ -207,7 +207,7 @@ class Sketchy(BaseImageDataset):
         super(Sketchy, self).__init__()
 
         # self.training_mode = config.DATASETS.TRAINING_MODE # choice for 'base' and 'novel' or 'novel_few'
-        self.training_mode = 'novel'
+        self.training_mode = 'novel_few'
 
         self.tag = format_tag
         self.pid_begin = pid_begin
