@@ -202,17 +202,13 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
         # if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1:   
         # only for the last epoch
-        # if epoch+1 == config.TRAIN.MAX_EPOCH and batch_idx == len(trainloader)-1:
-        if batch_idx==len(trainloader)-1:
+        if epoch+1 == config.TRAIN.MAX_EPOCH and batch_idx == len(trainloader)-1:
             if 'reid' not in config.MODEL.TRAIN_STAGE:
                 if 'kl' in config.MODEL.TRAIN_STAGE:
                     number_sample = 16
                 else:
                     number_sample = 64
-                
-                print("z_collect.shape: {}".format(z_collect.shape))
-                print("x_collect.shape: {}".format(x_collect.shape))
-                print("zs_collect.shape: {}".format(zs_collect.shape))
+                # (batch* samplebatch, dim)
                 plot_epoch_Zdim(config, z_collect, "0_Seperate_dim_of_final_cat_z", number_sample)
                 # plot_epoch_Zdim(config, z_collect, "0-Seperate dim of reparemeterized last z", last=True)
                 plot_epoch_Zdim(config, x_collect, "0_Seperate_dim_of_x_pre", number_sample)
@@ -233,7 +229,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
                 plot_histogram(config, z_s, "4_Z_S")
                 plot_histogram(config, z_c, "4_Z_C")
                 plot_histogram(config, fusez_s, "4_fusez_s")
-                assert False
+
         optimizer.zero_grad()
         if optimizer_center is not None:
             optimizer_center.zero_grad()
