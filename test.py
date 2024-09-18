@@ -81,7 +81,10 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
             batch_acc.update((torch.sum(preds == pid_tensor.data)).float()/pid_tensor.size(0), pid_tensor.size(0))
             
             # keep the top10 labels and scores for each class
-            batch_top10_scores, batch_top10_labels = torch.topk(outputs.data, 10)
+            '''
+            modifyed as 1 
+            '''
+            batch_top10_scores, batch_top10_labels = torch.topk(outputs.data, 1)
 
             if classifier_reID != None:
                 reid_feature = model.reid_projector(new_z)
@@ -108,7 +111,10 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
                     class_img_paths[class_idx].append((batch_ima_path[i], is_correct.item())) 
                     
                     # Get top 10 classification scores and corresponding labels
-                    id_top10_scores, id_top10_labels = torch.topk(outputs.data[i], 10)
+                    '''
+                    modifyed as 1 
+                    '''
+                    id_top10_scores, id_top10_labels = torch.topk(outputs.data[i], 1)
                     id_top10_labels = id_top10_labels.cpu().numpy()
                     id_top10_scores = id_top10_scores.cpu().numpy()
                     
