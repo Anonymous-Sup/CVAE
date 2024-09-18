@@ -163,7 +163,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         posterior = torch.sum(posterior_p, dim=-1)
 
         kl_loss = (posterior - prior).mean()   
-        if config.FEWSHOT.ENABEL:
+        if config.FEWSHOT.ENABLE:
             C = torch.clamp(torch.tensor(50.0) /
                             5000 * iteration_num, 0.0, 20.0)   
         else:    
