@@ -233,7 +233,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
                 plot_histogram(config, z_s, "4_Z_S")
                 plot_histogram(config, z_c, "4_Z_C")
                 plot_histogram(config, fusez_s, "4_fusez_s")
-
+                assert False
         optimizer.zero_grad()
         if optimizer_center is not None:
             optimizer_center.zero_grad()
