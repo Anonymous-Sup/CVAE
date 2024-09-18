@@ -125,19 +125,26 @@ class TUBerlin(BaseImageDataset):
         ----------------------------------------
     """
 
-
-    dataset_dir = 'TUBerlin'
-
-    def __init__(self, config=None, root='', verbose=True, pid_begin=0, **kwargs):
+    root_folder = 'TUBerlin'
+    def __init__(self, root='', format_tag='tensor', pretrained='CLIPreidFinetune', pid_begin=0, NWAY=5, KSHOT=1, **kwargs):
+    # def __init__(self, config=None, root='', verbose=True, pid_begin=0, **kwargs):
         super(TUBerlin, self).__init__()
 
 
         # self.training_mode = config.DATASETS.TRAINING_MODE # choice for 'base' and 'novel' or 'novel_few'
         self.training_mode = 'base'
 
-        self.base_label2index, self.novel_label2index, self.selected_label2inds = buildLabelIndex(Way=5, seed=0)
+        self.tag = format_tag
+        self.pid_begin = pid_begin
+        self.NWAY = NWAY
+        self.KSHOT = KSHOT
 
-        self.dataset_dir = osp.join(root, self.dataset_dir)
+        self.base_label2index, self.novel_label2index, self.selected_label2inds = buildLabelIndex(Way=self.NWAY, seed=0)
+        
+        if self.tag == 'tensor':
+            self.dataset_dir = osp.join(root, self.root_folder, 'tensor', pretrained)
+        else:  
+            self.dataset_dir = osp.join(root, self.root_folder)
 
         self.rgb_dir = osp.join(self.dataset_dir, 'images')
         self.sketch_dir = osp.join(self.dataset_dir, 'sketches')
@@ -146,10 +153,10 @@ class TUBerlin(BaseImageDataset):
         self.pid_begin = pid_begin
         
         train, val, query, gallery = self._process_dir(self.rgb_dir, self.sketch_dir, relabel=False, 
-                                                  training_mode=self.training_mode, number_pthots=5, number_sketches=5, random_seed=0)
-        if verbose:
-            print("=> TUBerlin dataset loaded")
-            self.print_dataset_statistics(train, query, gallery, val)
+                                                  training_mode=self.training_mode, number_pthots=self.KSHOT, number_sketches=self.KSHOT, random_seed=0)
+        
+        print("=> TUBerlin dataset loaded")
+        self.print_dataset_statistics(train, query, gallery, val)
 
         self.train = train
         self.val = val
@@ -191,12 +198,12 @@ class TUBerlin(BaseImageDataset):
         for photo_class_name in sorted(photo_all_class):
              # first get the class label
             photo_class = osp.basename(photo_class_name)  # like jellyfish
-            photo_paths = glob.glob(osp.join(photo_class_name, "*"))
+            photo_paths = glob.glob(osp.join(photo_class_name, "*.pt"))
 
             assert any(photo_class in sketch_cls for sketch_cls in sketch_all_class), "photo class {} not in sketch set".format(photo_class)
 
             sketch_class_name = osp.join(sketch_path, photo_class)
-            draw_paths = glob.glob(osp.join(sketch_class_name, "*.png"))
+            draw_paths = glob.glob(osp.join(sketch_class_name, "*.pt"))
 
 
             if training_mode == 'base':
