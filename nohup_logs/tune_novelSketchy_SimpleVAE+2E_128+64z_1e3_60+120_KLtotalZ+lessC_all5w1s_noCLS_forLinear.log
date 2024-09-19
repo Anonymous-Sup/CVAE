@@ -23,9 +23,9 @@ EVAL_MODE: False
 FEWSHOT:
   ENABLE: True
   EPISODE: 100
-  KSHOT: 5
+  KSHOT: 1
   NWAY: 5
-GPU: 1
+GPU: 3
 LOSS:
   CLA_LOSS: crossentropy
   CLA_M: 0.0
@@ -49,16 +49,16 @@ MODEL:
   PRETRAIN: CLIPreID_Novel_Sketchy_a5w1s
   PROJECTION_TYPE: None
   RES4_STRIDE: 1
-  RESUME: /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_all5w5s_noCLS_forLinear
+  RESUME: /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/2024-09-17/baseSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-18/baseSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce
   STYLE_NUM: 0
-  TRAIN_STAGE: reid+cls_stage
+  TRAIN_STAGE: klNocls_stage
   USE_CENTROID: False
-  USE_TWO_ENCODER: False
+  USE_TWO_ENCODER: True
   VAE_TYPE: SinpleVAE
   ZC_DIM: 128
   ZS_DIM: 64
-OUTPUT: /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE_128+64z_1e4_60+120_KLtotalZ_all5w5s_L1280+bnTuneVersion+distCLS_Trip+Center+Ce
-SAVED_NAME: novelSketchy_SimpleVAE_128+64z_1e4_60+120_KLtotalZ_all5w5s_L1280+bnTuneVersion+distCLS_Trip+Center+Ce
+OUTPUT: /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ+lessC_all5w1s_noCLS_forLinear
+SAVED_NAME: novelSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ+lessC_all5w1s_noCLS_forLinear
 SEED: 0
 TAG: clipreid_simplevae_base
 TEST:
@@ -87,36 +87,42 @@ Dataset statistics:
   ----------------------------------------
   subset   | # ids | # images | # cameras
   ----------------------------------------
-  train    |    61 |      610 |         1
-  query    |    61 |    36392 |         1
-  gallery  |    61 |    34001 |         1
-  val      |    61 |    70393 |         1
+  train    |    61 |      122 |         1
+  query    |    61 |    36636 |         1
+  gallery  |    61 |    34245 |         1
+  val      |    61 |    70881 |         1
   ----------------------------------------
-Initializing SinpleVAE model
+Initializing SinpleVAE model with 2 encoders
 ============Warning! No projection layer is used in Training!=================
 ============Warning! Using Defalt Linear 1280 to intialize!=================
-Model size: 13.27827M
-Using Dist classifier
+Model size: 13.60672M
+Using Linear classifier
 Initialized classifier with feature_dim: 1280, num_classes: 61
-Classifier size: 0.07814M
-reid_projector.weight is tuneable
-bottlenect.weight is tuneable
-bottlenect.bias is tuneable
-i2t_projector.weight is tuneable
-i2t_projector.bias is tuneable
-=> Start Training ReID projector and Classifier
-Loading checkpoint from '/data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_all5w5s_noCLS_forLinear/best_model.pth.tar'
-Loading all parameter:  encoder.0.weight
-Loading all parameter:  encoder.0.bias
-Loading all parameter:  encoder.1.weight
-Loading all parameter:  encoder.1.bias
-Loading all parameter:  encoder.1.running_mean
-Loading all parameter:  encoder.1.running_var
-Loading all parameter:  encoder.1.num_batches_tracked
-Loading all parameter:  fc_mu.0.weight
-Loading all parameter:  fc_mu.0.bias
-Loading all parameter:  fc_logvar.0.weight
-Loading all parameter:  fc_logvar.0.bias
+Classifier size: 0.07808M
+=> Start tuning the model on Novel data
+Loading checkpoint from '/data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/2024-09-17/baseSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-18/baseSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce/best_model.pth.tar'
+Loading all parameter:  encoder_zc.0.weight
+Loading all parameter:  encoder_zc.0.bias
+Loading all parameter:  encoder_zc.1.weight
+Loading all parameter:  encoder_zc.1.bias
+Loading all parameter:  encoder_zc.1.running_mean
+Loading all parameter:  encoder_zc.1.running_var
+Loading all parameter:  encoder_zc.1.num_batches_tracked
+Loading all parameter:  fc_mu_zc.0.weight
+Loading all parameter:  fc_mu_zc.0.bias
+Loading all parameter:  fc_logvar_zc.0.weight
+Loading all parameter:  fc_logvar_zc.0.bias
+Loading all parameter:  encoder_zs.0.weight
+Loading all parameter:  encoder_zs.0.bias
+Loading all parameter:  encoder_zs.1.weight
+Loading all parameter:  encoder_zs.1.bias
+Loading all parameter:  encoder_zs.1.running_mean
+Loading all parameter:  encoder_zs.1.running_var
+Loading all parameter:  encoder_zs.1.num_batches_tracked
+Loading all parameter:  fc_mu_zs.0.weight
+Loading all parameter:  fc_mu_zs.0.bias
+Loading all parameter:  fc_logvar_zs.0.weight
+Loading all parameter:  fc_logvar_zs.0.bias
 Loading all parameter:  decoder.0.weight
 Loading all parameter:  decoder.0.bias
 Loading all parameter:  decoder.1.weight
@@ -394,276 +400,285 @@ Loading all parameter:  bottlenect.running_mean
 Loading all parameter:  bottlenect.running_var
 Loading all parameter:  bottlenect.num_batches_tracked
 Loading all parameter:  i2t_projector.weight
-Ignores parameter:  i2t_projector.weight
 Loading all parameter:  i2t_projector.bias
-Ignores parameter:  i2t_projector.bias
 orginal best rank1 = 0
+=> Copy the checkpoint to the output folder
 => Start evaluation on Novel data without finetuning
 => Test CLASSIFICATION performance
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 28s
-Using 0m 28s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 37s
+Using 0m 37s
 Val Classifier results ---------------------------------------------------
-Total acc: 2.7%
+Total acc: 1.3%
 Test Classifier results ---------------------------------------------------
-Query acc: 2.5% Gallery acc: 3.0% Total acc: 2.7%
+Query acc: 1.3% Gallery acc: 1.3% Total acc: 1.3%
 => Start training
-Epoch:1 Time:6.3 Data:0.0 Loss:414.0283 Cls Loss:4.0292 Pair Loss:0.3242 Center Loss:409.6748 KL Loss:53.1159 Recon Loss:0.0285 Acc:0.2988 
+Epoch:1 Time:11.3 Data:0.0 Loss:5.5695 Cls Loss:4.1028 Pair Loss:0.0000 Center Loss:1402.1205 KL Loss:5.5408 Recon Loss:0.0287 Acc:0.0180 
 => Current learning rate: 0.000200
-Epoch:2 Time:6.0 Data:0.0 Loss:27.6629 Cls Loss:3.7887 Pair Loss:0.3032 Center Loss:23.5710 KL Loss:53.0504 Recon Loss:0.0284 Acc:0.5412 
+Epoch:2 Time:10.5 Data:0.0 Loss:1.4934 Cls Loss:4.1112 Pair Loss:0.0000 Center Loss:1405.2820 KL Loss:1.4647 Recon Loss:0.0287 Acc:0.0080 
 => Current learning rate: 0.000400
-Epoch:3 Time:5.8 Data:0.0 Loss:5.5228 Cls Loss:3.5478 Pair Loss:0.3093 Center Loss:1.6657 KL Loss:51.7577 Recon Loss:0.0285 Acc:0.5928 
+Epoch:3 Time:10.6 Data:0.0 Loss:1.9360 Cls Loss:4.1152 Pair Loss:0.0000 Center Loss:1412.0279 KL Loss:1.9072 Recon Loss:0.0287 Acc:0.0100 
 => Current learning rate: 0.000600
-Epoch:4 Time:6.2 Data:0.0 Loss:4.1967 Cls Loss:3.3710 Pair Loss:0.2934 Center Loss:0.5322 KL Loss:51.7394 Recon Loss:0.0285 Acc:0.6624 
+Epoch:4 Time:10.9 Data:0.0 Loss:1.4587 Cls Loss:4.1114 Pair Loss:0.0000 Center Loss:1413.8992 KL Loss:1.4300 Recon Loss:0.0286 Acc:0.0180 
 => Current learning rate: 0.000800
-Epoch:5 Time:5.6 Data:0.0 Loss:3.8980 Cls Loss:3.2954 Pair Loss:0.2915 Center Loss:0.3111 KL Loss:51.4495 Recon Loss:0.0285 Acc:0.6812 
+Epoch:5 Time:11.2 Data:0.0 Loss:1.5358 Cls Loss:4.1163 Pair Loss:0.0000 Center Loss:1421.9009 KL Loss:1.5069 Recon Loss:0.0290 Acc:0.0160 
 => Test at epoch 5
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 28s
-Using 0m 28s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 32s
+Using 0m 32s
 Val Classifier results ---------------------------------------------------
-Total acc: 67.2%
+Total acc: 1.3%
 Test Classifier results ---------------------------------------------------
-Query acc: 61.6% Gallery acc: 73.2% Total acc: 67.2%
+Query acc: 1.6% Gallery acc: 0.9% Total acc: 1.3%
 => Current learning rate: 0.001000
-Epoch:6 Time:6.1 Data:0.0 Loss:3.7214 Cls Loss:3.2269 Pair Loss:0.2909 Center Loss:0.2036 KL Loss:50.9996 Recon Loss:0.0287 Acc:0.7064 
+Epoch:6 Time:10.9 Data:0.0 Loss:1.3154 Cls Loss:4.1158 Pair Loss:0.0000 Center Loss:1431.4761 KL Loss:1.2867 Recon Loss:0.0287 Acc:0.0140 
 => Current learning rate: 0.001000
-Epoch:7 Time:5.7 Data:0.0 Loss:3.6397 Cls Loss:3.1883 Pair Loss:0.2907 Center Loss:0.1606 KL Loss:50.4238 Recon Loss:0.0285 Acc:0.6904 
+Epoch:7 Time:11.4 Data:0.0 Loss:1.2986 Cls Loss:4.1147 Pair Loss:0.0000 Center Loss:1427.9066 KL Loss:1.2698 Recon Loss:0.0288 Acc:0.0100 
 => Current learning rate: 0.001000
-Epoch:8 Time:5.7 Data:0.0 Loss:3.5946 Cls Loss:3.1608 Pair Loss:0.2935 Center Loss:0.1403 KL Loss:50.1061 Recon Loss:0.0284 Acc:0.6872 
+Epoch:8 Time:11.0 Data:0.0 Loss:1.4241 Cls Loss:4.1173 Pair Loss:0.0000 Center Loss:1429.3542 KL Loss:1.3951 Recon Loss:0.0289 Acc:0.0160 
 => Current learning rate: 0.001000
-Epoch:9 Time:6.0 Data:0.0 Loss:3.5509 Cls Loss:3.1260 Pair Loss:0.2944 Center Loss:0.1305 KL Loss:49.6525 Recon Loss:0.0285 Acc:0.7120 
+Epoch:9 Time:11.4 Data:0.0 Loss:1.3261 Cls Loss:4.1199 Pair Loss:0.0000 Center Loss:1432.3717 KL Loss:1.2974 Recon Loss:0.0287 Acc:0.0160 
 => Current learning rate: 0.001000
-Epoch:10 Time:6.0 Data:0.0 Loss:3.5119 Cls Loss:3.0881 Pair Loss:0.2937 Center Loss:0.1302 KL Loss:49.7558 Recon Loss:0.0283 Acc:0.7104 
+Epoch:10 Time:10.5 Data:0.0 Loss:1.2736 Cls Loss:4.1164 Pair Loss:0.0000 Center Loss:1432.7895 KL Loss:1.2449 Recon Loss:0.0287 Acc:0.0080 
+Jump TSNE
 => Test at epoch 10
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 28s
-Using 0m 28s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 30s
+Using 0m 30s
 Val Classifier results ---------------------------------------------------
-Total acc: 67.5%
+Total acc: 0.4%
 Test Classifier results ---------------------------------------------------
-Query acc: 62.1% Gallery acc: 73.3% Total acc: 67.5%
+Query acc: 0.5% Gallery acc: 0.3% Total acc: 0.4%
 => Current learning rate: 0.001000
-Epoch:11 Time:6.0 Data:0.0 Loss:3.4547 Cls Loss:3.0436 Pair Loss:0.2932 Center Loss:0.1179 KL Loss:49.1100 Recon Loss:0.0285 Acc:0.6976 
+Epoch:11 Time:10.6 Data:0.0 Loss:1.5358 Cls Loss:4.1209 Pair Loss:0.0000 Center Loss:1426.2510 KL Loss:1.5069 Recon Loss:0.0289 Acc:0.0180 
 => Current learning rate: 0.001000
-Epoch:12 Time:6.1 Data:0.0 Loss:3.4377 Cls Loss:3.0221 Pair Loss:0.2938 Center Loss:0.1217 KL Loss:48.7973 Recon Loss:0.0284 Acc:0.6996 
+Epoch:12 Time:11.2 Data:0.0 Loss:1.4309 Cls Loss:4.1079 Pair Loss:0.0000 Center Loss:1427.8485 KL Loss:1.4022 Recon Loss:0.0287 Acc:0.0240 
 => Current learning rate: 0.001000
-Epoch:13 Time:5.9 Data:0.0 Loss:3.3795 Cls Loss:2.9705 Pair Loss:0.2923 Center Loss:0.1167 KL Loss:48.2990 Recon Loss:0.0287 Acc:0.7268 
+Epoch:13 Time:11.8 Data:0.0 Loss:1.2235 Cls Loss:4.1100 Pair Loss:0.0000 Center Loss:1431.4682 KL Loss:1.1946 Recon Loss:0.0289 Acc:0.0160 
 => Current learning rate: 0.001000
-Epoch:14 Time:6.1 Data:0.0 Loss:3.3557 Cls Loss:2.9489 Pair Loss:0.2927 Center Loss:0.1141 KL Loss:47.9619 Recon Loss:0.0288 Acc:0.7280 
+Epoch:14 Time:10.7 Data:0.0 Loss:1.5632 Cls Loss:4.1195 Pair Loss:0.0000 Center Loss:1427.3097 KL Loss:1.5342 Recon Loss:0.0290 Acc:0.0100 
 => Current learning rate: 0.001000
-Epoch:15 Time:6.0 Data:0.0 Loss:3.3374 Cls Loss:2.9283 Pair Loss:0.2948 Center Loss:0.1143 KL Loss:47.2498 Recon Loss:0.0284 Acc:0.6992 
+Epoch:15 Time:11.8 Data:0.0 Loss:1.4419 Cls Loss:4.1170 Pair Loss:0.0000 Center Loss:1432.9316 KL Loss:1.4133 Recon Loss:0.0286 Acc:0.0180 
 => Test at epoch 15
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 29s
-Using 0m 29s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 31s
+Using 0m 31s
 Val Classifier results ---------------------------------------------------
-Total acc: 66.3%
+Total acc: 0.7%
 Test Classifier results ---------------------------------------------------
-Query acc: 61.5% Gallery acc: 71.6% Total acc: 66.3%
+Query acc: 0.5% Gallery acc: 0.8% Total acc: 0.7%
 => Current learning rate: 0.001000
-Epoch:16 Time:6.2 Data:0.0 Loss:3.2660 Cls Loss:2.8657 Pair Loss:0.2929 Center Loss:0.1073 KL Loss:46.9782 Recon Loss:0.0287 Acc:0.7328 
+Epoch:16 Time:12.8 Data:0.0 Loss:1.2985 Cls Loss:4.1136 Pair Loss:0.0000 Center Loss:1429.6295 KL Loss:1.2693 Recon Loss:0.0292 Acc:0.0280 
 => Current learning rate: 0.001000
-Epoch:17 Time:5.9 Data:0.0 Loss:3.2689 Cls Loss:2.8587 Pair Loss:0.2930 Center Loss:0.1173 KL Loss:46.8061 Recon Loss:0.0286 Acc:0.7096 
+Epoch:17 Time:11.3 Data:0.0 Loss:1.5753 Cls Loss:4.1207 Pair Loss:0.0000 Center Loss:1427.2650 KL Loss:1.5461 Recon Loss:0.0291 Acc:0.0220 
 => Current learning rate: 0.001000
-Epoch:18 Time:6.3 Data:0.0 Loss:3.2333 Cls Loss:2.8237 Pair Loss:0.2935 Center Loss:0.1162 KL Loss:46.1173 Recon Loss:0.0284 Acc:0.7312 
+Epoch:18 Time:10.3 Data:0.0 Loss:1.5182 Cls Loss:4.1192 Pair Loss:0.0000 Center Loss:1427.6735 KL Loss:1.4893 Recon Loss:0.0290 Acc:0.0080 
 => Current learning rate: 0.001000
-Epoch:19 Time:6.1 Data:0.0 Loss:3.2045 Cls Loss:2.7938 Pair Loss:0.2933 Center Loss:0.1173 KL Loss:45.9255 Recon Loss:0.0287 Acc:0.7128 
+Epoch:19 Time:10.6 Data:0.0 Loss:1.5233 Cls Loss:4.1087 Pair Loss:0.0000 Center Loss:1430.2837 KL Loss:1.4947 Recon Loss:0.0286 Acc:0.0180 
 => Current learning rate: 0.001000
-Epoch:20 Time:5.9 Data:0.0 Loss:3.1602 Cls Loss:2.7560 Pair Loss:0.2913 Center Loss:0.1130 KL Loss:45.3259 Recon Loss:0.0285 Acc:0.7300 
+Epoch:20 Time:10.9 Data:0.0 Loss:1.8060 Cls Loss:4.1209 Pair Loss:0.0000 Center Loss:1426.1187 KL Loss:1.7772 Recon Loss:0.0287 Acc:0.0160 
+Jump TSNE
 => Test at epoch 20
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 29s
-Using 0m 29s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 28s
+Using 0m 28s
 Val Classifier results ---------------------------------------------------
-Total acc: 66.4%
+Total acc: 2.0%
 Test Classifier results ---------------------------------------------------
-Query acc: 61.0% Gallery acc: 72.1% Total acc: 66.4%
+Query acc: 2.1% Gallery acc: 1.9% Total acc: 2.0%
 => Current learning rate: 0.001000
-Epoch:21 Time:6.1 Data:0.0 Loss:3.1518 Cls Loss:2.7411 Pair Loss:0.2930 Center Loss:0.1177 KL Loss:44.8549 Recon Loss:0.0286 Acc:0.7168 
+Epoch:21 Time:11.5 Data:0.0 Loss:1.6689 Cls Loss:4.1149 Pair Loss:0.0000 Center Loss:1424.8629 KL Loss:1.6401 Recon Loss:0.0288 Acc:0.0140 
 => Current learning rate: 0.001000
-Epoch:22 Time:6.2 Data:0.0 Loss:3.1109 Cls Loss:2.7014 Pair Loss:0.2924 Center Loss:0.1171 KL Loss:44.6854 Recon Loss:0.0285 Acc:0.7136 
+Epoch:22 Time:10.9 Data:0.0 Loss:1.6324 Cls Loss:4.1184 Pair Loss:0.0000 Center Loss:1423.6164 KL Loss:1.6033 Recon Loss:0.0292 Acc:0.0060 
 => Current learning rate: 0.001000
-Epoch:23 Time:6.1 Data:0.0 Loss:3.0834 Cls Loss:2.6756 Pair Loss:0.2922 Center Loss:0.1156 KL Loss:44.6602 Recon Loss:0.0285 Acc:0.7180 
+Epoch:23 Time:11.0 Data:0.0 Loss:1.6005 Cls Loss:4.1139 Pair Loss:0.0000 Center Loss:1428.2819 KL Loss:1.5720 Recon Loss:0.0284 Acc:0.0160 
 => Current learning rate: 0.001000
-Epoch:24 Time:6.2 Data:0.0 Loss:3.0716 Cls Loss:2.6615 Pair Loss:0.2927 Center Loss:0.1174 KL Loss:43.6856 Recon Loss:0.0285 Acc:0.7220 
+Epoch:24 Time:11.2 Data:0.0 Loss:1.6958 Cls Loss:4.1292 Pair Loss:0.0000 Center Loss:1424.3990 KL Loss:1.6668 Recon Loss:0.0290 Acc:0.0080 
 => Current learning rate: 0.001000
-Epoch:25 Time:5.9 Data:0.0 Loss:3.0157 Cls Loss:2.6125 Pair Loss:0.2909 Center Loss:0.1124 KL Loss:43.6412 Recon Loss:0.0286 Acc:0.7484 
+Epoch:25 Time:11.5 Data:0.0 Loss:1.4995 Cls Loss:4.1197 Pair Loss:0.0000 Center Loss:1423.1923 KL Loss:1.4709 Recon Loss:0.0286 Acc:0.0180 
 => Test at epoch 25
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 29s
-Using 0m 29s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 23s
+Using 0m 23s
 Val Classifier results ---------------------------------------------------
-Total acc: 67.5%
+Total acc: 2.0%
 Test Classifier results ---------------------------------------------------
-Query acc: 62.5% Gallery acc: 72.9% Total acc: 67.5%
+Query acc: 2.1% Gallery acc: 1.9% Total acc: 2.0%
 => Current learning rate: 0.001000
-Epoch:26 Time:6.1 Data:0.0 Loss:2.9914 Cls Loss:2.5855 Pair Loss:0.2924 Center Loss:0.1135 KL Loss:42.9688 Recon Loss:0.0285 Acc:0.7512 
+Epoch:26 Time:12.4 Data:0.0 Loss:1.4694 Cls Loss:4.1132 Pair Loss:0.0000 Center Loss:1426.7505 KL Loss:1.4405 Recon Loss:0.0289 Acc:0.0340 
 => Current learning rate: 0.001000
-Epoch:27 Time:5.9 Data:0.0 Loss:2.9742 Cls Loss:2.5674 Pair Loss:0.2926 Center Loss:0.1142 KL Loss:42.4924 Recon Loss:0.0285 Acc:0.7436 
+Epoch:27 Time:11.6 Data:0.0 Loss:1.5702 Cls Loss:4.1162 Pair Loss:0.0000 Center Loss:1429.3965 KL Loss:1.5413 Recon Loss:0.0289 Acc:0.0280 
 => Current learning rate: 0.001000
-Epoch:28 Time:6.2 Data:0.0 Loss:3.0019 Cls Loss:2.5843 Pair Loss:0.2935 Center Loss:0.1241 KL Loss:42.1224 Recon Loss:0.0284 Acc:0.7188 
+Epoch:28 Time:11.3 Data:0.0 Loss:1.5228 Cls Loss:4.1102 Pair Loss:0.0000 Center Loss:1431.9933 KL Loss:1.4940 Recon Loss:0.0288 Acc:0.0100 
 => Current learning rate: 0.001000
-Epoch:29 Time:6.2 Data:0.0 Loss:2.9522 Cls Loss:2.5374 Pair Loss:0.2921 Center Loss:0.1226 KL Loss:41.6044 Recon Loss:0.0283 Acc:0.7292 
+Epoch:29 Time:10.6 Data:0.0 Loss:1.5817 Cls Loss:4.1175 Pair Loss:0.0000 Center Loss:1430.4318 KL Loss:1.5526 Recon Loss:0.0291 Acc:0.0160 
 => Current learning rate: 0.001000
-Epoch:30 Time:6.0 Data:0.0 Loss:2.9264 Cls Loss:2.5085 Pair Loss:0.2929 Center Loss:0.1250 KL Loss:41.4899 Recon Loss:0.0286 Acc:0.7304 
+Epoch:30 Time:12.4 Data:0.0 Loss:1.6029 Cls Loss:4.1118 Pair Loss:0.0000 Center Loss:1432.4259 KL Loss:1.5740 Recon Loss:0.0289 Acc:0.0120 
+Jump TSNE
 => Test at epoch 30
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 29s
-Using 0m 29s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 24s
+Using 0m 24s
 Val Classifier results ---------------------------------------------------
-Total acc: 66.1%
+Total acc: 2.9%
 Test Classifier results ---------------------------------------------------
-Query acc: 60.9% Gallery acc: 71.5% Total acc: 66.1%
+Query acc: 3.2% Gallery acc: 2.5% Total acc: 2.9%
 => Current learning rate: 0.001000
-Epoch:31 Time:6.5 Data:0.0 Loss:2.8201 Cls Loss:2.4382 Pair Loss:0.2916 Center Loss:0.0903 KL Loss:41.1209 Recon Loss:0.0286 Acc:0.7536 
+Epoch:31 Time:11.9 Data:0.0 Loss:1.2820 Cls Loss:4.1144 Pair Loss:0.0000 Center Loss:1430.1268 KL Loss:1.2529 Recon Loss:0.0291 Acc:0.0200 
 => Current learning rate: 0.000100
-Epoch:32 Time:6.0 Data:0.0 Loss:2.7782 Cls Loss:2.4151 Pair Loss:0.2921 Center Loss:0.0711 KL Loss:40.9552 Recon Loss:0.0284 Acc:0.7544 
+Epoch:32 Time:11.6 Data:0.0 Loss:1.3063 Cls Loss:4.1117 Pair Loss:0.0000 Center Loss:1428.8626 KL Loss:1.2779 Recon Loss:0.0284 Acc:0.0200 
 => Current learning rate: 0.000100
-Epoch:33 Time:6.0 Data:0.0 Loss:2.7400 Cls Loss:2.3828 Pair Loss:0.2914 Center Loss:0.0658 KL Loss:39.9933 Recon Loss:0.0284 Acc:0.7804 
+Epoch:33 Time:12.0 Data:0.0 Loss:1.2487 Cls Loss:4.1185 Pair Loss:0.0000 Center Loss:1428.9052 KL Loss:1.2197 Recon Loss:0.0291 Acc:0.0100 
 => Current learning rate: 0.000100
-Epoch:34 Time:6.2 Data:0.0 Loss:2.7432 Cls Loss:2.3871 Pair Loss:0.2921 Center Loss:0.0640 KL Loss:39.9587 Recon Loss:0.0286 Acc:0.7732 
+Epoch:34 Time:12.9 Data:0.0 Loss:1.2694 Cls Loss:4.1108 Pair Loss:0.0000 Center Loss:1429.0929 KL Loss:1.2407 Recon Loss:0.0287 Acc:0.0160 
 => Current learning rate: 0.000100
-Epoch:35 Time:6.1 Data:0.0 Loss:2.7406 Cls Loss:2.3867 Pair Loss:0.2922 Center Loss:0.0617 KL Loss:39.5085 Recon Loss:0.0286 Acc:0.7744 
+Epoch:35 Time:11.8 Data:0.0 Loss:1.2667 Cls Loss:4.1204 Pair Loss:0.0000 Center Loss:1428.1079 KL Loss:1.2376 Recon Loss:0.0291 Acc:0.0200 
 => Test at epoch 35
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 27s
-Using 0m 27s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 21s
+Using 0m 21s
 Val Classifier results ---------------------------------------------------
-Total acc: 68.5%
+Total acc: 3.0%
 Test Classifier results ---------------------------------------------------
-Query acc: 63.2% Gallery acc: 74.2% Total acc: 68.5%
+Query acc: 3.3% Gallery acc: 2.7% Total acc: 3.0%
 => Current learning rate: 0.000100
-Epoch:36 Time:6.2 Data:0.0 Loss:2.7052 Cls Loss:2.3561 Pair Loss:0.2910 Center Loss:0.0581 KL Loss:38.9985 Recon Loss:0.0284 Acc:0.7904 
+Epoch:36 Time:10.5 Data:0.0 Loss:1.3035 Cls Loss:4.1039 Pair Loss:0.0000 Center Loss:1427.0577 KL Loss:1.2747 Recon Loss:0.0289 Acc:0.0360 
 => Current learning rate: 0.000100
-Epoch:37 Time:6.1 Data:0.0 Loss:2.7130 Cls Loss:2.3614 Pair Loss:0.2921 Center Loss:0.0595 KL Loss:39.1859 Recon Loss:0.0284 Acc:0.7848 
+Epoch:37 Time:11.3 Data:0.0 Loss:1.3248 Cls Loss:4.1119 Pair Loss:0.0000 Center Loss:1426.0099 KL Loss:1.2966 Recon Loss:0.0283 Acc:0.0160 
 => Current learning rate: 0.000100
-Epoch:38 Time:6.0 Data:0.0 Loss:2.7206 Cls Loss:2.3711 Pair Loss:0.2927 Center Loss:0.0568 KL Loss:37.7054 Recon Loss:0.0287 Acc:0.7864 
+Epoch:38 Time:10.9 Data:0.0 Loss:1.1863 Cls Loss:4.1148 Pair Loss:0.0000 Center Loss:1428.8748 KL Loss:1.1573 Recon Loss:0.0290 Acc:0.0180 
 => Current learning rate: 0.000100
-Epoch:39 Time:6.2 Data:0.0 Loss:2.7343 Cls Loss:2.3847 Pair Loss:0.2938 Center Loss:0.0559 KL Loss:37.7685 Recon Loss:0.0283 Acc:0.7752 
+Epoch:39 Time:12.0 Data:0.0 Loss:1.2015 Cls Loss:4.1184 Pair Loss:0.0000 Center Loss:1428.4154 KL Loss:1.1729 Recon Loss:0.0287 Acc:0.0160 
 => Current learning rate: 0.000100
-Epoch:40 Time:5.8 Data:0.0 Loss:2.7336 Cls Loss:2.3825 Pair Loss:0.2939 Center Loss:0.0571 KL Loss:37.3878 Recon Loss:0.0285 Acc:0.7784 
+Epoch:40 Time:11.1 Data:0.0 Loss:1.2150 Cls Loss:4.1250 Pair Loss:0.0000 Center Loss:1428.6608 KL Loss:1.1859 Recon Loss:0.0291 Acc:0.0100 
+Jump TSNE
 => Test at epoch 40
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 27s
-Using 0m 27s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 19s
+Using 0m 19s
 Val Classifier results ---------------------------------------------------
-Total acc: 68.6%
+Total acc: 2.8%
 Test Classifier results ---------------------------------------------------
-Query acc: 63.3% Gallery acc: 74.3% Total acc: 68.6%
+Query acc: 3.2% Gallery acc: 2.4% Total acc: 2.8%
 => Current learning rate: 0.000100
-Epoch:41 Time:5.7 Data:0.0 Loss:2.7136 Cls Loss:2.3672 Pair Loss:0.2930 Center Loss:0.0534 KL Loss:37.2685 Recon Loss:0.0285 Acc:0.7724 
+Epoch:41 Time:11.2 Data:0.0 Loss:1.2453 Cls Loss:4.1195 Pair Loss:0.0000 Center Loss:1431.0644 KL Loss:1.2165 Recon Loss:0.0288 Acc:0.0080 
 => Current learning rate: 0.000100
-Epoch:42 Time:5.6 Data:0.0 Loss:2.6902 Cls Loss:2.3440 Pair Loss:0.2927 Center Loss:0.0535 KL Loss:37.0907 Recon Loss:0.0286 Acc:0.7932 
+Epoch:42 Time:11.4 Data:0.0 Loss:1.3022 Cls Loss:4.1230 Pair Loss:0.0000 Center Loss:1430.8136 KL Loss:1.2734 Recon Loss:0.0288 Acc:0.0180 
 => Current learning rate: 0.000100
-Epoch:43 Time:5.8 Data:0.0 Loss:2.7160 Cls Loss:2.3705 Pair Loss:0.2937 Center Loss:0.0519 KL Loss:36.1125 Recon Loss:0.0285 Acc:0.7768 
+Epoch:43 Time:10.3 Data:0.0 Loss:1.1569 Cls Loss:4.1211 Pair Loss:0.0000 Center Loss:1434.4060 KL Loss:1.1278 Recon Loss:0.0292 Acc:0.0180 
 => Current learning rate: 0.000100
-Epoch:44 Time:5.7 Data:0.0 Loss:2.6908 Cls Loss:2.3482 Pair Loss:0.2927 Center Loss:0.0499 KL Loss:35.7445 Recon Loss:0.0286 Acc:0.7808 
+Epoch:44 Time:11.2 Data:0.0 Loss:1.0584 Cls Loss:4.1255 Pair Loss:0.0000 Center Loss:1425.1621 KL Loss:1.0298 Recon Loss:0.0286 Acc:0.0120 
 => Current learning rate: 0.000100
-Epoch:45 Time:5.4 Data:0.0 Loss:2.7196 Cls Loss:2.3735 Pair Loss:0.2948 Center Loss:0.0513 KL Loss:35.3624 Recon Loss:0.0284 Acc:0.7752 
+Epoch:45 Time:10.5 Data:0.0 Loss:1.1934 Cls Loss:4.1264 Pair Loss:0.0000 Center Loss:1432.3243 KL Loss:1.1643 Recon Loss:0.0291 Acc:0.0060 
 => Test at epoch 45
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 27s
-Using 0m 27s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 20s
+Using 0m 20s
 Val Classifier results ---------------------------------------------------
-Total acc: 68.5%
+Total acc: 2.9%
 Test Classifier results ---------------------------------------------------
-Query acc: 63.2% Gallery acc: 74.2% Total acc: 68.5%
+Query acc: 3.2% Gallery acc: 2.5% Total acc: 2.9%
 => Current learning rate: 0.000100
-Epoch:46 Time:5.6 Data:0.0 Loss:2.6818 Cls Loss:2.3407 Pair Loss:0.2935 Center Loss:0.0475 KL Loss:35.1089 Recon Loss:0.0283 Acc:0.7860 
+Epoch:46 Time:11.2 Data:0.0 Loss:1.4805 Cls Loss:4.1188 Pair Loss:0.0000 Center Loss:1429.9434 KL Loss:1.4519 Recon Loss:0.0287 Acc:0.0160 
 => Current learning rate: 0.000100
-Epoch:47 Time:5.5 Data:0.0 Loss:2.7140 Cls Loss:2.3703 Pair Loss:0.2947 Center Loss:0.0491 KL Loss:34.4694 Recon Loss:0.0286 Acc:0.7716 
+Epoch:47 Time:12.3 Data:0.0 Loss:1.2880 Cls Loss:4.1075 Pair Loss:0.0000 Center Loss:1423.5451 KL Loss:1.2593 Recon Loss:0.0287 Acc:0.0240 
 => Current learning rate: 0.000100
-Epoch:48 Time:5.5 Data:0.0 Loss:2.7062 Cls Loss:2.3630 Pair Loss:0.2947 Center Loss:0.0484 KL Loss:34.2524 Recon Loss:0.0285 Acc:0.7696 
+Epoch:48 Time:13.0 Data:0.0 Loss:1.2606 Cls Loss:4.1207 Pair Loss:0.0000 Center Loss:1426.6752 KL Loss:1.2314 Recon Loss:0.0292 Acc:0.0200 
 => Current learning rate: 0.000100
-Epoch:49 Time:5.4 Data:0.0 Loss:2.7065 Cls Loss:2.3639 Pair Loss:0.2949 Center Loss:0.0477 KL Loss:33.8720 Recon Loss:0.0284 Acc:0.7824 
+Epoch:49 Time:11.8 Data:0.0 Loss:1.3985 Cls Loss:4.1164 Pair Loss:0.0000 Center Loss:1428.1845 KL Loss:1.3696 Recon Loss:0.0290 Acc:0.0180 
 => Current learning rate: 0.000100
-Epoch:50 Time:5.6 Data:0.0 Loss:2.6643 Cls Loss:2.3255 Pair Loss:0.2936 Center Loss:0.0451 KL Loss:33.6898 Recon Loss:0.0285 Acc:0.7952 
+Epoch:50 Time:9.8 Data:0.0 Loss:1.0041 Cls Loss:4.1127 Pair Loss:0.0000 Center Loss:1424.7571 KL Loss:0.9749 Recon Loss:0.0293 Acc:0.0100 
+Jump TSNE
 => Test at epoch 50
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 28s
-Using 0m 28s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 20s
+Using 0m 20s
 Val Classifier results ---------------------------------------------------
-Total acc: 69.1%
+Total acc: 2.8%
 Test Classifier results ---------------------------------------------------
-Query acc: 63.8% Gallery acc: 74.8% Total acc: 69.1%
+Query acc: 3.3% Gallery acc: 2.3% Total acc: 2.8%
 => Current learning rate: 0.000100
-Epoch:51 Time:6.2 Data:0.0 Loss:2.6897 Cls Loss:2.3497 Pair Loss:0.2948 Center Loss:0.0453 KL Loss:32.9126 Recon Loss:0.0284 Acc:0.7784 
+Epoch:51 Time:11.0 Data:0.0 Loss:1.2479 Cls Loss:4.1114 Pair Loss:0.0000 Center Loss:1424.0123 KL Loss:1.2188 Recon Loss:0.0291 Acc:0.0100 
 => Current learning rate: 0.000100
-Epoch:52 Time:6.3 Data:0.0 Loss:2.6704 Cls Loss:2.3313 Pair Loss:0.2945 Center Loss:0.0446 KL Loss:33.4592 Recon Loss:0.0284 Acc:0.8048 
+Epoch:52 Time:10.5 Data:0.0 Loss:1.0628 Cls Loss:4.1147 Pair Loss:0.0000 Center Loss:1429.0939 KL Loss:1.0341 Recon Loss:0.0287 Acc:0.0180 
 => Current learning rate: 0.000100
-Epoch:53 Time:5.8 Data:0.0 Loss:2.6733 Cls Loss:2.3359 Pair Loss:0.2941 Center Loss:0.0433 KL Loss:33.2943 Recon Loss:0.0283 Acc:0.7932 
+Epoch:53 Time:12.8 Data:0.0 Loss:1.0552 Cls Loss:4.1141 Pair Loss:0.0000 Center Loss:1424.7378 KL Loss:1.0264 Recon Loss:0.0288 Acc:0.0160 
 => Current learning rate: 0.000100
-Epoch:54 Time:5.6 Data:0.0 Loss:2.6576 Cls Loss:2.3201 Pair Loss:0.2942 Center Loss:0.0433 KL Loss:33.2854 Recon Loss:0.0284 Acc:0.8020 
+Epoch:54 Time:10.7 Data:0.0 Loss:1.0539 Cls Loss:4.1215 Pair Loss:0.0000 Center Loss:1427.6101 KL Loss:1.0248 Recon Loss:0.0291 Acc:0.0080 
 => Current learning rate: 0.000100
-Epoch:55 Time:5.8 Data:0.0 Loss:2.6659 Cls Loss:2.3275 Pair Loss:0.2946 Center Loss:0.0438 KL Loss:33.2180 Recon Loss:0.0286 Acc:0.7888 
+Epoch:55 Time:12.4 Data:0.0 Loss:1.2681 Cls Loss:4.1178 Pair Loss:0.0000 Center Loss:1428.8893 KL Loss:1.2393 Recon Loss:0.0288 Acc:0.0160 
 => Test at epoch 55
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 28s
-Using 0m 28s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 21s
+Using 0m 21s
 Val Classifier results ---------------------------------------------------
-Total acc: 68.7%
+Total acc: 2.9%
 Test Classifier results ---------------------------------------------------
-Query acc: 63.5% Gallery acc: 74.4% Total acc: 68.7%
+Query acc: 3.4% Gallery acc: 2.4% Total acc: 2.9%
 => Current learning rate: 0.000100
-Epoch:56 Time:5.7 Data:0.0 Loss:2.6481 Cls Loss:2.3107 Pair Loss:0.2945 Center Loss:0.0429 KL Loss:33.5778 Recon Loss:0.0287 Acc:0.7988 
+Epoch:56 Time:11.2 Data:0.0 Loss:1.0944 Cls Loss:4.1141 Pair Loss:0.0000 Center Loss:1428.3849 KL Loss:1.0656 Recon Loss:0.0288 Acc:0.0180 
 => Current learning rate: 0.000100
-Epoch:57 Time:5.8 Data:0.0 Loss:2.6666 Cls Loss:2.3292 Pair Loss:0.2951 Center Loss:0.0422 KL Loss:32.7659 Recon Loss:0.0282 Acc:0.7924 
+Epoch:57 Time:8.6 Data:0.0 Loss:1.0176 Cls Loss:4.1264 Pair Loss:0.0000 Center Loss:1426.1270 KL Loss:0.9885 Recon Loss:0.0291 Acc:0.0160 
 => Current learning rate: 0.000100
-Epoch:58 Time:5.7 Data:0.0 Loss:2.6311 Cls Loss:2.2949 Pair Loss:0.2945 Center Loss:0.0417 KL Loss:33.4021 Recon Loss:0.0287 Acc:0.8128 
+Epoch:58 Time:8.8 Data:0.0 Loss:1.1655 Cls Loss:4.1163 Pair Loss:0.0000 Center Loss:1427.9257 KL Loss:1.1370 Recon Loss:0.0285 Acc:0.0100 
 => Current learning rate: 0.000100
-Epoch:59 Time:5.2 Data:0.0 Loss:2.6543 Cls Loss:2.3180 Pair Loss:0.2946 Center Loss:0.0416 KL Loss:33.3405 Recon Loss:0.0286 Acc:0.7912 
+Epoch:59 Time:8.5 Data:0.0 Loss:1.1471 Cls Loss:4.1116 Pair Loss:0.0000 Center Loss:1436.7960 KL Loss:1.1185 Recon Loss:0.0286 Acc:0.0240 
 => Current learning rate: 0.000100
-Epoch:60 Time:5.5 Data:0.0 Loss:2.6506 Cls Loss:2.3145 Pair Loss:0.2949 Center Loss:0.0411 KL Loss:33.1933 Recon Loss:0.0285 Acc:0.7928 
+/home/zhengwei/yzwT2V/lib/python3.9/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/zhengwei/yzwT2V/lib/python3.9/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+Epoch:60 Time:62.2 Data:0.0 Loss:1.0594 Cls Loss:4.1231 Pair Loss:0.0000 Center Loss:1427.7410 KL Loss:1.0311 Recon Loss:0.0284 Acc:0.0120 
+Jump TSNE
 => Test at epoch 60
 ==========Test with latent_z: z_c =========
-Extracted features for query set, obtained torch.Size([36392, 1280]) matrix
-Extracted features for gallery set, obtained torch.Size([34001, 1280]) matrix
-Extracted features for validation set, obtained torch.Size([70393, 1280]) matrix
-Extracting features complete in 0m 28s
-Using 0m 28s
+Extracted features for query set, obtained torch.Size([36636, 128]) matrix
+Extracted features for gallery set, obtained torch.Size([34245, 128]) matrix
+Extracted features for validation set, obtained torch.Size([70881, 128]) matrix
+Extracting features complete in 0m 18s
+Using 0m 18s
 Val Classifier results ---------------------------------------------------
-Total acc: 69.1%
+Total acc: 3.0%
 Test Classifier results ---------------------------------------------------
-Query acc: 63.9% Gallery acc: 74.6% Total acc: 69.1%
+Query acc: 3.5% Gallery acc: 2.5% Total acc: 3.0%
 Keep checkpoint file: checkpoint_ep60.pth.tar
 => Current learning rate: 0.000100
-=> Best Val Acc 69.1% at epoch 50: 
- Test Acc: Query 63.8%, Gallery 74.8%, Total 69.1%
-Finished. Total elapsed time (h:m:s): 0:12:05. Training time (h:m:s): 0:06:18.
+=> Best Val Acc 3.0% at epoch 60: 
+ Test Acc: Query 3.5%, Gallery 2.5%, Total 3.0%
+Finished. Total elapsed time (h:m:s): 0:17:20. Training time (h:m:s): 0:12:25.
