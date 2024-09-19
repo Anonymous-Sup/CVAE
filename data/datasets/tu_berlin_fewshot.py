@@ -153,7 +153,7 @@ class TUBerlin(BaseImageDataset):
         self.pid_begin = pid_begin
         
         train, val, query, gallery = self._process_dir(self.rgb_dir, self.sketch_dir, relabel=False, 
-                                                  training_mode=self.training_mode, number_pthots=self.KSHOT, number_sketches=self.KSHOT, random_seed=0)
+                                                  training_mode=self.training_mode, number_pthots=self.KSHOT, number_sketches=self.KSHOT, random_seed=1)
         
         print("=> TUBerlin dataset loaded")
         self.print_dataset_statistics(train, query, gallery, val)

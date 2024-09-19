@@ -129,7 +129,7 @@ class FewshotSampler(Sampler):
             episode_idxs = []  # Collect indices for this episode
             
             # Randomly select `num_classes` (N) from available pids (with replacement allowed)
-            selected_pids = random.sample(self.pids, self.num_classes*3)
+            selected_pids = random.sample(self.pids, self.num_classes)
             
             for pid in selected_pids:
                 idxs = self.index_dic[pid]
@@ -150,4 +150,4 @@ class FewshotSampler(Sampler):
 
     def __len__(self):
         # estimate number of examples in an epoch
-        return self.num_episodes*self.num_classes*self.num_instances*3
+        return self.num_episodes*self.num_classes*self.num_instances
