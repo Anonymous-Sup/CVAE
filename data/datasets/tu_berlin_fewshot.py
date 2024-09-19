@@ -250,7 +250,6 @@ class TUBerlin(BaseImageDataset):
                     for draw_path in draw_paths:
                         query_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
 
-            
             elif training_mode == 'novel':
                 # get the class label
                 train_subset = novel_classes_split
