@@ -13,7 +13,7 @@ cd /home/zhengwei/github/CVAE
 CUDA_VISIBLE_DEVICES=1
 # # ===========Stage 1 traning================
 nohup python -u main.py --cfg ./configs/novel_mask1k/clipreid_cvae_kl_novel.yaml \
---root /home/zhengwei/my_data/datasets \
+--root /data/zhengwei/datasets \
 --output /data/zhengwei/CVAE/outputs \
 --dataset market1k_fewshot \
 --format_tag tensor \
@@ -30,7 +30,7 @@ nohup python -u main.py --cfg ./configs/novel_mask1k/clipreid_cvae_kl_novel.yaml
 
 # # ===========Stage 1 traning================
 nohup python -u main.py --cfg ./configs/novel_mask1k/clipreid_cvae_kl_novel.yaml \
---root /home/zhengwei/my_data/datasets \
+--root /data/zhengwei/datasets \
 --output /data/zhengwei/CVAE/outputs \
 --dataset market1k_fewshot \
 --format_tag tensor \
@@ -50,7 +50,7 @@ nohup python -u main.py --cfg ./configs/novel_mask1k/clipreid_cvae_kl_novel.yaml
 # CUDA_VISIBLE_DEVICES=2
 # # =========== ReID+CLS Stage traning================
 # nohup python -u main.py --cfg ./configs/novel_mask1k/clipreid_cvae_kl_novel_cls.yaml \
-# --root /home/zhengwei/my_data/datasets \
+# --root /data/zhengwei/datasets \
 # --output /data/zhengwei/CVAE/outputs \
 # --dataset market1k_fewshot \
 # --format_tag tensor \
@@ -67,7 +67,7 @@ nohup python -u main.py --cfg ./configs/novel_mask1k/clipreid_cvae_kl_novel.yaml
 
 
 # nohup python -u main.py --cfg ./configs/clipreid_cvae_stage2.yaml \
-# --root /home/zhengwei/my_data/datasets \
+# --root /data/zhengwei/datasets \
 # --output /data/zhengwei/CVAE/outputs \
 # --dataset market1k_fewshot \
 # --format_tag tensor \
