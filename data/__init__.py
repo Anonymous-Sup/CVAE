@@ -11,6 +11,7 @@ from data.datasets.celebHQ import CelebHQ
 from data.datasets.sksf_a import SKSF_A
 from data.datasets.skechy_fewshot import Sketchy
 from data.datasets.tu_berlin_fewshot import TUBerlin
+from data.datasets.market1k_fewshot import MarketSketch_FewShot
 
 from data.dataset_loader import ImageDataset
 from data.samplers import RandomIdentitySampler, FewshotSampler
@@ -27,6 +28,7 @@ __factory = {
     'sksf_a': SKSF_A,
     'sketchy': Sketchy,
     'tuberlin': TUBerlin,
+    'market_fewshot': MarketSketch_FewShot,
 }
 
 
