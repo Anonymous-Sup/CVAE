@@ -93,12 +93,12 @@ class MarketSketch_FewShot(BaseImageDataset):
         if random_seed is not None:
             random.seed(random_seed)
 
-        rgb_img_paths = glob.glob(osp.join(rgb_path, '*.jpg'))
-        rgb_sub_img_paths = glob.glob(osp.join(rgb_sub_path, '*.jpg'))
+        rgb_img_paths = glob.glob(osp.join(rgb_path, '*.pt'))
+        rgb_sub_img_paths = glob.glob(osp.join(rgb_sub_path, '*.pt'))
 
 
-        sketch_img_paths = glob.glob(osp.join(sketch_path, '*.jpg'))
-        sketch_img_paths_2 = glob.glob(osp.join(sketch_path_rest, '*.jpg'))
+        sketch_img_paths = glob.glob(osp.join(sketch_path, '*.pt'))
+        sketch_img_paths_2 = glob.glob(osp.join(sketch_path_rest, '*.pt'))
         sketch_img_paths += sketch_img_paths_2
         # sketch_pattern is like 0001_A.jpg or 0002_B, get the str before and after '_'
         
