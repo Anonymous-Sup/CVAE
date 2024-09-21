@@ -28,7 +28,7 @@ __factory = {
     'sksf_a': SKSF_A,
     'sketchy': Sketchy,
     'tuberlin': TUBerlin,
-    'market_fewshot': MarketSketch_FewShot,
+    'market1k_fewshot': MarketSketch_FewShot,
 }
 
 

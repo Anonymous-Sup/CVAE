@@ -423,10 +423,13 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
 
         since = time.time()
         
-        if config.DATA.DATASET == 'market1k':
-            cmc_cat, mAP_cat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=True)
+        if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
+            nocam = False
         else:
-            cmc_cat, mAP_cat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
+            nocam = True
+
+        cmc_cat, mAP_cat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, nocam=nocam)
+
         
         print("CAT Results ---------------------------------------------------")
         print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc_cat[0], cmc_cat[4], cmc_cat[9], cmc_cat[19], mAP_cat))
