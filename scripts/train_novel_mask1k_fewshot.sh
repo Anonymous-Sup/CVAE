@@ -66,7 +66,7 @@ nohup python -u main.py --cfg ./configs/novel_mask1k/clipreid_cvae_kl_novel_cls.
 > nohup_logs/tune_2nd_novelMask1KFew_SimpleVAE_128+64z_1e3_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w2s_Trip+Center+Ce.log 2>&1 &
 
 
-nohup python -u main.py --cfg ./configs/clipreid_cvae_stage2.yaml \
+nohup python -u main.py --cfg ./configs/novel_mask1k/clipreid_cvae_kl_novel_cls.yaml \
 --root /data/zhengwei/datasets \
 --output /data/zhengwei/CVAE/outputs \
 --dataset market1k_fewshot \

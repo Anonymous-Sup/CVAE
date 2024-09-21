@@ -39,6 +39,8 @@ class MarketSketch_FewShot(BaseImageDataset):
             folder = 'all'
         elif self.KSHOT == 2:
             folder = '2sketch'
+        else:
+            raise ValueError("KSHOT must be 1 or 2")
 
         if self.tag == 'tensor':
             self.dataset_dir = osp.join(root, self.root_folder, 'tensor', pretrained)
