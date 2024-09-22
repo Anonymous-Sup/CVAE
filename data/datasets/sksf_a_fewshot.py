@@ -67,7 +67,7 @@ class SKSF_A_FewShot(BaseImageDataset):
         self.train = train
         self.val = val
         self.query = query
-        self.gallery = gallery
+        self.gallery = query
 
         self.num_train_pids, self.num_train_imgs, self.num_train_cams, self.num_train_vids = self.get_imagedata_info(self.train)
         self.num_query_pids, self.num_query_imgs, self.num_query_cams, self.num_query_vids = self.get_imagedata_info(self.query)
