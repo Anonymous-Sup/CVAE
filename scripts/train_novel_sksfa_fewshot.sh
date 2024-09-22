@@ -21,12 +21,12 @@ nohup python -u main.py --cfg ./configs/novel_face/clipreid_cvae_kl_novel.yaml \
 --resume /data/zhengwei/CVAE/outputs/celebHQ/clipreid_simplevae_base/2024-09-22/baseCelebHQ_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-22/baseCelebHQ_SimpleVAE_128+64z_1e4_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --train_stage klNocls_stage \
 --gpu 1 \
---saved_name novelSKSFFew_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear \
+--saved_name novelSKSFFew_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w2s_noCLS_forLinear \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/tune_novelSKSFFew_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear.log 2>&1 &
+> nohup_logs/tune_novelSKSFFew_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w2s_noCLS_forLinear.log 2>&1 &
 
 # # ===========Stage 1 traning================
 nohup python -u main.py --cfg ./configs/novel_face/clipreid_cvae_kl_novel.yaml \
@@ -38,13 +38,13 @@ nohup python -u main.py --cfg ./configs/novel_face/clipreid_cvae_kl_novel.yaml \
 --resume /data/zhengwei/CVAE/outputs/celebHQ/clipreid_simplevae_base/2024-09-22/baseCelebHQ_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-22/baseCelebHQ_SimpleVAE+2E_128+64z_1e4_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --train_stage klNocls_stage \
 --gpu 1 \
---saved_name novelSKSFFew_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear \
+--saved_name novelSKSFFew_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w2s_noCLS_forLinear \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --use_two_encoder \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/tune_novelSKSFFew_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear.log 2>&1 &
+> nohup_logs/tune_novelSKSFFew_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w2s_noCLS_forLinear.log 2>&1 &
 
 
 # CUDA_VISIBLE_DEVICES=3
