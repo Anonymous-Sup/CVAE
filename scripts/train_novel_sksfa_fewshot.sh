@@ -56,14 +56,14 @@ nohup python -u main.py --cfg ./configs/novel_face/clipreid_cvae_kl_novel_cls.ya
 --format_tag tensor \
 --train_format novel \
 --train_stage reid+cls_stage \
---resume /data/zhengwei/CVAE/outputs/sksf_a_fewshot/clipreid_simplevae_base/novel/2024-09-22/novelSKSFFew_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w2s_noCLS_forLinear \
+--resume /data/zhengwei/CVAE/outputs/sksf_a_fewshot/clipreid_simplevae_base/novel/2024-09-22/novelSKSFFew_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear \
 --gpu 1 \
---saved_name novelSKSFFew_SimpleVAE_128+64z_1e4_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w2s_Trip+Center+Ce \
+--saved_name novelSKSFFew_SimpleVAE_128+64z_1e4_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w1s_Trip+Center+Ce \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/tune_2nd_novelSKSFFew_SimpleVAE_128+64z_1e4_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w2s_Trip+Center+Ce.log 2>&1 &
+> nohup_logs/tune_2nd_novelSKSFFew_SimpleVAE_128+64z_1e4_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w1s_Trip+Center+Ce.log 2>&1 &
 
 
 nohup python -u main.py --cfg ./configs/novel_face/clipreid_cvae_kl_novel_cls.yaml \
@@ -73,13 +73,13 @@ nohup python -u main.py --cfg ./configs/novel_face/clipreid_cvae_kl_novel_cls.ya
 --format_tag tensor \
 --train_format novel \
 --train_stage reid+cls_stage \
---resume /data/zhengwei/CVAE/outputs/sksf_a_fewshot/clipreid_simplevae_base/novel/2024-09-22/novelSKSFFew_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w2s_noCLS_forLinear \
+--resume /data/zhengwei/CVAE/outputs/sksf_a_fewshot/clipreid_simplevae_base/novel/2024-09-22/novelSKSFFew_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear \
 --gpu 1 \
---saved_name novelSKSFFew_SimpleVAE+2E_128+64z_1e4_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w2s_Trip+Center+Ce \
+--saved_name novelSKSFFew_SimpleVAE+2E_128+64z_1e4_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w1s_Trip+Center+Ce \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --use_two_encoder \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/tune_2nd_novelSKSFFew_SimpleVAE+2E_128+64z_1e4_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w2s_Trip+Center+Ce.log 2>&1 &
+> nohup_logs/tune_2nd_novelSKSFFew_SimpleVAE+2E_128+64z_1e4_30+50+120_KLtotalZ+lessC_L1280+bnTuneVersion+CLS_all5w1s_Trip+Center+Ce.log 2>&1 &
 
