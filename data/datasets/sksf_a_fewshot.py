@@ -100,7 +100,7 @@ class SKSF_A_FewShot(BaseImageDataset):
         sketch_img_paths += sketch_img_paths_2
         # sketch_pattern is like 0001_A.jpg or 0002_B, get the str before and after '_'
         
-        rgb_pattern = re.compile(r'(\d+)\.png$')
+        rgb_pattern = re.compile(r'(\d+)\.pt$')
         sketch_pattern = re.compile(r'(\d+)_([\d]+)')
 
         pid_container = set()
