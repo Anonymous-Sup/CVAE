@@ -47,7 +47,7 @@ nohup python -u main.py --cfg ./configs/base_face/clipreid_cvae_kl.yaml \
 --train_stage reid+cls_stage \
 --resume /data/zhengwei/CVAE/outputs/celebHQ/clipreid_simplevae_base/2024-09-22/baseCelebHQ_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS \
 --gpu 3 \
---saved_name baseCelebHQ_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
+--saved_name baseCelebHQ_SimpleVAE_128+64z_1e4_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
@@ -64,7 +64,7 @@ nohup python -u main.py --cfg ./configs/base_face/clipreid_cvae_kl.yaml \
 --train_stage reid+cls_stage \
 --resume /data/zhengwei/CVAE/outputs/celebHQ/clipreid_simplevae_base/2024-09-22/baseCelebHQ_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS \
 --gpu 3 \
---saved_name baseCelebHQ_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
+--saved_name baseCelebHQ_SimpleVAE+2E_128+64z_1e4_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --use_two_encoder \
