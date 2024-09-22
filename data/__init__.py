@@ -12,6 +12,7 @@ from data.datasets.sksf_a import SKSF_A
 from data.datasets.skechy_fewshot import Sketchy
 from data.datasets.tu_berlin_fewshot import TUBerlin
 from data.datasets.market1k_fewshot import MarketSketch_FewShot
+from data.datasets.sksf_a_fewshot import SKSF_A_FewShot
 
 from data.dataset_loader import ImageDataset
 from data.samplers import RandomIdentitySampler, FewshotSampler
@@ -29,6 +30,7 @@ __factory = {
     'sketchy': Sketchy,
     'tuberlin': TUBerlin,
     'market1k_fewshot': MarketSketch_FewShot,
+    'sksf_a_fewshot': SKSF_A_FewShot
 }
 
 
