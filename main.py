@@ -159,9 +159,11 @@ def main(config):
     else:
         cla_parameters = list(classifier.parameters())
 
-    if config.DATA.TRAIN_FORMAT == 'novel':
-        alpha_lr = 1.0   # base lr 1e-4, classifier lr 1e-3
+    if config.MODEL.TRAIN_STAGE == 'reid+cls_stage':
+        cls_tune_lr = 0.1   # base lr 1e-4, classifier lr 1e-3
+        alpha_lr = 1.0
     else:
+        cls_tune_lr = 1.0   # base lr 1e-4, classifier lr 1e-3
         alpha_lr = 1.0
     
     i2t_parameters = []
@@ -190,7 +192,7 @@ def main(config):
             optimizer = optim.Adam([
                 {'params': filter(lambda p: p.requires_grad ,all_model_parameters)},
                 {'params': filter(lambda p: p.requires_grad ,cla_parameters), 'lr': config.TRAIN.OPTIMIZER.LR * alpha_lr}], 
-                lr=config.TRAIN.OPTIMIZER.LR, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
+                lr=config.TRAIN.OPTIMIZER.LR * cls_tune_lr, weight_decay=config.TRAIN.OPTIMIZER.WEIGHT_DECAY)
             # maybe with center loss
             optimizer_center = optim.SGD(criterion_circle.parameters(), lr=0.5)
 
