@@ -286,7 +286,7 @@ class TUBerlin(BaseImageDataset):
                         val_dataset.append((photo_path, self.pid_begin + pid, 0, 'rgb'))
                     for draw_path in remaining_draws:
                         query_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
-                        val_dataset.append((draw_path, self.pid_begin + pid, 0, 'rgb'))
+                        val_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
             
             elif training_mode == 'novel_few':
                 if photo_class in self.selected_label2inds.keys():
@@ -321,7 +321,7 @@ class TUBerlin(BaseImageDataset):
                         val_dataset.append((photo_path, self.pid_begin + pid, 0, 'rgb'))
                     for draw_path in remaining_draws:
                         query_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
-                        val_dataset.append((draw_path, self.pid_begin + pid, 0, 'rgb'))
+                        val_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
 
         return train_dataset, val_dataset, query_dataset, gallery_dataset
     

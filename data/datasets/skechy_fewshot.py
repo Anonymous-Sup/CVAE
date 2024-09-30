@@ -207,7 +207,7 @@ class Sketchy(BaseImageDataset):
         super(Sketchy, self).__init__()
 
         # self.training_mode = config.DATASETS.TRAINING_MODE # choice for 'base' and 'novel' or 'novel_few'
-        self.training_mode = 'novel_few'
+        self.training_mode = 'novel'
 
         self.tag = format_tag
         self.pid_begin = pid_begin
@@ -360,7 +360,7 @@ class Sketchy(BaseImageDataset):
                         val_dataset.append((photo_path, self.pid_begin + pid, 0, 'rgb'))
                     for draw_path in remaining_draws:
                         query_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
-                        val_dataset.append((draw_path, self.pid_begin + pid, 0, 'rgb'))
+                        val_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
             
             elif training_mode == 'novel_few':
                 if photo_class in self.selected_label2inds.keys():
@@ -395,7 +395,7 @@ class Sketchy(BaseImageDataset):
                         val_dataset.append((photo_path, self.pid_begin + pid, 0, 'rgb'))
                     for draw_path in remaining_draws:
                         query_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
-                        val_dataset.append((draw_path, self.pid_begin + pid, 0, 'rgb'))
+                        val_dataset.append((draw_path, self.pid_begin + pid, 0, 'sketch'))
 
         return train_dataset, val_dataset, query_dataset, gallery_dataset
     
