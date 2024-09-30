@@ -124,7 +124,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
 
         if 'novel' in config.DATA.TRAIN_FORMAT and 'kl' in config.MODEL.TRAIN_STAGE:
             drawer.update((z_c, pids, data_tag))
-            drawer.update_U(domian_feature)
+            # drawer.update_U(domian_feature)
 
         """
         Here should be noticed using which z for reid
@@ -229,8 +229,8 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
                 plot_histogram(config, mean, "2_mean")
                 plot_histogram(config, log_var, "2_log_var")
                 plot_histogram(config, z, "2_final_cat_z")
-                plot_histogram(config, domian_feature, "3_domian_feature")
-                plot_scatter_2D(config, domian_feature, "3_domian_feature_scatter")
+                # plot_histogram(config, domian_feature, "3_domian_feature")
+                # plot_scatter_2D(config, domian_feature, "3_domian_feature_scatter")
                 plot_histogram(config, z_s, "4_Z_S")
                 plot_histogram(config, z_c, "4_Z_C")
                 plot_histogram(config, fusez_s, "4_fusez_s")
