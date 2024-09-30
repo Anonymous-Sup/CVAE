@@ -12,7 +12,7 @@ cd /home/zhengwei/github/CVAE
 
 CUDA_VISIBLE_DEVICES=1
 # # ===========Stage 1 traning================
-nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel_true5wKs.yaml \
+nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
 --root /home/zhengwei/my_data/datasets \
 --output /data/zhengwei/CVAE/outputs \
 --dataset sketchy \
@@ -29,7 +29,7 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel_
 > nohup_logs/ablation_withouU_tune_novelSketchy_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear.log 2>&1 &
 
 # # ===========Stage 1 traning================
-nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel_true5wKs.yaml \
+nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
 --root /home/zhengwei/my_data/datasets \
 --output /data/zhengwei/CVAE/outputs \
 --dataset sketchy \
@@ -49,7 +49,7 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel_
 
 # CUDA_VISIBLE_DEVICES=3
 # # ===========Base ReID+CLS Stage traning================
-# nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel_true5wKs.yaml \
+# nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
 # --root /home/zhengwei/my_data/datasets \
 # --output /data/zhengwei/CVAE/outputs \
 # --dataset sketchy \
@@ -66,7 +66,7 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel_
 # > nohup_logs/tune_2nd_novelSketchy_SimpleVAE_128+64z_1e4_60+120_KLtotalZ+lessC_true5w1s_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
 
 
-# nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel_true5wKs.yaml \
+# nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
 # --root /home/zhengwei/my_data/datasets \
 # --output /data/zhengwei/CVAE/outputs \
 # --dataset sketchy \
