@@ -108,7 +108,7 @@ class SinpleVAE(nn.Module):
                                 nn.ReLU(),
                                 nn.Linear(hidden_dim, input_dim))
 
-        self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
+        # self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         
         if self.style_num > 0:
             self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 3, zs_dim))
@@ -212,12 +212,14 @@ class SinpleVAE(nn.Module):
         z_idx += self.zc_dim
         z_s = z[:, z_idx: z_idx + self.zs_dim]
     
-        gate, U = self.u_embedding(x)
+        # gate, U = self.u_embedding(x)
+        U = None
 
         if self.style_num > 0 and style is not None:
             U = torch.cat([U, style_emb], dim=1)
             
-        newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
+        # newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
+        newz_s = z_s
 
         return h, z, z_c, z_s, newz_s, U, mu, log_var
 
@@ -311,7 +313,7 @@ class SinpleVAE_2Encoder(nn.Module):
                                 nn.Linear(hidden_dim, input_dim))
         
 
-        self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
+        # self.u_embedding = SparseBattery(num_adapters=128, c_in=input_dim, c_out=zs_dim, usebias=True)
         
         if self.style_num > 0:
             self.zs_embedding = nn.Sequential(nn.Linear(zs_dim * 3, zs_dim))
@@ -414,12 +416,13 @@ class SinpleVAE_2Encoder(nn.Module):
             z_c = mu_c
             z_s = mu_s
 
-        gate, U = self.u_embedding(x)
+        # gate, U = self.u_embedding(x)
         
         if self.style_num > 0 and style is not None:
             U = torch.cat([U, style_emb], dim=1)
 
-        newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
+        # newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
+        newz_s = z_s
 
         return h_c, mu_c, log_var_c, z_c, h_s, mu_s, log_var_s, z_s, U, newz_s
 
