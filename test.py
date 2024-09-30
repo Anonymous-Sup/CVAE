@@ -144,12 +144,13 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
         all_imgs.append(imgs.cpu())
         all_recons.append(reconx.cpu())
 
-        cat_domain_y = torch.cat((U, outputs), dim=1)
+        # cat_domain_y = torch.cat((U, outputs), dim=1)
+        cat_domain_y = outputs
         all_domains_y.append(cat_domain_y.cpu())
         all_img_paths += batch_ima_path
 
-        drawer.update((batach_features_norm, batch_pids, batch_data_tags))
-        drawer.update_U(U)
+        # drawer.update((batach_features_norm, batch_pids, batch_data_tags))
+        # drawer.update_U(U)
         
     all_top10_scores = torch.cat(all_top10_scores, 0)
     all_top10_labels = torch.cat(all_top10_labels, 0)
@@ -246,8 +247,8 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
         all_imgs.append(imgs.cpu())
         all_recons.append(reconx.cpu())
 
-        drawer.update((batach_features_norm, batch_pids, batch_data_tags))
-        drawer.update_U(U)
+        # drawer.update((batach_features_norm, batch_pids, batch_data_tags))
+        # drawer.update_U(U)
         
 
     features = torch.cat(features, 0)

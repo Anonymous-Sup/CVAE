@@ -417,10 +417,12 @@ class SinpleVAE_2Encoder(nn.Module):
             z_s = mu_s
 
         # gate, U = self.u_embedding(x)
+        U = None
         
         if self.style_num > 0 and style is not None:
             U = torch.cat([U, style_emb], dim=1)
 
+    
         # newz_s = self.zs_embedding(torch.cat([z_s, U], dim=1))
         newz_s = z_s
 
