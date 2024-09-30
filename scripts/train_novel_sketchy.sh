@@ -10,7 +10,7 @@ cd /home/zhengwei/github/CVAE
 # --use_two_encoder  # for model
 # --use_NCE # for loss
 
-CUDA_VISIBLE_DEVICES=1
+CUDA_VISIBLE_DEVICES=0
 # # ===========Stage 1 traning================
 nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
 --root /home/zhengwei/my_data/datasets \
@@ -20,7 +20,7 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.
 --train_format novel \
 --resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/2024-09-17/baseSketchy_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-17/baseSketchy_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --train_stage klNocls_stage \
---gpu 1 \
+--gpu 0 \
 --saved_name ablation_withouU_novelSketchy_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear \
 --vae_type SinpleVAE \
 --recon_loss mse \
@@ -37,7 +37,7 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.
 --train_format novel \
 --resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/2024-09-17/baseSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_noCLS/2nd_stage/2024-09-18/baseSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --train_stage klNocls_stage \
---gpu 1 \
+--gpu 0 \
 --saved_name ablation_withouU_novelSketchy_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w1s_noCLS_forLinear \
 --vae_type SinpleVAE \
 --recon_loss mse \
