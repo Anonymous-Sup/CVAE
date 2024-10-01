@@ -55,7 +55,7 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.
 --format_tag tensor \
 --train_format novel \
 --train_stage reid+cls_stage \
---resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE_128+64z_1e3_60+120_KLtotalZ+lessC_all5w5s_noCLS_forLinear \
+--resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE_128+64z_1e3_60+120_KLtotalZ_all5w5s_noCLS_forLinear \
 --gpu 3 \
 --saved_name only_for_test_novelSketchy_SimpleVAE_128+64z_1e4_60+120_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --vae_type SinpleVAE \
@@ -72,7 +72,7 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.
 --format_tag tensor \
 --train_format novel \
 --train_stage reid+cls_stage \
---resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ+lessC_all5w5s_noCLS_forLinear \
+--resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE+2E_128+64z_1e3_60+120_KLtotalZ_all5w5s_noCLS_forLinear \
 --gpu 3 \
 --saved_name only_for_test_novelSketchy_SimpleVAE+2E_128+64z_1e4_60+120_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --vae_type SinpleVAE \
