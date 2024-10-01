@@ -264,9 +264,14 @@ def convert_keys_to_string(input_dict):
     """
     Recursively converts dictionary keys to strings.
     """
-    if not isinstance(input_dict, dict):
+    if isinstance(input_dict, dict):
+        return {str(key): convert_keys_to_string(value) for key, value in input_dict.items()}
+    elif isinstance(input_dict, list):
+        return [convert_keys_to_string(element) for element in input_dict]
+    elif isinstance(input_dict, tuple):
+        return tuple(convert_keys_to_string(element) for element in input_dict)
+    else:
         return input_dict
-    return {str(key): convert_keys_to_string(value) for key, value in input_dict.items()}
 
 
 def evaluate_classification_accuracy(distmat, qf, gf, classifer, qids, gids):
@@ -503,8 +508,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         q_g_recons = torch.cat((q_all_recons, g_all_recons), 0)
         q_g_features = torch.cat((qf, gf), 0)
         
-        pair_plots(config, q_g_imgs, q_g_features, "Q+G_X-Z_plots")
-        pair_plots(config, q_g_recons, q_g_features, "Q+G_Recons_Rx-Z_plots")
+        # pair_plots(config, q_g_imgs, q_g_features, "Q+G_X-Z_plots")
+        # pair_plots(config, q_g_recons, q_g_features, "Q+G_Recons_Rx-Z_plots")
 
         # # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
         q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
