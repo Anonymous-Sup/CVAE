@@ -414,6 +414,8 @@ def main(config):
                     final_epoch = False
                 test_cvae(None, config, model, queryloader, galleryloader, dataset, classifier, None, text_embeddings, latent_z='z_c', final_epoch=False)
 
+            test_cvae(config, config, model, queryloader, galleryloader, dataset, classifier, None, text_embeddings, latent_z='z_c', final_epoch=True)
+        
         if config.EVAL_MODE:
             return
 

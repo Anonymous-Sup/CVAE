@@ -84,9 +84,9 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
             
             # keep the top10 labels and scores for each class
             '''
-            modifyed as 1 
+            modifyed as 5
             '''
-            batch_top10_scores, batch_top10_labels = torch.topk(outputs.data, 1)
+            batch_top10_scores, batch_top10_labels = torch.topk(outputs.data, 5)
 
             if classifier_reID != None:
                 reid_feature = model.reid_projector(new_z)
@@ -114,9 +114,9 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
                     
                     # Get top 10 classification scores and corresponding labels
                     '''
-                    modifyed as 1 
+                    modifyed as 5
                     '''
-                    id_top10_scores, id_top10_labels = torch.topk(outputs.data[i], 1)
+                    id_top10_scores, id_top10_labels = torch.topk(outputs.data[i], 5)
                     id_top10_labels = id_top10_labels.cpu().numpy()
                     id_top10_scores = id_top10_scores.cpu().numpy()
                     
@@ -381,7 +381,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
     time_elapsed = time.time() - since
     print('Distance computing in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
-    former_merge_acc, former_q_pred, former_g_pred = evaluate_classification_accuracy(distmat, qf_cls, gf_cls, classifer, q_pids, g_pids)
+    # former_merge_acc, former_q_pred, former_g_pred = evaluate_classification_accuracy(distmat, qf_cls, gf_cls, classifer, q_pids, g_pids)
+    
     since = time.time()
     if config.DATA.DATASET == 'duke' or config.DATA.DATASET == 'msmt17':
         cmc, mAP, updatemat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path)
@@ -398,19 +399,19 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
                 cmc, mAP, updatemat = evaluate(distmat, q_pids, g_pids, q_camids, g_camids, q_all_img_path, g_all_img_path, nocam=True)
 
     
-    later_merge_acc, later_q_pred, later_g_pred = evaluate_classification_accuracy(updatemat, qf_cls, gf_cls, classifer, q_pids, g_pids)
+    # later_merge_acc, later_q_pred, later_g_pred = evaluate_classification_accuracy(updatemat, qf_cls, gf_cls, classifer, q_pids, g_pids)
     
     print("Results ---------------------------------------------------")
     print('top1:{:.1%} top5:{:.1%} top10:{:.1%} top20:{:.1%} mAP:{:.1%}'.format(cmc[0], cmc[4], cmc[9], cmc[19], mAP))
     print("-----------------------------------------------------------")
     
-    print("Classification accuracy before cls-ranking: {:.1%}".format(former_merge_acc))
-    print("query accuracy after cls-ranking: {:.1%}".format(former_q_pred))
-    print("gallery accuracy after cls-ranking: {:.1%}".format(former_g_pred))
+    # print("Classification accuracy before cls-ranking: {:.1%}".format(former_merge_acc))
+    # print("query accuracy after cls-ranking: {:.1%}".format(former_q_pred))
+    # print("gallery accuracy after cls-ranking: {:.1%}".format(former_g_pred))
 
-    print("Classification accuracy after cls-ranking: {:.1%}".format(later_merge_acc))
-    print("query accuracy after cls-ranking: {:.1%}".format(later_q_pred))
-    print("gallery accuracy after cls-ranking: {:.1%}".format(later_g_pred))
+    # print("Classification accuracy after cls-ranking: {:.1%}".format(later_merge_acc))
+    # print("query accuracy after cls-ranking: {:.1%}".format(later_q_pred))
+    # print("gallery accuracy after cls-ranking: {:.1%}".format(later_g_pred))
 
     if config.LOSS.USE_NCE:
         m, n = qf_cat.size(0), gf_cat.size(0)
@@ -489,8 +490,6 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
                 
             del result
             del data_to_save            
-
-
         # else:
             # run["test/mAP"].append(mAP)
             # run["test/top1"].append(cmc[0])
@@ -508,8 +507,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         pair_plots(config, q_g_recons, q_g_features, "Q+G_Recons_Rx-Z_plots")
 
         # # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
-        # q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
-        # save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, q_g_domains_y, config.MODEL.RESUME)
+        q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
+        save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, q_g_domains_y, config.MODEL.RESUME)
     return cmc, mAP, [q_acc, g_acc, q_g_acc]
 
 
@@ -543,7 +542,6 @@ def test_cvae_for_cls(run, config, model, valloader, queryloader, galleryloader,
     elif final_epoch:
         qf, qf_cls, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels, q_class_acc_dict, q_class_path_dict = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z, final_epoch)
         gf, gf_cls, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels, g_class_acc_dict, g_class_path_dict= extract_midium_feature(g_batch_acc, q_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z, final_epoch)
-    
     else:
         qf, qf_cls, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
         gf, gf_cls, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
@@ -582,40 +580,39 @@ def test_cvae_for_cls(run, config, model, valloader, queryloader, galleryloader,
     #     print("ReID Classifier results ---------------------------------------------------")
     #     print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc_reid, g_acc_reid, q_g_acc_reid))
     # if run != None:
-    #     if final_epoch:
-    #         mat_save_path = os.path.join(config.MODEL.RESUME, 'visual_results')
-    #         if not os.path.exists(mat_save_path):
-    #             os.makedirs(mat_save_path)
+        # if final_epoch:
+        #     mat_save_path = os.path.join(config.MODEL.RESUME, 'visual_results')
+        #     if not os.path.exists(mat_save_path):
+        #         os.makedirs(mat_save_path)
 
-    #         # save q_class_acc_dict, q_class_path_dict and g_class_acc_dict, g_class_path_dict in a json file
-    #         data_to_save = {
-    #         "q_class_acc_dict": q_class_acc_dict,
-    #         "q_class_path_dict": q_class_path_dict,
-    #         "g_class_acc_dict": g_class_acc_dict,
-    #         "g_class_path_dict": g_class_path_dict,
-    #         'class_rank1_map_dict': class_rank1_map_dict
-    #         }
+        #     # save q_class_acc_dict, q_class_path_dict and g_class_acc_dict, g_class_path_dict in a json file
+        #     data_to_save = {
+        #     "q_class_acc_dict": q_class_acc_dict,
+        #     "q_class_path_dict": q_class_path_dict,
+        #     "g_class_acc_dict": g_class_acc_dict,
+        #     "g_class_path_dict": g_class_path_dict,
+        #     }
 
-    #         data_to_save = convert_keys_to_string(data_to_save)
-    #         # Specify the filename
-    #         filename = os.path.join(mat_save_path, "class_data.json")
-    #         # Open the file and save the combined dictionary
-    #         with open(filename, 'w') as f:
-    #             json.dump(data_to_save, f, indent=4)
+        #     data_to_save = convert_keys_to_string(data_to_save)
+        #     # Specify the filename
+        #     filename = os.path.join(mat_save_path, "class_data.json")
+        #     # Open the file and save the combined dictionary
+        #     with open(filename, 'w') as f:
+        #         json.dump(data_to_save, f, indent=4)
 
             
-    #         # Save to Matlab for check
-    #         gf, qf = gf.cpu().numpy(), qf.cpu().numpy()
-    #         result = {'gallery_f':gf,'gallery_label':g_pids,'gallery_cam':g_camids, 'gallery_name': g_all_img_path ,'query_f':qf,'query_label':q_pids,'query_cam':q_camids, 'query_name': q_all_img_path}
-    #         scipy.io.savemat(mat_save_path + '/pytorch_result.mat', result)
+        #     # Save to Matlab for check
+        #     gf, qf = gf.cpu().numpy(), qf.cpu().numpy()
+        #     result = {'gallery_f':gf,'gallery_label':g_pids,'gallery_cam':g_camids, 'gallery_name': g_all_img_path ,'query_f':qf,'query_label':q_pids,'query_cam':q_camids, 'query_name': q_all_img_path}
+        #     scipy.io.savemat(mat_save_path + '/pytorch_result.mat', result)
             
-    #         # save all_results in a json file
-    #         rank_results_path = os.path.join(mat_save_path, "rank_results.json")
-    #         with open(rank_results_path, 'w') as f:
-    #             json.dump(all_results, f, indent=4)
+        #     # save all_results in a json file
+        #     rank_results_path = os.path.join(mat_save_path, "rank_results.json")
+        #     with open(rank_results_path, 'w') as f:
+        #         json.dump(all_results, f, indent=4)
                 
-    #         del result
-    #         del data_to_save            
+        #     del result
+        #     del data_to_save            
 
 
     #     # else:

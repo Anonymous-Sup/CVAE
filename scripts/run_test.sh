@@ -5,13 +5,13 @@
 
 # [market1k, duke, sysu_mm01]
 # ===============For Regular testing================
-nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
+nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
 --root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
---dataset market1k \
+--dataset sketchy \
 --format_tag tensor \
 --train_format novel \
---train_stage klstage \
---resume /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-14/2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center \
+--train_stage reid+cls_stage \
+--resume  /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-18/novelSketchy_SimpleVAE+2E_128+64z_1e4_60+120_KLtotalZ_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
 --gpu 0 \
 --vae_type SinpleVAE \
 --recon_loss mse \
@@ -20,7 +20,7 @@ nohup python -u main.py --cfg ./configs/clipreid_cvae_kl.yaml \
 --eval \
 --use_two_encoder \
 --saved_name test \
-> test_sketch_old.log 2>&1 & 
+> nohup_logs/test_sketchy_2E_all5w5s.log 2>&1 & 
 
 
 
