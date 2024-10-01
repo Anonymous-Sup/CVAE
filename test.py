@@ -260,6 +260,17 @@ def extract_midium_feature_withNCE(batch_acc, drawer, config, model, dataloader,
     
     return features, features_cat, pids, styleids, all_imgs, all_recons
 
+def convert_ndarray_to_list(data):
+    """Recursively convert NumPy arrays to lists in a dictionary."""
+    if isinstance(data, dict):
+        return {k: convert_ndarray_to_list(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_ndarray_to_list(v) for v in data]
+    elif isinstance(data, np.ndarray):
+        return data.tolist()
+    else:
+        return data
+
 def convert_keys_to_string(input_dict):
     """
     Recursively converts dictionary keys to strings.
@@ -272,7 +283,6 @@ def convert_keys_to_string(input_dict):
         return tuple(convert_keys_to_string(element) for element in input_dict)
     else:
         return input_dict
-
 
 def evaluate_classification_accuracy(distmat, qf, gf, classifer, qids, gids):
     """
@@ -475,7 +485,10 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
             'class_rank1_map_dict': class_rank1_map_dict
             }
 
+            # Convert NumPy arrays to lists and keys to strings
+            data_to_save = convert_ndarray_to_list(data_to_save)
             data_to_save = convert_keys_to_string(data_to_save)
+
             # Specify the filename
             filename = os.path.join(mat_save_path, "class_data.json")
             # Open the file and save the combined dictionary
