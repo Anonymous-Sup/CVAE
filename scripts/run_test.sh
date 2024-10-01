@@ -7,7 +7,7 @@ cd /home/zhengwei/github/CVAE
 # [market1k, duke, sysu_mm01]
 # ===============For Regular testing================
 nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
---root /home/zhengwei/Desktop/Zhengwei/Projects/datasets \
+--root /data/zhengwei/CVAE/outputs  \
 --dataset sketchy \
 --format_tag tensor \
 --train_format novel \
