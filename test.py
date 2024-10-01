@@ -527,6 +527,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
         # # save the q_g_imgs, q_g_recons, q_g_features, q_g_domains_y  in to a mat
         q_g_domains_y = torch.cat((q_all_domains_y, g_all_domains_y), 0)
         save_for_pairplot(len(q_all_imgs), q_g_imgs, q_g_recons, q_g_features, q_g_domains_y, config.MODEL.RESUME)
+    print("Done")
     return cmc, mAP, [q_acc, g_acc, q_g_acc]
 
 
