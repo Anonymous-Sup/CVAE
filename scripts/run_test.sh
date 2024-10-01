@@ -1,3 +1,4 @@
+cd /home/zhengwei/github/CVAE
 # python test.py --pretrained CLIPreid
 
 # /home/zhengwei/Desktop/Zhengwei/Projects/CVAE/outputs/market1k/clipreid_simplevae_tune/novel/2024-07-14/2ndstage_SimpleVAE+2E_128+64z_1e3+3_60+120_KLtotalZ_s2_L1280+CLS_ce+trip+center
