@@ -164,6 +164,8 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
     if save_u != None and epoch != None:
         if config.MODEL.USE_TWO_ENCODER:
             model_tag = '2E'
+        else:
+            model_tag = '1E'
         u_collect = all_domains_y.cpu().numpy()
         data_tag_collect = np.asarray(batch_data_tags_list)
         result = {'U_{}'.format(epoch):u_collect, 'data_tag_{}'.format(epoch):data_tag_collect}
