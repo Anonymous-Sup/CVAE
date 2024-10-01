@@ -10,10 +10,12 @@ from utils import plot_histogram, plot_pair_seperate, plot_correlation_matrix, p
 from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot_epoch_Zdim, idx2onehot
 from tools.drawer import tSNE_plot
 from scipy.io import savemat
+import numpy as np
+
 
 def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, criterion_pair, criterion_recon, criterion_center,
               optimizer, optimizer_center, trainloader, epoch, iteration_num):
-    
+    data_tag_collect = []
     drawer = tSNE_plot(num_query=None, trainplot=True)
     drawer.reset()
     if config.DATA.TRAIN_FORMAT == 'novel':
@@ -206,6 +208,8 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
         u_collect = domian_feature if batch_idx == 0 else torch.cat((u_collect, domian_feature), dim=0)
+        # data_tags.extend(np.asarray(data_tag))
+        data_tag_collect.extend(np.asarray(data_tag))
         if epoch==0 or epoch+1 == config.TRAIN.MAX_EPOCH:
             if batch_idx == len(trainloader)-1:
                 # save the feature to mat, use save mat
@@ -213,9 +217,11 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
                 #     result = {'gallery_f':gf,'gallery_label':g_pids,'gallery_cam':g_camids, 'gallery_name': g_all_img_path ,'query_f':qf,'query_label':q_pids,'query_cam':q_camids, 'query_name': q_all_img_path}
                 #     scipy.io.savemat(mat_save_path + '/pytorch_result.mat', result)
                 u_collect = u_collect.cpu().numpy()
-                result = {'U_{}'.format(epoch):u_collect}
+                data_tag_collect = np.asarray(data_tag_collect)
+                result = {'U_{}'.format(epoch):u_collect, 'data_tag_{}'.format(epoch):data_tag_collect}
                 mat_save_path = config.OUTPUT_DIR
                 savemat(mat_save_path + '/U_{}.mat'.format(epoch), result)
+                print("Save U to mat file")
 
                 
         # if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1:   
