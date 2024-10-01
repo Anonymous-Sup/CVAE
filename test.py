@@ -497,8 +497,8 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
 
             
             # Save to Matlab for check
-            gf, qf = gf.cpu().numpy(), qf.cpu().numpy()
-            result = {'gallery_f':gf,'gallery_label':g_pids,'gallery_cam':g_camids, 'gallery_name': g_all_img_path ,'query_f':qf,'query_label':q_pids,'query_cam':q_camids, 'query_name': q_all_img_path}
+            gf_np, qf_np = gf.cpu().numpy(), qf.cpu().numpy()
+            result = {'gallery_f':gf_np,'gallery_label':g_pids,'gallery_cam':g_camids, 'gallery_name': g_all_img_path ,'query_f':qf_np,'query_label':q_pids,'query_cam':q_camids, 'query_name': q_all_img_path}
             scipy.io.savemat(mat_save_path + '/pytorch_result.mat', result)
             
             # save all_results in a json file
