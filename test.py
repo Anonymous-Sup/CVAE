@@ -14,10 +14,10 @@ import scipy.io
 import os
 
 @torch.no_grad()
-def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dataloader, classifier=None, classifier_reID=None, latent_z='z_c', final_epoch=False):
+def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dataloader, classifier=None, classifier_reID=None, latent_z='z_c', final_epoch=False, save_u=None, epoch=None):
     
     features, feature_cls, pids, styleids, cls_result, all_imgs, all_recons, all_domains_y, all_img_paths, all_top10_scores, all_top10_labels = [], [], torch.tensor([]), torch.tensor([]), [], [], [], [], [], [], []
-    
+    batch_data_tags_list = []
     if final_epoch:
         # Initialize dictionaries to store class accuracy and image paths with classification status
         class_acc_dict = {}  # Changed part
@@ -144,8 +144,9 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
         all_imgs.append(imgs.cpu())
         all_recons.append(reconx.cpu())
 
-        cat_domain_y = torch.cat((U, outputs), dim=1)
+        cat_domain_y = U
         all_domains_y.append(cat_domain_y.cpu())
+        batch_data_tags_list.extend(np.array(batch_data_tags))
         all_img_paths += batch_ima_path
 
         drawer.update((batach_features_norm, batch_pids, batch_data_tags))
@@ -159,6 +160,17 @@ def extract_midium_feature(batch_acc, reid_batch_acc, drawer, config, model, dat
     all_recons = torch.cat(all_recons, 0)
     all_domains_y = torch.cat(all_domains_y, 0)
     
+
+    if save_u != None and epoch != None:
+        if config.MODEL.USE_TWO_ENCODER:
+            model_tag = '2E'
+        u_collect = all_domains_y.cpu().numpy()
+        data_tag_collect = np.asarray(batch_data_tags_list)
+        result = {'U_{}'.format(epoch):u_collect, 'data_tag_{}'.format(epoch):data_tag_collect}
+        mat_save_path = '/home/zhengwei/github/CVAE/nohup_logs'
+        scipy.io.savemat(mat_save_path + '/{}_{}_U_{}.mat'.format(config.DATA.DATASET, model_tag, epoch), result)
+        print("Save U to mat file")
+
     if final_epoch:
         class_accuracy = {}
         for class_idx, acc in class_acc_dict.items():
@@ -532,7 +544,7 @@ def test_cvae(run, config, model, queryloader, galleryloader, dataset, classifer
 
 
 
-def test_cvae_for_cls(run, config, model, valloader, queryloader, galleryloader, dataset, classifer=None, classifier_reID=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False, cls_rerank=False):
+def test_cvae_for_cls(run, config, model, valloader, queryloader, galleryloader, dataset, classifer=None, classifier_reID=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False, cls_rerank=False, save_u=None, epoch=None):
     since = time.time()
     model.eval()
 
@@ -564,7 +576,7 @@ def test_cvae_for_cls(run, config, model, valloader, queryloader, galleryloader,
     else:
         qf, qf_cls, q_pids, q_camids, q_all_imgs, q_all_recons, q_all_domains_y, q_all_img_path, q_10_scores, q_10_labels = extract_midium_feature(q_batch_acc, q_reid_batch_acc, drawer, config, model, queryloader, classifer, classifier_reID, latent_z)
         gf, gf_cls, g_pids, g_camids, g_all_imgs, g_all_recons, g_all_domains_y, g_all_img_path, g_10_scores, g_10_labels = extract_midium_feature(g_batch_acc, g_reid_batch_acc, drawer, config, model, galleryloader, classifer, classifier_reID, latent_z)
-        vf, _, _, _, _, _, _, _, _, _ = extract_midium_feature(val_batch_acc, None, drawer, config, model, valloader, classifer, None, latent_z)
+        vf, _, _, _, _, _, _, _, _, _ = extract_midium_feature(val_batch_acc, None, drawer, config, model, valloader, classifer, None, latent_z, save_u=save_u, epoch=epoch)
     
     torch.cuda.empty_cache()
     time_elapsed = time.time() - since

@@ -207,21 +207,21 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
-        u_collect = domian_feature if batch_idx == 0 else torch.cat((u_collect, domian_feature), dim=0)
-        # data_tags.extend(np.asarray(data_tag))
-        data_tag_collect.extend(np.asarray(data_tag))
-        if epoch==0 or epoch+1 == config.TRAIN.MAX_EPOCH:
-            if batch_idx == len(trainloader)-1:
+        # u_collect = domian_feature if batch_idx == 0 else torch.cat((u_collect, domian_feature), dim=0)
+        # # data_tags.extend(np.asarray(data_tag))
+        # data_tag_collect.extend(np.asarray(data_tag))
+        # if epoch==0 or epoch+1 == config.TRAIN.MAX_EPOCH:
+        #     if batch_idx == len(trainloader)-1:
                 # save the feature to mat, use save mat
                 #     gf, qf = gf.cpu().numpy(), qf.cpu().numpy()
                 #     result = {'gallery_f':gf,'gallery_label':g_pids,'gallery_cam':g_camids, 'gallery_name': g_all_img_path ,'query_f':qf,'query_label':q_pids,'query_cam':q_camids, 'query_name': q_all_img_path}
                 #     scipy.io.savemat(mat_save_path + '/pytorch_result.mat', result)
-                u_collect = u_collect.cpu().numpy()
-                data_tag_collect = np.asarray(data_tag_collect)
-                result = {'U_{}'.format(epoch):u_collect, 'data_tag_{}'.format(epoch):data_tag_collect}
-                mat_save_path = '/home/zhengwei/github/CVAE/nohup_logs'
-                savemat(mat_save_path + '/{}_U_{}.mat'.format(config.DATA.DATASET, epoch), result)
-                print("Save U to mat file")
+                # u_collect = u_collect.cpu().numpy()
+                # data_tag_collect = np.asarray(data_tag_collect)
+                # result = {'U_{}'.format(epoch):u_collect, 'data_tag_{}'.format(epoch):data_tag_collect}
+                # mat_save_path = '/home/zhengwei/github/CVAE/nohup_logs'
+                # savemat(mat_save_path + '/{}_U_{}.mat'.format(config.DATA.DATASET, epoch), result)
+                # print("Save U to mat file")
 
                 
         # if (epoch+1) % 10 == 0 and batch_idx == len(trainloader)-1:   

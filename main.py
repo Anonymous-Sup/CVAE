@@ -402,7 +402,7 @@ def main(config):
         with torch.no_grad():
             if config.FEWSHOT.ENABLE:
                 print("=> Test CLASSIFICATION performance")
-                test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c', save_u=True, epoch=0)
 
             else: # for regular retrieval
                 print("=> Test pretarined feature form VLP model")
@@ -495,7 +495,10 @@ def main(config):
                     }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
             else:
                 with torch.no_grad():
-                    val_acc, acc_total = test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                    if epoch == 0 or (epoch+1) == config.TRAIN.MAX_EPOCH:
+                        val_acc, acc_total = test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c', save_u=True, epoch=epoch+1) 
+                    else:
+                        val_acc, acc_total = test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
 
                 is_best = val_acc > best_val_acc
                 
