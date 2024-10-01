@@ -219,7 +219,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
                 u_collect = u_collect.cpu().numpy()
                 data_tag_collect = np.asarray(data_tag_collect)
                 result = {'U_{}'.format(epoch):u_collect, 'data_tag_{}'.format(epoch):data_tag_collect}
-                mat_save_path = config.OUTPUT_DIR
+                mat_save_path = config.OUTPUT
                 savemat(mat_save_path + '/U_{}.mat'.format(epoch), result)
                 print("Save U to mat file")
 
