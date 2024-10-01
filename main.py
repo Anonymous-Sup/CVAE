@@ -17,8 +17,8 @@ from configs.default import get_config
 from data import build_dataloader, build_fewshot_dataloader
 from models import build_model
 from losses import build_losses
-from train import train_cvae, train_cvae_nce
-from test import test_cvae, test_clip_feature, test_cvae_for_cls
+from train import train_cvae, train_cvae_nce, train_cvae_onlycls
+from test import test_cvae, test_clip_feature, test_cvae_for_cls, test_cvae_for_only_cls
 from tools.eval_metrics import evaluate
 from tools.utils import AverageMeter, save_checkpoint, set_seed, mkdir_if_missing
 from torch.cuda.amp import GradScaler, autocast
@@ -402,7 +402,8 @@ def main(config):
         with torch.no_grad():
             if config.FEWSHOT.ENABLE:
                 print("=> Test CLASSIFICATION performance")
-                test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                test_cvae_for_only_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                # test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
 
             else: # for regular retrieval
                 print("=> Test pretarined feature form VLP model")
@@ -432,7 +433,9 @@ def main(config):
                 iteration_num = train_cvae_nce(None, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_nce, criterion_circle,
                 optimizer, optimizer_center, trainloader, epoch, iteration_num, text_embeddings)
             else:
-                iteration_num = train_cvae(None, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
+                # iteration_num = train_cvae(None, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
+                # optimizer, optimizer_center, trainloader, epoch, iteration_num)
+                iteration_num = train_cvae_onlycls(None, config, model, classifier, classifier_reID, criterion_cla, criterion_pair, criterion_recon, criterion_circle,
                 optimizer, optimizer_center, trainloader, epoch, iteration_num)
             # for name, param in classifier.named_parameters():
             #     print(f'Layer: {name} | Size: {param.size()} | Values : {param[:2]} \n')
@@ -493,7 +496,7 @@ def main(config):
                     }, is_best, final_epoch, osp.join(config.OUTPUT, 'checkpoint_ep' + str(epoch+1) + '.pth.tar'))
             else:
                 with torch.no_grad():
-                    val_acc, acc_total = test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                    val_acc, acc_total = test_cvae_for_only_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
 
                 is_best = val_acc > best_val_acc
                 

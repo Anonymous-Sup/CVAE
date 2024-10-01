@@ -11,6 +11,91 @@ from utils import plot_histogram_seperate, print_gradients, plot_scatterNN, plot
 from tools.drawer import tSNE_plot
 
 
+def train_cvae_onlycls(run, config, model, classifier, classifer_reid, criterion_cla, criterion_pair, criterion_recon, criterion_center,
+              optimizer, optimizer_center, trainloader, epoch, iteration_num):
+    
+    model.eval()
+    classifier.train()
+    
+    batch_cls_loss = AverageMeter()
+    # batch_cls_reid_loss = AverageMeter()
+    batch_center_loss = AverageMeter()
+    batch_pair_loss = AverageMeter()
+    batch_kl_loss = AverageMeter()
+    # batch_kld_theta = AverageMeter()
+    batch_recon_loss = AverageMeter()
+    batch_loss = AverageMeter()
+    batch_acc = AverageMeter()
+    # batch_reid_acc = AverageMeter()
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+
+    end = time.time()
+    # run["train/epoch"].append(epoch)
+
+    for batch_idx, (imgs_tensor, pids, style_ids, data_tag, _) in enumerate(trainloader):
+        iteration_num += 1
+        # convert fp16 tensor to fp32            
+        if not config.TRAIN.AMP:
+            imgs_tensor = imgs_tensor.float()
+
+        imgs_tensor, pids, style_ids = imgs_tensor.cuda(), pids.cuda(), style_ids.cuda()
+
+        outputs = classifier(imgs_tensor)
+        
+        _, preds = torch.max(outputs.data, 1)
+        cls_loss = criterion_cla(outputs, pids)
+
+        loss = cls_loss
+
+        optimizer.zero_grad()
+        if optimizer_center is not None:
+            optimizer_center.zero_grad()
+        
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
+        optimizer.step()
+        if optimizer_center is not None:
+            optimizer_center.step()
+
+ 
+        batch_acc.update((torch.sum(preds == pids.data)).float()/pids.size(0), pids.size(0))
+        # batch_reid_acc.update((torch.sum(preds_reid == pids.data)).float()/pids.size(0), pids.size(0))
+        batch_loss.update(loss.item(), pids.size(0))
+        batch_cls_loss.update(cls_loss.item(), pids.size(0))
+        
+        batch_time.update(time.time() - end)
+        
+        end = time.time()
+
+    print('Epoch:{0} '
+          'Time:{batch_time.sum:.1f} '
+          'Data:{data_time.sum:.1f} '
+          'Loss:{loss.avg:.4f} '
+          'Cls Loss:{cls_loss.avg:.4f} '
+          'Acc:{acc.avg:.4f} '.format(
+            epoch+1, batch_time=batch_time, data_time=data_time, 
+            loss=batch_loss, cls_loss=batch_cls_loss, acc=batch_acc)
+          )
+    if 'reid' not in config.MODEL.TRAIN_STAGE:
+        if 'kl' in config.MODEL.TRAIN_STAGE:
+            if (epoch+1) % 10 == 0:
+                print("Jump TSNE")
+                # drawer.compute(run)
+    # run["train/epoch/loss"].append(batch_loss)
+    # run["train/epoch/acc"].append(batch_acc)
+    # run["train/epoch/theta_acc"].append(batch_theta_acc)
+    # run["train/epoch/cls_loss"].append(batch_cls_loss)
+    # run["train/epoch/cls_loss_theta"].append(batch_cls_loss_theta)
+    # run["train/epoch/pair_loss"].append(batch_pair_loss)
+    # run["train/epoch/kl_loss"].append(batch_kl_loss.avg)
+    # # run["train/epoch/kld_theta"].append(batch_kld_theta)
+    # run["train/epoch/recon_loss"].append(batch_recon_loss.avg)
+    return iteration_num
+
+
+
+
 def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, criterion_pair, criterion_recon, criterion_center,
               optimizer, optimizer_center, trainloader, epoch, iteration_num):
     

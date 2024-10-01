@@ -702,6 +702,89 @@ def test_clip_feature(queryloader, galleryloader, dataset, final_epoch=False):
 
     return cmc[0]
 
+
+def test_cvae_for_only_cls(run, config, model, valloader, queryloader, galleryloader, dataset, classifier=None, classifier_reID=None, text_embeddings=None, latent_z='fuse_z', final_epoch=False, cls_rerank=False):
+    since = time.time()
+    model.eval()
+
+    drawer = tSNE_plot(len(dataset.query), trainplot=False)
+    drawer.reset()
+
+    if classifier != None:
+        classifier.eval()
+    if classifier_reID != None:
+        classifier_reID.eval()
+
+    # Extract features 
+    print("==========Test with latent_z: {} =========".format(latent_z))
+    q_batch_acc = AverageMeter()
+    g_batch_acc = AverageMeter()
+    q_reid_batch_acc = AverageMeter()
+    g_reid_batch_acc = AverageMeter()
+
+    val_batch_acc = AverageMeter()
+
+    for batch_idx, (imgs, batch_pids, batch_styleids, batch_data_tags, batch_ima_path) in enumerate(queryloader):
+        if not config.TRAIN.AMP:
+            imgs = imgs.float()
+
+        pretrained_features = imgs
+        pretrained_features = pretrained_features.cuda()
+
+        outputs = classifier(pretrained_features)
+        _, preds = torch.max(outputs.data, 1)
+        pid_tensor = batch_pids.cuda()
+        assert preds.shape == pid_tensor.shape
+        q_batch_acc.update((torch.sum(preds == pid_tensor.data)).float()/pid_tensor.size(0), pid_tensor.size(0))
+    
+    for _, (imgs, batch_pids, _, _, _) in enumerate(galleryloader):
+        if not config.TRAIN.AMP:
+            imgs = imgs.float()
+
+        pretrained_features = imgs
+        pretrained_features = pretrained_features.cuda()
+
+        outputs = classifier(pretrained_features)
+        _, preds = torch.max(outputs.data, 1)
+        pid_tensor = batch_pids.cuda()
+        assert preds.shape == pid_tensor.shape
+        g_batch_acc.update((torch.sum(preds == pid_tensor.data)).float()/pid_tensor.size(0), pid_tensor.size(0))
+
+    for _, (imgs, batch_pids, _, _, _) in enumerate(valloader):
+        if not config.TRAIN.AMP:
+            imgs = imgs.float()
+
+        pretrained_features = imgs
+        pretrained_features = pretrained_features.cuda()
+
+        outputs = classifier(pretrained_features)
+        _, preds = torch.max(outputs.data, 1)
+        pid_tensor = batch_pids.cuda()
+        assert preds.shape == pid_tensor.shape
+        val_batch_acc.update((torch.sum(preds == pid_tensor.data)).float()/pid_tensor.size(0), pid_tensor.size(0))
+
+
+    torch.cuda.empty_cache()
+
+    if classifier != None:
+        q_acc = q_batch_acc.avg
+        g_acc = g_batch_acc.avg
+        q_batch_acc.merge(g_batch_acc)
+        q_g_acc = q_batch_acc.avg
+
+        val_acc = val_batch_acc.avg
+        # total_acc = (q_acc + g_acc) / 2
+        print("Val Classifier results ---------------------------------------------------") 
+        print("Total acc: {:.1%}".format(val_acc))
+
+        print("Test Classifier results ---------------------------------------------------") 
+        print("Query acc: {:.1%} Gallery acc: {:.1%} Total acc: {:.1%}".format(q_acc, g_acc, q_g_acc))
+
+    return val_acc, [q_acc, g_acc, q_g_acc]
+
+
+
+
 if __name__=='__main__':
     import argparse
     import os

@@ -47,6 +47,45 @@ cd /home/zhengwei/github/CVAE
 # > nohup_logs/ablation_withouU_tune_novelSketchy_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w5s_noCLS_forLinear.log 2>&1 &
 
 
+# CUDA_VISIBLE_DEVICES=0
+# # ===========Base ReID+CLS Stage traning================
+# nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
+# --root /home/zhengwei/my_data/datasets \
+# --output /data/zhengwei/CVAE/outputs \
+# --dataset sketchy \
+# --format_tag tensor \
+# --train_format novel \
+# --train_stage reid+cls_stage \
+# --resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-30/ablation_withouU_novelSketchy_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w5s_noCLS_forLinear \
+# --gpu 0 \
+# --saved_name ablation_OnlyCLS_novelSketchy_SimpleVAE_128+64z_1e4_30+60_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
+# --vae_type SinpleVAE \
+# --recon_loss mse \
+# --reid_loss crossentropy \
+# --gaussian MultivariateNormal \
+# > nohup_logs/ablation_OnlyCLS_tune_2nd_novelSketchy_SimpleVAE_128+64z_1e4_60+120_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
+
+
+# nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
+# --root /home/zhengwei/my_data/datasets \
+# --output /data/zhengwei/CVAE/outputs \
+# --dataset sketchy \
+# --format_tag tensor \
+# --train_format novel \
+# --train_stage reid+cls_stage \
+# --resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-30/ablation_withouU_novelSketchy_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w5s_noCLS_forLinear \
+# --gpu 0 \
+# --saved_name ablation_withouU_novelSketchy_SimpleVAE+2E_128+64z_1e4_30+60_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
+# --vae_type SinpleVAE \
+# --recon_loss mse \
+# --use_two_encoder \
+# --reid_loss crossentropy \
+# --gaussian MultivariateNormal \
+# > nohup_logs/ablation_withouU_tune_2nd_novelSketchy_SimpleVAE+2E_128+64z_1e4_30+60_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
+
+
+
+
 CUDA_VISIBLE_DEVICES=0
 # ===========Base ReID+CLS Stage traning================
 nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
@@ -58,28 +97,9 @@ nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.
 --train_stage reid+cls_stage \
 --resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-30/ablation_withouU_novelSketchy_SimpleVAE_128+64z_1e3_30+60_KLtotalZ+lessC_all5w5s_noCLS_forLinear \
 --gpu 0 \
---saved_name ablation_withouU_novelSketchy_SimpleVAE_128+64z_1e4_30+60_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
+--saved_name ablation_OnlyCLS_novelSketchy_all5w5_Ce \
 --vae_type SinpleVAE \
 --recon_loss mse \
 --reid_loss crossentropy \
 --gaussian MultivariateNormal \
-> nohup_logs/ablation_withouU_tune_2nd_novelSketchy_SimpleVAE_128+64z_1e4_60+120_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
-
-
-nohup python -u main.py --cfg ./configs/sketchy_categray/clipreid_cvae_kl_novel.yaml \
---root /home/zhengwei/my_data/datasets \
---output /data/zhengwei/CVAE/outputs \
---dataset sketchy \
---format_tag tensor \
---train_format novel \
---train_stage reid+cls_stage \
---resume /data/zhengwei/CVAE/outputs/sketchy/clipreid_simplevae_base/novel/2024-09-30/ablation_withouU_novelSketchy_SimpleVAE+2E_128+64z_1e3_30+60_KLtotalZ+lessC_all5w5s_noCLS_forLinear \
---gpu 0 \
---saved_name ablation_withouU_novelSketchy_SimpleVAE+2E_128+64z_1e4_30+60_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce \
---vae_type SinpleVAE \
---recon_loss mse \
---use_two_encoder \
---reid_loss crossentropy \
---gaussian MultivariateNormal \
-> nohup_logs/ablation_withouU_tune_2nd_novelSketchy_SimpleVAE+2E_128+64z_1e4_30+60_KLtotalZ+lessC_all5w5s_L1280+bnTuneVersion+CLS_Trip+Center+Ce.log 2>&1 &
-
+> nohup_logs/ablation_OnlyCLS_novelSketchy_all5w5_Ce.log 2>&1 &
