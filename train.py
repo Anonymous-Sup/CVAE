@@ -207,9 +207,8 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         z_collect = z if batch_idx == 0 else torch.cat((z_collect, z), dim=0)
         x_collect = x_pre if batch_idx == 0 else torch.cat((x_collect, x_pre), dim=0)
         zs_collect = fusez_s if batch_idx == 0 else torch.cat((zs_collect, fusez_s), dim=0)
-        # u_collect = domian_feature if batch_idx == 0 else torch.cat((u_collect, domian_feature), dim=0)
-        # # data_tags.extend(np.asarray(data_tag))
-        # data_tag_collect.extend(np.asarray(data_tag))
+        u_collect = domian_feature if batch_idx == 0 else torch.cat((u_collect, domian_feature), dim=0)
+        data_tag_collect.extend(np.asarray(data_tag))
         if epoch==0 or epoch+1 == config.TRAIN.MAX_EPOCH:
             if batch_idx == len(trainloader)-1:
                 u_collect = u_collect.cpu().numpy()
