@@ -211,7 +211,7 @@ def train_cvae(run, config, model, classifier, classifer_reid, criterion_cla, cr
         data_tag_collect.extend(np.asarray(data_tag))
         if epoch==0 or epoch+1 == config.TRAIN.MAX_EPOCH:
             if batch_idx == len(trainloader)-1:
-                u_collect = u_collect.cpu().numpy()
+                u_collect = u_collect.cpu().detach().numpy()
                 data_tag_collect = np.asarray(data_tag_collect)
                 result = {'U_{}'.format(epoch):u_collect, 'data_tag_{}'.format(epoch):data_tag_collect}
                 if config.MODEL.USE_TWO_ENCODER:
