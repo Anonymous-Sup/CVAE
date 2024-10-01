@@ -402,7 +402,7 @@ def main(config):
         with torch.no_grad():
             if config.FEWSHOT.ENABLE:
                 print("=> Test CLASSIFICATION performance")
-                test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
+                # test_cvae_for_cls(None, config, model, val_loader, queryloader, galleryloader, dataset, classifier, classifier_reID, text_embeddings, latent_z='z_c')
 
             else: # for regular retrieval
                 print("=> Test pretarined feature form VLP model")
